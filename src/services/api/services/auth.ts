@@ -51,28 +51,6 @@ export function useAuthGoogleLoginService() {
   );
 }
 
-export type AuthFacebookLoginRequest = {
-  accessToken: string;
-};
-
-export type AuthFacebookLoginResponse = Tokens & {
-  user: User;
-};
-
-export function useAuthFacebookLoginService() {
-  const fetchBase = useFetch();
-
-  return useCallback(
-    (data: AuthFacebookLoginRequest, requestConfig?: RequestConfigType) => {
-      return fetchBase(`${API_URL}/v1/auth/facebook/login`, {
-        method: "POST",
-        body: JSON.stringify(data),
-        ...requestConfig,
-      }).then(wrapperFetchJsonResponse<AuthFacebookLoginResponse>);
-    },
-    [fetchBase]
-  );
-}
 
 export type AuthSignUpRequest = {
   email: string;
