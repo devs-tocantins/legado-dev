@@ -49,38 +49,16 @@ npm run dev
 - [x] ESLint
 - [x] CI (GitHub Actions)
 
-## Screenshots
+Frontend do Motor de Gamificação e Reconhecimento da comunidade **Devs Tocantins**.
 
-<img width="1552" alt="Sign In" src="https://github.com/brocoders/extensive-react-boilerplate/assets/6001723/5d42cd15-685b-4ae7-951d-4c8ed89c5390">
+---
 
-<img width="1552" alt="Sign Up" src="https://github.com/brocoders/extensive-react-boilerplate/assets/6001723/aca2d405-2155-4755-8d0e-d41bdc0db852">
+## Índice
 
-<img width="1552" alt="Users list" src="https://github.com/brocoders/extensive-react-boilerplate/assets/6001723/244409c0-2235-4018-b062-44fb54ea4321">
-
-<img width="1552" alt="Create user" src="https://github.com/brocoders/extensive-react-boilerplate/assets/6001723/cb86a3e1-331f-4bd7-9668-3c6cf44eb372">
-
-## Contributors
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Shchepotin"><img src="https://avatars.githubusercontent.com/u/6001723?v=4?s=100" width="100px;" alt="Vladyslav Shchepotin"/><br /><sub><b>Vladyslav Shchepotin</b></sub></a><br /><a href="#maintenance-Shchepotin" title="Maintenance">🚧</a> <a href="#doc-Shchepotin" title="Documentation">📖</a> <a href="#code-Shchepotin" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ElenVlass"><img src="https://avatars.githubusercontent.com/u/72293912?v=4?s=100" width="100px;" alt="Elena Vlasenko"/><br /><sub><b>Elena Vlasenko</b></sub></a><br /><a href="#doc-ElenVlass" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TetianaFomina"><img src="https://avatars.githubusercontent.com/u/72749258?v=4?s=100" width="100px;" alt="TetianaFomina"/><br /><sub><b>TetianaFomina</b></sub></a><br /><a href="#test-TetianaFomina" title="Tests">⚠️</a> <a href="#bug-TetianaFomina" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/LiudmylaKostenko"><img src="https://avatars.githubusercontent.com/u/55603883?v=4?s=100" width="100px;" alt="Liudmyla Kostenko"/><br /><sub><b>Liudmyla Kostenko</b></sub></a><br /><a href="#code-LiudmylaKostenko" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://brocoders.com"><img src="https://avatars.githubusercontent.com/u/226194?v=4?s=100" width="100px;" alt="Rodion"/><br /><sub><b>Rodion</b></sub></a><br /><a href="#business-sars" title="Business development">💼</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-## Support
-
-If you seek consulting, support, or wish to collaborate, please get in touch with us via [boilerplates@brocoders.com](boilerplates@brocoders.com) or feel free to ask us on [GitHub Discussions](https://github.com/brocoders/extensive-react-boilerplate/discussions). We are totally open to any suggestions and improvements.
+1. [Introdução](docs/introducao.md) — O que é o projeto, contexto e stack
+2. [Instalação e Execução](docs/instalacao.md) — Como rodar o projeto localmente
+3. [Arquitetura](docs/arquitetura.md) — Estrutura de pastas, páginas, i18n e proteção de rotas
+4. [Autenticação](docs/autenticacao.md) — Fluxos de login, JWT e Google OAuth
+5. [API do Backend](docs/api.md) — Endpoints que o frontend consome
+6. [Formulários](docs/formularios.md) — Padrões com React Hook Form
+7. [Como Contribuir](docs/como-contribuir.md) — Workflow de branches, commits e PRs
