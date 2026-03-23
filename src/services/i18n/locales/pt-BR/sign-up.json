@@ -1,0 +1,49 @@
+{
+  "title": "Cadastrar",
+  "actions": {
+    "submit": "Cadastrar",
+    "accountAlreadyExists": "Já tem uma conta?"
+  },
+  "inputs": {
+    "firstName": {
+      "label": "Nome",
+      "validation": {
+        "required": "Nome é obrigatório"
+      }
+    },
+    "lastName": {
+      "label": "Sobrenome",
+      "validation": {
+        "required": "Sobrenome é obrigatório"
+      }
+    },
+    "email": {
+      "label": "E-mail",
+      "validation": {
+        "required": "E-mail é obrigatório",
+        "invalid": "E-mail inválido",
+        "server": {
+          "emailAlreadyExists": "E-mail já cadastrado"
+        }
+      }
+    },
+    "password": {
+      "label": "Senha",
+      "validation": {
+        "required": "Senha é obrigatória",
+        "min": "A senha deve ter pelo menos 6 caracteres",
+        "server": {
+          "incorrectPassword": "Senha inválida"
+        }
+      }
+    },
+    "policy": {
+      "label": "Política de Privacidade",
+      "agreement": "Li e aceito a ",
+      "validation": {
+        "required": "O consentimento com a Política de Privacidade é obrigatório"
+      }
+    }
+  },
+  "or": "OU"
+}

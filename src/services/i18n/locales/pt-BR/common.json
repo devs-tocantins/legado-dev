@@ -1,0 +1,40 @@
+{
+  "app-name": "Motor de Engajamento",
+  "loading": "Carregando ...",
+  "navigation": {
+    "home": "Início",
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "profile": "Perfil",
+    "users": "Usuários",
+    "logout": "Sair"
+  },
+  "formInputs": {
+    "avatarInput": {
+      "dropzoneText": "Solte a imagem aqui ...",
+      "dragAndDrop": "Ou arraste e solte uma imagem aqui",
+      "selectFile": "Selecionar imagem"
+    },
+    "multipleImageInput": {
+      "dropzoneText": "Solte a imagem aqui ...",
+      "dragAndDrop": "Ou arraste e solte imagens aqui",
+      "selectFile": "Selecionar imagem"
+    },
+    "singleImageInput": {
+      "dropzoneText": "Solte a imagem aqui ...",
+      "dragAndDrop": "Ou arraste e solte imagens aqui",
+      "selectFile": "Selecionar imagem"
+    }
+  },
+  "leavePage": {
+    "title": "Sair desta página?",
+    "message": "As alterações feitas podem não ser salvas",
+    "stay": "Permanecer na Página",
+    "leave": "Sair da Página"
+  },
+  "auth": {
+    "facebook": {
+      "action": "Entrar com Facebook"
+    }
+  }
+}

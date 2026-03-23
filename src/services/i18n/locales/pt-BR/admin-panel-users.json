@@ -1,0 +1,36 @@
+{
+  "title": "Usuários",
+  "table": {
+    "column1": "ID",
+    "column2": "Nome",
+    "column3": "E-mail",
+    "column4": "Função"
+  },
+  "actions": {
+    "add": "Adicionar Usuário",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "create": "Criar Usuário"
+  },
+  "confirm": {
+    "delete": {
+      "title": "Excluir Usuário",
+      "message": "Tem certeza que deseja excluir este usuário?"
+    }
+  },
+  "filter": {
+    "actions": {
+      "filter": "Filtrar",
+      "apply": "Aplicar"
+    },
+    "inputs": {
+      "role": {
+        "label": "Função",
+        "options": {
+          "1": "Administrador",
+          "2": "Usuário"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "title": "Criar usuário",
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "inputs": {
+    "email": {
+      "label": "E-mail",
+      "validation": {
+        "invalid": "E-mail inválido",
+        "required": "E-mail é obrigatório",
+        "server": {
+          "emailAlreadyExists": "E-mail já cadastrado"
+        }
+      }
+    },
+    "firstName": {
+      "label": "Nome",
+      "validation": {
+        "required": "Nome é obrigatório"
+      }
+    },
+    "lastName": {
+      "label": "Sobrenome",
+      "validation": {
+        "required": "Sobrenome é obrigatório"
+      }
+    },
+    "role": {
+      "label": "Função",
+      "validation": {
+        "required": "Função é obrigatória"
+      },
+      "options": {
+        "1": "Administrador",
+        "2": "Usuário"
+      }
+    },
+    "password": {
+      "label": "Senha",
+      "validation": {
+        "required": "Senha é obrigatória",
+        "min": "A senha deve ter pelo menos 6 caracteres"
+      }
+    },
+    "passwordConfirmation": {
+      "label": "Confirmação de senha",
+      "validation": {
+        "required": "Confirmação de senha é obrigatória",
+        "match": "A confirmação deve ser igual à senha"
+      }
+    },
+    "<system>": "Do not remove this property"
+  },
+  "alerts": {
+    "user": {
+      "success": "Perfil do usuário criado com sucesso"
+    }
+  }
+}

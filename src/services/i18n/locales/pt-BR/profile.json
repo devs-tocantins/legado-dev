@@ -1,0 +1,78 @@
+{
+  "title": "Perfil",
+  "title1": "Editar Perfil",
+  "title2": "Alterar E-mail",
+  "title3": "Alterar Senha",
+  "actions": {
+    "edit": "Editar",
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "inputs": {
+    "firstName": {
+      "label": "Nome",
+      "validation": {
+        "required": "Nome é obrigatório"
+      }
+    },
+    "lastName": {
+      "label": "Sobrenome",
+      "validation": {
+        "required": "Sobrenome é obrigatório"
+      }
+    },
+    "email": {
+      "label": "Novo E-mail",
+      "validation": {
+        "required": "E-mail é obrigatório",
+        "email": "E-mail deve ser válido",
+        "currentEmail": "O e-mail deve ser diferente do e-mail atual",
+        "server": {
+          "emailExists": "E-mail já está em uso"
+        }
+      }
+    },
+    "emailConfirmation": {
+      "label": "Confirmação de E-mail",
+      "validation": {
+        "required": "Confirmação de e-mail é obrigatória",
+        "match": "A confirmação deve ser igual ao e-mail"
+      }
+    },
+    "oldPassword": {
+      "label": "Senha Atual",
+      "validation": {
+        "required": "Senha atual é obrigatória",
+        "min": "A senha deve ter pelo menos 6 caracteres",
+        "server": {
+          "incorrectOldPassword": "Senha atual inválida"
+        }
+      }
+    },
+    "password": {
+      "label": "Nova Senha",
+      "validation": {
+        "required": "Nova senha é obrigatória",
+        "min": "A nova senha deve ter pelo menos 6 caracteres"
+      }
+    },
+    "passwordConfirmation": {
+      "label": "Confirmação de Senha",
+      "validation": {
+        "required": "Confirmação de senha é obrigatória",
+        "match": "A confirmação deve ser igual à senha"
+      }
+    }
+  },
+  "alerts": {
+    "email": {
+      "success": "Solicitação de alteração de e-mail enviada para o novo endereço. Verifique seu e-mail e clique no link para confirmar a alteração."
+    },
+    "password": {
+      "success": "Senha atualizada com sucesso"
+    },
+    "profile": {
+      "success": "Perfil atualizado com sucesso"
+    }
+  }
+}

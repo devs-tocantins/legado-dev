@@ -1,0 +1,32 @@
+{
+  "title": "Entrar",
+  "actions": {
+    "submit": "Entrar",
+    "createAccount": "Criar Conta",
+    "forgotPassword": "Esqueceu a senha?"
+  },
+  "inputs": {
+    "email": {
+      "label": "E-mail",
+      "validation": {
+        "required": "E-mail é obrigatório",
+        "invalid": "E-mail inválido",
+        "server": {
+          "emailNotExists": "E-mail não encontrado",
+          "notFound": "E-mail não encontrado"
+        }
+      }
+    },
+    "password": {
+      "label": "Senha",
+      "validation": {
+        "required": "Senha é obrigatória",
+        "min": "A senha deve ter pelo menos 6 caracteres",
+        "server": {
+          "incorrectPassword": "Senha inválida"
+        }
+      }
+    }
+  },
+  "or": "OU"
+}
