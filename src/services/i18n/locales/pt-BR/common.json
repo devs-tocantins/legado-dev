@@ -32,9 +32,5 @@
     "stay": "Permanecer na Página",
     "leave": "Sair da Página"
   },
-  "auth": {
-    "facebook": {
-      "action": "Entrar com Facebook"
-    }
-  }
+  "auth": {}
 }
