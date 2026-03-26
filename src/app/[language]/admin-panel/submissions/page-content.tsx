@@ -3,249 +3,74 @@
 import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useTranslation } from "@/services/i18n/client";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import {
-  PropsWithChildren,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  useGetSubmissionsQuery,
-  submissionsQueryKeys,
-} from "./queries/queries";
+import { PropsWithChildren, useCallback, useMemo, useState } from "react";
+import { useGetSubmissionsQuery, submissionsQueryKeys } from "./queries/queries";
 import { TableVirtuoso } from "react-virtuoso";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
-import LinearProgress from "@mui/material/LinearProgress";
-import { styled } from "@mui/material/styles";
-import TableComponents from "@/components/table/table-components";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Button from "@mui/material/Button";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
-import Grow from "@mui/material/Grow";
-import Paper from "@mui/material/Paper";
-import Popper from "@mui/material/Popper";
-import MenuItem from "@mui/material/MenuItem";
-import MenuList from "@mui/material/MenuList";
+import TableComponents from "@/components/table/table-components-shadcn";
 import { Submission } from "@/services/api/types/submission";
-import Link from "@/components/link";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
 import { useDeleteSubmissionService } from "@/services/api/services/submissions";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import SubmissionFilter from "./submission-filter";
 import { useRouter, useSearchParams } from "next/navigation";
-import TableSortLabel from "@mui/material/TableSortLabel";
-import {
-  SubmissionFilterType,
-  SubmissionSortType,
-} from "./submission-filter-types";
+import { SubmissionFilterType, SubmissionSortType } from "./submission-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
-import Chip from "@mui/material/Chip";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
 type SubmissionKeys = keyof Submission;
 
-const TableCellLoadingContainer = styled(TableCell)(() => ({
-  padding: 0,
-}));
-
-function TableSortCellWrapper(
-  props: PropsWithChildren<{
-    width?: number;
-    orderBy: SubmissionKeys;
-    order: SortEnum;
-    column: SubmissionKeys;
-    handleRequestSort: (
-      event: React.MouseEvent<unknown>,
-      property: SubmissionKeys
-    ) => void;
-  }>
-) {
+function SortableHeader(props: PropsWithChildren<{ column: SubmissionKeys; orderBy: SubmissionKeys; order: SortEnum; onSort: (e: React.MouseEvent<unknown>, p: SubmissionKeys) => void; className?: string }>) {
   return (
-    <TableCell
-      style={{ width: props.width }}
-      sortDirection={props.orderBy === props.column ? props.order : false}
-    >
-      <TableSortLabel
-        active={props.orderBy === props.column}
-        direction={props.orderBy === props.column ? props.order : SortEnum.ASC}
-        onClick={(event) => props.handleRequestSort(event, props.column)}
-      >
+    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={(e) => props.onSort(e, props.column)}>
         {props.children}
-      </TableSortLabel>
-    </TableCell>
-  );
-}
-
-function StatusChip({ status }: { status: string }) {
-  const { t } = useTranslation("admin-panel-submissions");
-  const colorMap: Record<string, "warning" | "success" | "error"> = {
-    pending: "warning",
-    approved: "success",
-    rejected: "error",
-  };
-
-  return (
-    <Chip
-      label={t(`admin-panel-submissions:status.${status}`)}
-      color={colorMap[status] || "default"}
-      size="small"
-    />
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    </th>
   );
 }
 
 function Actions({ submission }: { submission: Submission }) {
-  const [open, setOpen] = useState(false);
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteSubmissionService();
   const queryClient = useQueryClient();
-  const anchorRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation("admin-panel-submissions");
-
-  const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
-  };
-
-  const handleClose = (event: Event) => {
-    if (
-      anchorRef.current &&
-      anchorRef.current.contains(event.target as HTMLElement)
-    ) {
-      return;
-    }
-    setOpen(false);
-  };
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog({
       title: t("admin-panel-submissions:confirm.delete.title"),
       message: t("admin-panel-submissions:confirm.delete.message"),
     });
-
     if (isConfirmed) {
-      setOpen(false);
-
-      const searchParams = new URLSearchParams(window.location.search);
-      const searchParamsFilter = searchParams.get("filter");
-      const searchParamsSort = searchParams.get("sort");
-
+      const sp = new URLSearchParams(window.location.search);
       let filter: SubmissionFilterType | undefined = undefined;
-      let sort: SubmissionSortType | undefined = {
-        order: SortEnum.DESC,
-        orderBy: "id",
-      };
+      let sort: SubmissionSortType | undefined = { order: SortEnum.DESC, orderBy: "id" };
+      if (sp.get("filter")) filter = JSON.parse(sp.get("filter")!);
+      if (sp.get("sort")) sort = JSON.parse(sp.get("sort")!);
 
-      if (searchParamsFilter) {
-        filter = JSON.parse(searchParamsFilter);
-      }
-
-      if (searchParamsSort) {
-        sort = JSON.parse(searchParamsSort);
-      }
-
-      const previousData = queryClient.getQueryData<
-        InfiniteData<{ nextPage: number; data: Submission[] }>
-      >(submissionsQueryKeys.list().sub.by({ sort, filter }).key);
-
-      await queryClient.cancelQueries({
-        queryKey: submissionsQueryKeys.list().key,
-      });
-
-      const newData = {
-        ...previousData,
-        pages: previousData?.pages.map((page) => ({
-          ...page,
-          data: page?.data.filter((item) => item.id !== submission.id),
-        })),
-      };
-
-      queryClient.setQueryData(
-        submissionsQueryKeys.list().sub.by({ sort, filter }).key,
-        newData
-      );
-
-      await fetchDelete({
-        id: submission.id,
-      });
+      const previousData = queryClient.getQueryData<InfiniteData<{ nextPage: number; data: Submission[] }>>(submissionsQueryKeys.list().sub.by({ sort, filter }).key);
+      await queryClient.cancelQueries({ queryKey: submissionsQueryKeys.list().key });
+      const newData = { ...previousData, pages: previousData?.pages.map((page) => ({ ...page, data: page?.data.filter((item) => item.id !== submission.id) })) };
+      queryClient.setQueryData(submissionsQueryKeys.list().sub.by({ sort, filter }).key, newData);
+      await fetchDelete({ id: submission.id });
     }
   };
 
-  const mainButton = (
-    <Button
-      size="small"
-      variant="contained"
-      LinkComponent={Link}
-      href={`/admin-panel/submissions/edit/${submission.id}`}
-    >
-      {t("admin-panel-submissions:actions.edit")}
-    </Button>
-  );
-
   return (
-    <>
-      <ButtonGroup
-        variant="contained"
-        ref={anchorRef}
-        aria-label="split button"
-        size="small"
-      >
-        {mainButton}
-        <Button
-          size="small"
-          aria-controls={open ? "split-button-menu" : undefined}
-          aria-expanded={open ? "true" : undefined}
-          aria-label="select merge strategy"
-          aria-haspopup="menu"
-          onClick={handleToggle}
-        >
-          <ArrowDropDownIcon />
-        </Button>
-      </ButtonGroup>
-      <Popper
-        sx={{
-          zIndex: 1,
-        }}
-        open={open}
-        anchorEl={anchorRef.current}
-        role={undefined}
-        transition
-        disablePortal
-      >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "center top" : "center bottom",
-            }}
-          >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  <MenuItem
-                    sx={{
-                      bgcolor: "error.main",
-                      color: `var(--mui-palette-common-white)`,
-                      "&:hover": {
-                        bgcolor: "error.light",
-                      },
-                    }}
-                    onClick={handleDelete}
-                  >
-                    {t("admin-panel-submissions:actions.delete")}
-                  </MenuItem>
-                </MenuList>
-              </ClickAwayListener>
-            </Paper>
-          </Grow>
-        )}
-      </Popper>
-    </>
+    <div className="flex items-center gap-1">
+      <Button size="sm" render={<Link href={`/admin-panel/submissions/edit/${submission.id}`} />}>{t("admin-panel-submissions:actions.edit")}</Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>{t("admin-panel-submissions:actions.delete")}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -253,46 +78,26 @@ function Submissions() {
   const { t } = useTranslation("admin-panel-submissions");
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [{ order, orderBy }, setSort] = useState<{
-    order: SortEnum;
-    orderBy: SubmissionKeys;
-  }>(() => {
-    const searchParamsSort = searchParams.get("sort");
-    if (searchParamsSort) {
-      return JSON.parse(searchParamsSort);
-    }
-    return { order: SortEnum.DESC, orderBy: "id" };
+  const [{ order, orderBy }, setSort] = useState<{ order: SortEnum; orderBy: SubmissionKeys }>(() => {
+    const s = searchParams.get("sort");
+    return s ? JSON.parse(s) : { order: SortEnum.DESC, orderBy: "id" };
   });
 
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: SubmissionKeys
-  ) => {
+  const handleRequestSort = (_: React.MouseEvent<unknown>, property: SubmissionKeys) => {
     const isAsc = orderBy === property && order === SortEnum.ASC;
-    const searchParams = new URLSearchParams(window.location.search);
+    const sp = new URLSearchParams(window.location.search);
     const newOrder = isAsc ? SortEnum.DESC : SortEnum.ASC;
-    const newOrderBy = property;
-    searchParams.set(
-      "sort",
-      JSON.stringify({ order: newOrder, orderBy: newOrderBy })
-    );
-    setSort({
-      order: newOrder,
-      orderBy: newOrderBy,
-    });
-    router.push(window.location.pathname + "?" + searchParams.toString());
+    sp.set("sort", JSON.stringify({ order: newOrder, orderBy: property }));
+    setSort({ order: newOrder, orderBy: property });
+    router.push(window.location.pathname + "?" + sp.toString());
   };
 
   const filter = useMemo(() => {
-    const searchParamsFilter = searchParams.get("filter");
-    if (searchParamsFilter) {
-      return JSON.parse(searchParamsFilter) as SubmissionFilterType;
-    }
-    return undefined;
+    const f = searchParams.get("filter");
+    return f ? (JSON.parse(f) as SubmissionFilterType) : undefined;
   }, [searchParams]);
 
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useGetSubmissionsQuery({ filter, sort: { order, orderBy } });
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useGetSubmissionsQuery({ filter, sort: { order, orderBy } });
 
   const handleScroll = useCallback(() => {
     if (!hasNextPage || isFetchingNextPage) return;
@@ -300,112 +105,62 @@ function Submissions() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const result = useMemo(() => {
-    const result =
-      (data?.pages.flatMap((page) => page?.data) as Submission[]) ??
-      ([] as Submission[]);
-    return removeDuplicatesFromArrayObjects(result, "id");
+    const r = (data?.pages.flatMap((p) => p?.data) as Submission[]) ?? [];
+    return removeDuplicatesFromArrayObjects(r, "id");
   }, [data]);
 
-  return (
-    <Container maxWidth="xl">
-      <Grid container spacing={3} pt={3}>
-        <Grid container spacing={3} size={{ xs: 12 }}>
-          <Grid size="grow">
-            <Typography variant="h3">
-              {t("admin-panel-submissions:title")}
-            </Typography>
-          </Grid>
-          <Grid container size="auto" wrap="nowrap" spacing={2}>
-            <Grid size="auto">
-              <SubmissionFilter />
-            </Grid>
-            <Grid size="auto">
-              <Button
-                variant="contained"
-                LinkComponent={Link}
-                href="/admin-panel/submissions/create"
-                color="success"
-              >
-                {t("admin-panel-submissions:actions.create")}
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
+  const statusVariant = (status: string) => {
+    switch (status) {
+      case "approved": return "default" as const;
+      case "rejected": return "destructive" as const;
+      default: return "secondary" as const;
+    }
+  };
 
-        <Grid size={{ xs: 12 }} mb={2}>
-          <TableVirtuoso
-            style={{ height: 500 }}
-            data={result}
-            components={TableComponents}
-            endReached={handleScroll}
-            overscan={20}
-            useWindowScroll
-            increaseViewportBy={400}
-            fixedHeaderContent={() => (
-              <>
-                <TableRow>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="id"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-submissions:table.column1")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 200 }}>
-                    {t("admin-panel-submissions:table.column2")}
-                  </TableCell>
-                  <TableCell style={{ width: 200 }}>
-                    {t("admin-panel-submissions:table.column3")}
-                  </TableCell>
-                  <TableCell style={{ width: 120 }}>
-                    {t("admin-panel-submissions:table.column4")}
-                  </TableCell>
-                  <TableCell style={{ width: 180 }}>
-                    {t("admin-panel-submissions:table.column5")}
-                  </TableCell>
-                  <TableCell style={{ width: 130 }}></TableCell>
-                </TableRow>
-                {isFetchingNextPage && (
-                  <TableRow>
-                    <TableCellLoadingContainer colSpan={6}>
-                      <LinearProgress />
-                    </TableCellLoadingContainer>
-                  </TableRow>
-                )}
-              </>
-            )}
-            itemContent={(index, submission) => (
-              <>
-                <TableCell style={{ width: 100 }}>
-                  {submission?.id}
-                </TableCell>
-                <TableCell style={{ width: 200 }}>
-                  {submission?.user?.email ?? "-"}
-                </TableCell>
-                <TableCell style={{ width: 200 }}>
-                  {submission?.activity?.name ?? "-"}
-                </TableCell>
-                <TableCell style={{ width: 120 }}>
-                  {submission?.status && (
-                    <StatusChip status={submission.status} />
-                  )}
-                </TableCell>
-                <TableCell style={{ width: 180 }}>
-                  {submission?.createdAt
-                    ? new Date(submission.createdAt).toLocaleDateString()
-                    : ""}
-                </TableCell>
-                <TableCell style={{ width: 130 }}>
-                  {!!submission && <Actions submission={submission} />}
-                </TableCell>
-              </>
-            )}
-          />
-        </Grid>
-      </Grid>
-    </Container>
+  return (
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">{t("admin-panel-submissions:title")}</h1>
+        <div className="flex items-center gap-2">
+          <SubmissionFilter />
+          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/submissions/create" />}>{t("admin-panel-submissions:actions.create")}</Button>
+        </div>
+      </div>
+      <div className="rounded-md border">
+        <TableVirtuoso
+          style={{ height: 500 }}
+          data={result}
+          components={TableComponents}
+          endReached={handleScroll}
+          overscan={20}
+          useWindowScroll
+          increaseViewportBy={400}
+          fixedHeaderContent={() => (
+            <>
+              <tr className="border-b">
+                <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">{t("admin-panel-submissions:table.column1")}</SortableHeader>
+                <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column2")}</th>
+                <th className="h-10 px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column3")}</th>
+                <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column4")}</th>
+                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column5")}</th>
+                <th className="h-10 w-[150px] px-3"></th>
+              </tr>
+              {isFetchingNextPage && (<tr><td colSpan={6} className="p-0"><div className="h-1 w-full overflow-hidden bg-muted"><div className="h-full w-1/3 animate-pulse bg-primary" /></div></td></tr>)}
+            </>
+          )}
+          itemContent={(_i, sub) => (
+            <>
+              <td className="p-3 w-[100px]">{sub?.id}</td>
+              <td className="p-3 w-[200px]">{sub?.user?.email ?? "-"}</td>
+              <td className="p-3">{sub?.activity?.name ?? "-"}</td>
+              <td className="p-3 w-[120px]">{sub?.status && <Badge variant={statusVariant(sub.status)}>{t(`admin-panel-submissions:status.${sub.status}`)}</Badge>}</td>
+              <td className="p-3 w-[180px]">{sub?.createdAt ? new Date(sub.createdAt).toLocaleDateString() : ""}</td>
+              <td className="p-3 w-[150px]">{!!sub && <Actions submission={sub} />}</td>
+            </>
+          )}
+        />
+      </div>
+    </div>
   );
 }
 

@@ -3,35 +3,11 @@
 import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useTranslation } from "@/services/i18n/client";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import {
-  PropsWithChildren,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { PropsWithChildren, useCallback, useMemo, useState } from "react";
 import { useGetUsersQuery, usersQueryKeys } from "./queries/queries";
 import { TableVirtuoso } from "react-virtuoso";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
-import Avatar from "@mui/material/Avatar";
-import LinearProgress from "@mui/material/LinearProgress";
-import { styled } from "@mui/material/styles";
-import TableComponents from "@/components/table/table-components";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Button from "@mui/material/Button";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
-import Grow from "@mui/material/Grow";
-import Paper from "@mui/material/Paper";
-import Popper from "@mui/material/Popper";
-import MenuItem from "@mui/material/MenuItem";
-import MenuList from "@mui/material/MenuList";
+import TableComponents from "@/components/table/table-components-shadcn";
 import { User } from "@/services/api/types/user";
-import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
 import { useDeleteUsersService } from "@/services/api/services/users";
@@ -39,78 +15,61 @@ import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicat
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import UserFilter from "./user-filter";
 import { useRouter, useSearchParams } from "next/navigation";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import { UserFilterType, UserSortType } from "./user-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
 type UsersKeys = keyof User;
 
-const TableCellLoadingContainer = styled(TableCell)(() => ({
-  padding: 0,
-}));
-
-function TableSortCellWrapper(
+function SortableHeader(
   props: PropsWithChildren<{
-    width?: number;
+    column: UsersKeys;
     orderBy: UsersKeys;
     order: SortEnum;
-    column: UsersKeys;
-    handleRequestSort: (
+    onSort: (
       event: React.MouseEvent<unknown>,
       property: UsersKeys
     ) => void;
+    className?: string;
   }>
 ) {
   return (
-    <TableCell
-      style={{ width: props.width }}
-      sortDirection={props.orderBy === props.column ? props.order : false}
-    >
-      <TableSortLabel
-        active={props.orderBy === props.column}
-        direction={props.orderBy === props.column ? props.order : SortEnum.ASC}
-        onClick={(event) => props.handleRequestSort(event, props.column)}
+    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+      <button
+        className="inline-flex items-center gap-1 hover:text-foreground"
+        onClick={(e) => props.onSort(e, props.column)}
       >
         {props.children}
-      </TableSortLabel>
-    </TableCell>
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    </th>
   );
 }
 
 function Actions({ user }: { user: User }) {
-  const [open, setOpen] = useState(false);
   const { user: authUser } = useAuth();
   const { confirmDialog } = useConfirmDialog();
-  const fetchUserDelete = useDeleteUsersService();
+  const fetchDelete = useDeleteUsersService();
   const queryClient = useQueryClient();
-  const anchorRef = useRef<HTMLDivElement>(null);
   const canDelete = user.id !== authUser?.id;
-  const { t: tUsers } = useTranslation("admin-panel-users");
-
-  const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
-  };
-
-  const handleClose = (event: Event) => {
-    if (
-      anchorRef.current &&
-      anchorRef.current.contains(event.target as HTMLElement)
-    ) {
-      return;
-    }
-
-    setOpen(false);
-  };
+  const { t } = useTranslation("admin-panel-users");
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog({
-      title: tUsers("admin-panel-users:confirm.delete.title"),
-      message: tUsers("admin-panel-users:confirm.delete.message"),
+      title: t("admin-panel-users:confirm.delete.title"),
+      message: t("admin-panel-users:confirm.delete.message"),
     });
 
     if (isConfirmed) {
-      setOpen(false);
-
       const searchParams = new URLSearchParams(window.location.search);
       const searchParamsFilter = searchParams.get("filter");
       const searchParamsSort = searchParams.get("sort");
@@ -121,13 +80,8 @@ function Actions({ user }: { user: User }) {
         orderBy: "id",
       };
 
-      if (searchParamsFilter) {
-        filter = JSON.parse(searchParamsFilter);
-      }
-
-      if (searchParamsSort) {
-        sort = JSON.parse(searchParamsSort);
-      }
+      if (searchParamsFilter) filter = JSON.parse(searchParamsFilter);
+      if (searchParamsSort) sort = JSON.parse(searchParamsSort);
 
       const previousData = queryClient.getQueryData<
         InfiniteData<{ nextPage: number; data: User[] }>
@@ -148,90 +102,31 @@ function Actions({ user }: { user: User }) {
         newData
       );
 
-      await fetchUserDelete({
-        id: user.id,
-      });
+      await fetchDelete({ id: user.id });
     }
   };
 
-  const mainButton = (
-    <Button
-      size="small"
-      variant="contained"
-      LinkComponent={Link}
-      href={`/admin-panel/users/edit/${user.id}`}
-    >
-      {tUsers("admin-panel-users:actions.edit")}
-    </Button>
-  );
-
   return (
-    <>
-      {[!canDelete].every(Boolean) ? (
-        mainButton
-      ) : (
-        <ButtonGroup
-          variant="contained"
-          ref={anchorRef}
-          aria-label="split button"
-          size="small"
-        >
-          {mainButton}
-
-          <Button
-            size="small"
-            aria-controls={open ? "split-button-menu" : undefined}
-            aria-expanded={open ? "true" : undefined}
-            aria-label="select merge strategy"
-            aria-haspopup="menu"
-            onClick={handleToggle}
-          >
-            <ArrowDropDownIcon />
-          </Button>
-        </ButtonGroup>
+    <div className="flex items-center gap-1">
+      <Button size="sm" render={<Link href={`/admin-panel/users/edit/${user.id}`} />}>
+          {t("admin-panel-users:actions.edit")}
+      </Button>
+      {canDelete && (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
+              <MoreHorizontal className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={handleDelete}
+            >
+              {t("admin-panel-users:actions.delete")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
-      <Popper
-        sx={{
-          zIndex: 1,
-        }}
-        open={open}
-        anchorEl={anchorRef.current}
-        role={undefined}
-        transition
-        disablePortal
-      >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "center top" : "center bottom",
-            }}
-          >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  {canDelete && (
-                    <MenuItem
-                      sx={{
-                        bgcolor: "error.main",
-                        color: `var(--mui-palette-common-white)`,
-                        "&:hover": {
-                          bgcolor: "error.light",
-                        },
-                      }}
-                      onClick={handleDelete}
-                    >
-                      {tUsers("admin-panel-users:actions.delete")}
-                    </MenuItem>
-                  )}
-                </MenuList>
-              </ClickAwayListener>
-            </Paper>
-          </Grow>
-        )}
-      </Popper>
-    </>
+    </div>
   );
 }
 
@@ -245,9 +140,7 @@ function Users() {
     orderBy: UsersKeys;
   }>(() => {
     const searchParamsSort = searchParams.get("sort");
-    if (searchParamsSort) {
-      return JSON.parse(searchParamsSort);
-    }
+    if (searchParamsSort) return JSON.parse(searchParamsSort);
     return { order: SortEnum.DESC, orderBy: "id" };
   });
 
@@ -263,19 +156,14 @@ function Users() {
       "sort",
       JSON.stringify({ order: newOrder, orderBy: newOrderBy })
     );
-    setSort({
-      order: newOrder,
-      orderBy: newOrderBy,
-    });
+    setSort({ order: newOrder, orderBy: newOrderBy });
     router.push(window.location.pathname + "?" + searchParams.toString());
   };
 
   const filter = useMemo(() => {
     const searchParamsFilter = searchParams.get("filter");
-    if (searchParamsFilter) {
+    if (searchParamsFilter)
       return JSON.parse(searchParamsFilter) as UserFilterType;
-    }
-
     return undefined;
   }, [searchParams]);
 
@@ -290,109 +178,102 @@ function Users() {
   const result = useMemo(() => {
     const result =
       (data?.pages.flatMap((page) => page?.data) as User[]) ?? ([] as User[]);
-
     return removeDuplicatesFromArrayObjects(result, "id");
   }, [data]);
 
   return (
-    <Container maxWidth="xl">
-      <Grid container spacing={3} pt={3}>
-        <Grid container spacing={3} size={{ xs: 12 }}>
-          <Grid size="grow">
-            <Typography variant="h3">
-              {tUsers("admin-panel-users:title")}
-            </Typography>
-          </Grid>
-          <Grid container size="auto" wrap="nowrap" spacing={2}>
-            <Grid size="auto">
-              <UserFilter />
-            </Grid>
-            <Grid size="auto">
-              <Button
-                variant="contained"
-                LinkComponent={Link}
-                href="/admin-panel/users/create"
-                color="success"
-              >
-                {tUsers("admin-panel-users:actions.create")}
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {tUsers("admin-panel-users:title")}
+        </h1>
+        <div className="flex items-center gap-2">
+          <UserFilter />
+          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/users/create" />}>
+              {tUsers("admin-panel-users:actions.create")}
+          </Button>
+        </div>
+      </div>
 
-        <Grid size={{ xs: 12 }} mb={2}>
-          <TableVirtuoso
-            style={{ height: 500 }}
-            data={result}
-            components={TableComponents}
-            endReached={handleScroll}
-            overscan={20}
-            useWindowScroll
-            increaseViewportBy={400}
-            fixedHeaderContent={() => (
-              <>
-                <TableRow>
-                  <TableCell style={{ width: 50 }}></TableCell>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="id"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {tUsers("admin-panel-users:table.column1")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 200 }}>
-                    {tUsers("admin-panel-users:table.column2")}
-                  </TableCell>
-                  <TableSortCellWrapper
-                    orderBy={orderBy}
-                    order={order}
-                    column="email"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {tUsers("admin-panel-users:table.column3")}
-                  </TableSortCellWrapper>
-
-                  <TableCell style={{ width: 80 }}>
-                    {tUsers("admin-panel-users:table.column4")}
-                  </TableCell>
-                  <TableCell style={{ width: 130 }}></TableCell>
-                </TableRow>
-                {isFetchingNextPage && (
-                  <TableRow>
-                    <TableCellLoadingContainer colSpan={6}>
-                      <LinearProgress />
-                    </TableCellLoadingContainer>
-                  </TableRow>
-                )}
-              </>
-            )}
-            itemContent={(index, user) => (
-              <>
-                <TableCell style={{ width: 50 }}>
-                  <Avatar
-                    alt={user?.firstName + " " + user?.lastName}
+      <div className="rounded-md border">
+        <TableVirtuoso
+          style={{ height: 500 }}
+          data={result}
+          components={TableComponents}
+          endReached={handleScroll}
+          overscan={20}
+          useWindowScroll
+          increaseViewportBy={400}
+          fixedHeaderContent={() => (
+            <>
+              <tr className="border-b">
+                <th className="h-10 w-[50px] px-3"></th>
+                <SortableHeader
+                  column="id"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[100px]"
+                >
+                  {tUsers("admin-panel-users:table.column1")}
+                </SortableHeader>
+                <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {tUsers("admin-panel-users:table.column2")}
+                </th>
+                <SortableHeader
+                  column="email"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                >
+                  {tUsers("admin-panel-users:table.column3")}
+                </SortableHeader>
+                <th className="h-10 w-[80px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {tUsers("admin-panel-users:table.column4")}
+                </th>
+                <th className="h-10 w-[150px] px-3"></th>
+              </tr>
+              {isFetchingNextPage && (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <div className="h-1 w-full overflow-hidden bg-muted">
+                      <div className="h-full w-1/3 animate-pulse bg-primary" />
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </>
+          )}
+          itemContent={(_index, user) => (
+            <>
+              <td className="p-3 w-[50px]">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
                     src={user?.photo?.path}
+                    alt={`${user?.firstName} ${user?.lastName}`}
                   />
-                </TableCell>
-                <TableCell style={{ width: 100 }}>{user?.id}</TableCell>
-                <TableCell style={{ width: 200 }}>
-                  {user?.firstName} {user?.lastName}
-                </TableCell>
-                <TableCell>{user?.email}</TableCell>
-                <TableCell style={{ width: 80 }}>
-                  {tRoles(`role.${user?.role?.id}`)}
-                </TableCell>
-                <TableCell style={{ width: 130 }}>
-                  {!!user && <Actions user={user} />}
-                </TableCell>
-              </>
-            )}
-          />
-        </Grid>
-      </Grid>
-    </Container>
+                  <AvatarFallback className="text-xs">
+                    {user?.firstName?.[0]}
+                    {user?.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+              </td>
+              <td className="p-3 w-[100px]">{user?.id}</td>
+              <td className="p-3 w-[200px]">
+                {user?.firstName} {user?.lastName}
+              </td>
+              <td className="p-3">{user?.email}</td>
+              <td className="p-3 w-[80px]">
+                {tRoles(`role.${user?.role?.id}`)}
+              </td>
+              <td className="p-3 w-[150px]">
+                {!!user && <Actions user={user} />}
+              </td>
+            </>
+          )}
+        />
+      </div>
+    </div>
   );
 }
 

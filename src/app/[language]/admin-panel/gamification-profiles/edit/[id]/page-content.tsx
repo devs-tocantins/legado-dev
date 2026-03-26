@@ -1,19 +1,12 @@
 "use client";
 
-import Button from "@mui/material/Button";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import FormTextInput from "@/components/form/text-input/form-text-input";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useEffect } from "react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import Link from "@/components/link";
 import useLeavePage from "@/services/leave-page/use-leave-page";
-import Box from "@mui/material/Box";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import {
@@ -21,6 +14,10 @@ import {
   usePatchGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
 import { useParams } from "next/navigation";
+import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 type EditFormData = {
   totalPoints: number;
@@ -54,12 +51,7 @@ function EditGamificationProfileFormActions() {
   useLeavePage(isDirty);
 
   return (
-    <Button
-      variant="contained"
-      color="primary"
-      type="submit"
-      disabled={isSubmitting}
-    >
+    <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-gamification-profiles-edit:actions.submit")}
     </Button>
   );
@@ -135,16 +127,13 @@ function FormEditGamificationProfile() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit}>
-          <Grid container spacing={2} mb={3} mt={3}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6">
-                {t("admin-panel-gamification-profiles-edit:title")}
-              </Typography>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
+      <div className="mx-auto max-w-md p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("admin-panel-gamification-profiles-edit:title")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="space-y-4">
               <FormTextInput<EditFormData>
                 name="totalPoints"
                 testId="totalPoints"
@@ -153,9 +142,7 @@ function FormEditGamificationProfile() {
                   "admin-panel-gamification-profiles-edit:inputs.totalPoints.label"
                 )}
               />
-            </Grid>
 
-            <Grid size={{ xs: 12 }}>
               <FormTextInput<EditFormData>
                 name="level"
                 testId="level"
@@ -164,26 +151,19 @@ function FormEditGamificationProfile() {
                   "admin-panel-gamification-profiles-edit:inputs.level.label"
                 )}
               />
-            </Grid>
 
-            <Grid size={{ xs: 12 }}>
-              <EditGamificationProfileFormActions />
-              <Box ml={1} component="span">
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  LinkComponent={Link}
-                  href="/admin-panel/gamification-profiles"
-                >
-                  {t(
-                    "admin-panel-gamification-profiles-edit:actions.cancel"
-                  )}
+              <div className="flex gap-2 pt-2">
+                <EditGamificationProfileFormActions />
+                <Button variant="secondary" render={<Link href="/admin-panel/gamification-profiles" />}>
+                    {t(
+                      "admin-panel-gamification-profiles-edit:actions.cancel"
+                    )}
                 </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </FormProvider>
   );
 }

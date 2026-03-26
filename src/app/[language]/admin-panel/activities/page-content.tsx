@@ -3,99 +3,58 @@
 import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useTranslation } from "@/services/i18n/client";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import {
-  PropsWithChildren,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { PropsWithChildren, useCallback, useMemo, useState } from "react";
 import { useGetActivitiesQuery, activitiesQueryKeys } from "./queries/queries";
 import { TableVirtuoso } from "react-virtuoso";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
-import LinearProgress from "@mui/material/LinearProgress";
-import { styled } from "@mui/material/styles";
-import TableComponents from "@/components/table/table-components";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Button from "@mui/material/Button";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
-import Grow from "@mui/material/Grow";
-import Paper from "@mui/material/Paper";
-import Popper from "@mui/material/Popper";
-import MenuItem from "@mui/material/MenuItem";
-import MenuList from "@mui/material/MenuList";
+import TableComponents from "@/components/table/table-components-shadcn";
 import { Activity } from "@/services/api/types/activity";
-import Link from "@/components/link";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
 import { useDeleteActivityService } from "@/services/api/services/activities";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import ActivityFilter from "./activity-filter";
 import { useRouter, useSearchParams } from "next/navigation";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import { ActivityFilterType, ActivitySortType } from "./activity-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
 type ActivityKeys = keyof Activity;
 
-const TableCellLoadingContainer = styled(TableCell)(() => ({
-  padding: 0,
-}));
-
-function TableSortCellWrapper(
+function SortableHeader(
   props: PropsWithChildren<{
-    width?: number;
+    column: ActivityKeys;
     orderBy: ActivityKeys;
     order: SortEnum;
-    column: ActivityKeys;
-    handleRequestSort: (
-      event: React.MouseEvent<unknown>,
-      property: ActivityKeys
-    ) => void;
+    onSort: (event: React.MouseEvent<unknown>, property: ActivityKeys) => void;
+    className?: string;
   }>
 ) {
   return (
-    <TableCell
-      style={{ width: props.width }}
-      sortDirection={props.orderBy === props.column ? props.order : false}
-    >
-      <TableSortLabel
-        active={props.orderBy === props.column}
-        direction={props.orderBy === props.column ? props.order : SortEnum.ASC}
-        onClick={(event) => props.handleRequestSort(event, props.column)}
+    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+      <button
+        className="inline-flex items-center gap-1 hover:text-foreground"
+        onClick={(e) => props.onSort(e, props.column)}
       >
         {props.children}
-      </TableSortLabel>
-    </TableCell>
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    </th>
   );
 }
 
 function Actions({ activity }: { activity: Activity }) {
-  const [open, setOpen] = useState(false);
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteActivityService();
   const queryClient = useQueryClient();
-  const anchorRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation("admin-panel-activities");
-
-  const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
-  };
-
-  const handleClose = (event: Event) => {
-    if (
-      anchorRef.current &&
-      anchorRef.current.contains(event.target as HTMLElement)
-    ) {
-      return;
-    }
-    setOpen(false);
-  };
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog({
@@ -104,33 +63,21 @@ function Actions({ activity }: { activity: Activity }) {
     });
 
     if (isConfirmed) {
-      setOpen(false);
-
       const searchParams = new URLSearchParams(window.location.search);
       const searchParamsFilter = searchParams.get("filter");
       const searchParamsSort = searchParams.get("sort");
 
       let filter: ActivityFilterType | undefined = undefined;
-      let sort: ActivitySortType | undefined = {
-        order: SortEnum.DESC,
-        orderBy: "id",
-      };
+      let sort: ActivitySortType | undefined = { order: SortEnum.DESC, orderBy: "id" };
 
-      if (searchParamsFilter) {
-        filter = JSON.parse(searchParamsFilter);
-      }
-
-      if (searchParamsSort) {
-        sort = JSON.parse(searchParamsSort);
-      }
+      if (searchParamsFilter) filter = JSON.parse(searchParamsFilter);
+      if (searchParamsSort) sort = JSON.parse(searchParamsSort);
 
       const previousData = queryClient.getQueryData<
         InfiniteData<{ nextPage: number; data: Activity[] }>
       >(activitiesQueryKeys.list().sub.by({ sort, filter }).key);
 
-      await queryClient.cancelQueries({
-        queryKey: activitiesQueryKeys.list().key,
-      });
+      await queryClient.cancelQueries({ queryKey: activitiesQueryKeys.list().key });
 
       const newData = {
         ...previousData,
@@ -145,83 +92,29 @@ function Actions({ activity }: { activity: Activity }) {
         newData
       );
 
-      await fetchDelete({
-        id: activity.id,
-      });
+      await fetchDelete({ id: activity.id });
     }
   };
 
-  const mainButton = (
-    <Button
-      size="small"
-      variant="contained"
-      LinkComponent={Link}
-      href={`/admin-panel/activities/edit/${activity.id}`}
-    >
-      {t("admin-panel-activities:actions.edit")}
-    </Button>
-  );
-
   return (
-    <>
-      <ButtonGroup
-        variant="contained"
-        ref={anchorRef}
-        aria-label="split button"
-        size="small"
-      >
-        {mainButton}
-        <Button
-          size="small"
-          aria-controls={open ? "split-button-menu" : undefined}
-          aria-expanded={open ? "true" : undefined}
-          aria-label="select merge strategy"
-          aria-haspopup="menu"
-          onClick={handleToggle}
-        >
-          <ArrowDropDownIcon />
-        </Button>
-      </ButtonGroup>
-      <Popper
-        sx={{
-          zIndex: 1,
-        }}
-        open={open}
-        anchorEl={anchorRef.current}
-        role={undefined}
-        transition
-        disablePortal
-      >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "center top" : "center bottom",
-            }}
+    <div className="flex items-center gap-1">
+      <Button size="sm" render={<Link href={`/admin-panel/activities/edit/${activity.id}`} />}>
+          {t("admin-panel-activities:actions.edit")}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
+            <MoreHorizontal className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={handleDelete}
           >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  <MenuItem
-                    sx={{
-                      bgcolor: "error.main",
-                      color: `var(--mui-palette-common-white)`,
-                      "&:hover": {
-                        bgcolor: "error.light",
-                      },
-                    }}
-                    onClick={handleDelete}
-                  >
-                    {t("admin-panel-activities:actions.delete")}
-                  </MenuItem>
-                </MenuList>
-              </ClickAwayListener>
-            </Paper>
-          </Grow>
-        )}
-      </Popper>
-    </>
+            {t("admin-panel-activities:actions.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -234,37 +127,22 @@ function Activities() {
     orderBy: ActivityKeys;
   }>(() => {
     const searchParamsSort = searchParams.get("sort");
-    if (searchParamsSort) {
-      return JSON.parse(searchParamsSort);
-    }
+    if (searchParamsSort) return JSON.parse(searchParamsSort);
     return { order: SortEnum.DESC, orderBy: "id" };
   });
 
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: ActivityKeys
-  ) => {
+  const handleRequestSort = (event: React.MouseEvent<unknown>, property: ActivityKeys) => {
     const isAsc = orderBy === property && order === SortEnum.ASC;
     const searchParams = new URLSearchParams(window.location.search);
     const newOrder = isAsc ? SortEnum.DESC : SortEnum.ASC;
-    const newOrderBy = property;
-    searchParams.set(
-      "sort",
-      JSON.stringify({ order: newOrder, orderBy: newOrderBy })
-    );
-    setSort({
-      order: newOrder,
-      orderBy: newOrderBy,
-    });
+    searchParams.set("sort", JSON.stringify({ order: newOrder, orderBy: property }));
+    setSort({ order: newOrder, orderBy: property });
     router.push(window.location.pathname + "?" + searchParams.toString());
   };
 
   const filter = useMemo(() => {
-    const searchParamsFilter = searchParams.get("filter");
-    if (searchParamsFilter) {
-      return JSON.parse(searchParamsFilter) as ActivityFilterType;
-    }
-    return undefined;
+    const f = searchParams.get("filter");
+    return f ? (JSON.parse(f) as ActivityFilterType) : undefined;
   }, [searchParams]);
 
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
@@ -276,119 +154,83 @@ function Activities() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const result = useMemo(() => {
-    const result =
-      (data?.pages.flatMap((page) => page?.data) as Activity[]) ??
-      ([] as Activity[]);
-    return removeDuplicatesFromArrayObjects(result, "id");
+    const r = (data?.pages.flatMap((page) => page?.data) as Activity[]) ?? ([] as Activity[]);
+    return removeDuplicatesFromArrayObjects(r, "id");
   }, [data]);
 
   return (
-    <Container maxWidth="xl">
-      <Grid container spacing={3} pt={3}>
-        <Grid container spacing={3} size={{ xs: 12 }}>
-          <Grid size="grow">
-            <Typography variant="h3">
-              {t("admin-panel-activities:title")}
-            </Typography>
-          </Grid>
-          <Grid container size="auto" wrap="nowrap" spacing={2}>
-            <Grid size="auto">
-              <ActivityFilter />
-            </Grid>
-            <Grid size="auto">
-              <Button
-                variant="contained"
-                LinkComponent={Link}
-                href="/admin-panel/activities/create"
-                color="success"
-              >
-                {t("admin-panel-activities:actions.create")}
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t("admin-panel-activities:title")}
+        </h1>
+        <div className="flex items-center gap-2">
+          <ActivityFilter />
+          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/activities/create" />}>
+              {t("admin-panel-activities:actions.create")}
+          </Button>
+        </div>
+      </div>
 
-        <Grid size={{ xs: 12 }} mb={2}>
-          <TableVirtuoso
-            style={{ height: 500 }}
-            data={result}
-            components={TableComponents}
-            endReached={handleScroll}
-            overscan={20}
-            useWindowScroll
-            increaseViewportBy={400}
-            fixedHeaderContent={() => (
-              <>
-                <TableRow>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="id"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-activities:table.column1")}
-                  </TableSortCellWrapper>
-                  <TableSortCellWrapper
-                    orderBy={orderBy}
-                    order={order}
-                    column="name"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-activities:table.column2")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 120 }}>
-                    {t("admin-panel-activities:table.column3")}
-                  </TableCell>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="points"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-activities:table.column4")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 180 }}>
-                    {t("admin-panel-activities:table.column5")}
-                  </TableCell>
-                  <TableCell style={{ width: 130 }}></TableCell>
-                </TableRow>
-                {isFetchingNextPage && (
-                  <TableRow>
-                    <TableCellLoadingContainer colSpan={6}>
-                      <LinearProgress />
-                    </TableCellLoadingContainer>
-                  </TableRow>
-                )}
-              </>
-            )}
-            itemContent={(index, activity) => (
-              <>
-                <TableCell style={{ width: 100 }}>{activity?.id}</TableCell>
-                <TableCell>{activity?.name}</TableCell>
-                <TableCell style={{ width: 120 }}>
-                  {t(
-                    `admin-panel-activities:filter.inputs.type.options.${activity?.type}`
-                  )}
-                </TableCell>
-                <TableCell style={{ width: 100 }}>
-                  {activity?.points}
-                </TableCell>
-                <TableCell style={{ width: 180 }}>
-                  {activity?.createdAt
-                    ? new Date(activity.createdAt).toLocaleDateString()
-                    : ""}
-                </TableCell>
-                <TableCell style={{ width: 130 }}>
-                  {!!activity && <Actions activity={activity} />}
-                </TableCell>
-              </>
-            )}
-          />
-        </Grid>
-      </Grid>
-    </Container>
+      <div className="rounded-md border">
+        <TableVirtuoso
+          style={{ height: 500 }}
+          data={result}
+          components={TableComponents}
+          endReached={handleScroll}
+          overscan={20}
+          useWindowScroll
+          increaseViewportBy={400}
+          fixedHeaderContent={() => (
+            <>
+              <tr className="border-b">
+                <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
+                  {t("admin-panel-activities:table.column1")}
+                </SortableHeader>
+                <SortableHeader column="name" orderBy={orderBy} order={order} onSort={handleRequestSort}>
+                  {t("admin-panel-activities:table.column2")}
+                </SortableHeader>
+                <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {t("admin-panel-activities:table.column3")}
+                </th>
+                <SortableHeader column="points" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
+                  {t("admin-panel-activities:table.column4")}
+                </SortableHeader>
+                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {t("admin-panel-activities:table.column5")}
+                </th>
+                <th className="h-10 w-[150px] px-3"></th>
+              </tr>
+              {isFetchingNextPage && (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <div className="h-1 w-full overflow-hidden bg-muted">
+                      <div className="h-full w-1/3 animate-pulse bg-primary" />
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </>
+          )}
+          itemContent={(_index, activity) => (
+            <>
+              <td className="p-3 w-[100px]">{activity?.id}</td>
+              <td className="p-3">{activity?.name}</td>
+              <td className="p-3 w-[120px]">
+                {t(`admin-panel-activities:filter.inputs.type.options.${activity?.type}`)}
+              </td>
+              <td className="p-3 w-[100px]">{activity?.points}</td>
+              <td className="p-3 w-[180px]">
+                {activity?.createdAt ? new Date(activity.createdAt).toLocaleDateString() : ""}
+              </td>
+              <td className="p-3 w-[150px]">
+                {!!activity && <Actions activity={activity} />}
+              </td>
+            </>
+          )}
+        />
+      </div>
+    </div>
   );
 }
 

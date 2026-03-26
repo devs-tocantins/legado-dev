@@ -1,21 +1,12 @@
 "use client";
 
-import Button from "@mui/material/Button";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import FormTextInput from "@/components/form/text-input/form-text-input";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useEffect } from "react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import Link from "@/components/link";
-import FormAvatarInput from "@/components/form/avatar-input/form-avatar-input";
-import { FileEntity } from "@/services/api/types/file-entity";
 import useLeavePage from "@/services/leave-page/use-leave-page";
-import Box from "@mui/material/Box";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import {
@@ -24,7 +15,12 @@ import {
 } from "@/services/api/services/users";
 import { useParams } from "next/navigation";
 import { Role, RoleEnum } from "@/services/api/types/role";
-import FormSelectInput from "@/components/form/select/form-select";
+import { FileEntity } from "@/services/api/types/file-entity";
+import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
+import FormSelectInput from "@/components/form/select/form-select-shadcn";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 type EditUserFormData = {
   email: string;
@@ -46,19 +42,13 @@ const useValidationEditUserSchema = () => {
     email: yup
       .string()
       .email(t("admin-panel-users-edit:inputs.email.validation.invalid"))
-      .required(
-        t("admin-panel-users-edit:inputs.firstName.validation.required")
-      ),
+      .required(t("admin-panel-users-edit:inputs.firstName.validation.required")),
     firstName: yup
       .string()
-      .required(
-        t("admin-panel-users-edit:inputs.firstName.validation.required")
-      ),
+      .required(t("admin-panel-users-edit:inputs.firstName.validation.required")),
     lastName: yup
       .string()
-      .required(
-        t("admin-panel-users-edit:inputs.lastName.validation.required")
-      ),
+      .required(t("admin-panel-users-edit:inputs.lastName.validation.required")),
     role: yup
       .object()
       .shape({
@@ -76,9 +66,7 @@ const useValidationChangePasswordSchema = () => {
     password: yup
       .string()
       .min(6, t("admin-panel-users-edit:inputs.password.validation.min"))
-      .required(
-        t("admin-panel-users-edit:inputs.password.validation.required")
-      ),
+      .required(t("admin-panel-users-edit:inputs.password.validation.required")),
     passwordConfirmation: yup
       .string()
       .oneOf(
@@ -86,9 +74,7 @@ const useValidationChangePasswordSchema = () => {
         t("admin-panel-users-edit:inputs.passwordConfirmation.validation.match")
       )
       .required(
-        t(
-          "admin-panel-users-edit:inputs.passwordConfirmation.validation.required"
-        )
+        t("admin-panel-users-edit:inputs.passwordConfirmation.validation.required")
       ),
   });
 };
@@ -99,29 +85,19 @@ function EditUserFormActions() {
   useLeavePage(isDirty);
 
   return (
-    <Button
-      variant="contained"
-      color="primary"
-      type="submit"
-      disabled={isSubmitting}
-    >
+    <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-users-edit:actions.submit")}
     </Button>
   );
 }
 
-function ChangePasswordUserFormActions() {
+function ChangePasswordFormActions() {
   const { t } = useTranslation("admin-panel-users-edit");
   const { isSubmitting, isDirty } = useFormState();
   useLeavePage(isDirty);
 
   return (
-    <Button
-      variant="contained"
-      color="primary"
-      type="submit"
-      disabled={isSubmitting}
-    >
+    <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-users-edit:actions.submit")}
     </Button>
   );
@@ -188,9 +164,7 @@ function FormEditUser() {
           email: user?.email ?? "",
           firstName: user?.firstName ?? "",
           lastName: user?.lastName ?? "",
-          role: {
-            id: Number(user?.role?.id),
-          },
+          role: { id: Number(user?.role?.id) },
           photo: user?.photo,
         });
       }
@@ -201,78 +175,46 @@ function FormEditUser() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit}>
-          <Grid container spacing={2} mb={3} mt={3}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6">
-                {t("admin-panel-users-edit:title1")}
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormAvatarInput<EditUserFormData> name="photo" testId="photo" />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<EditUserFormData>
-                name="email"
-                testId="email"
-                label={t("admin-panel-users-edit:inputs.email.label")}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<EditUserFormData>
-                name="firstName"
-                testId="first-name"
-                label={t("admin-panel-users-edit:inputs.firstName.label")}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<EditUserFormData>
-                name="lastName"
-                testId="last-name"
-                label={t("admin-panel-users-edit:inputs.lastName.label")}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormSelectInput<EditUserFormData, Pick<Role, "id">>
-                name="role"
-                testId="role"
-                label={t("admin-panel-users-edit:inputs.role.label")}
-                options={[
-                  {
-                    id: RoleEnum.ADMIN,
-                  },
-                  {
-                    id: RoleEnum.USER,
-                  },
-                ]}
-                keyValue="id"
-                renderOption={(option) =>
-                  t(`admin-panel-users-edit:inputs.role.options.${option.id}`)
-                }
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin-panel-users-edit:title1")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <FormTextInput<EditUserFormData>
+              name="email"
+              testId="email"
+              label={t("admin-panel-users-edit:inputs.email.label")}
+            />
+            <FormTextInput<EditUserFormData>
+              name="firstName"
+              testId="first-name"
+              label={t("admin-panel-users-edit:inputs.firstName.label")}
+            />
+            <FormTextInput<EditUserFormData>
+              name="lastName"
+              testId="last-name"
+              label={t("admin-panel-users-edit:inputs.lastName.label")}
+            />
+            <FormSelectInput<EditUserFormData, Pick<Role, "id">>
+              name="role"
+              testId="role"
+              label={t("admin-panel-users-edit:inputs.role.label")}
+              options={[{ id: RoleEnum.ADMIN }, { id: RoleEnum.USER }]}
+              keyValue="id"
+              renderOption={(option) =>
+                t(`admin-panel-users-edit:inputs.role.options.${option.id}`)
+              }
+            />
+            <div className="flex gap-2 pt-2">
               <EditUserFormActions />
-              <Box ml={1} component="span">
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  LinkComponent={Link}
-                  href="/admin-panel/users"
-                >
+              <Button variant="secondary" render={<Link href="/admin-panel/users" />}>
                   {t("admin-panel-users-edit:actions.cancel")}
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </FormProvider>
   );
 }
@@ -323,59 +265,41 @@ function FormChangePasswordUser() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit}>
-          <Grid container spacing={2} mb={3} mt={3}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6">
-                {t("admin-panel-users-edit:title2")}
-              </Typography>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<ChangeUserPasswordFormData>
-                name="password"
-                type="password"
-                label={t("admin-panel-users-edit:inputs.password.label")}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<ChangeUserPasswordFormData>
-                name="passwordConfirmation"
-                label={t(
-                  "admin-panel-users-edit:inputs.passwordConfirmation.label"
-                )}
-                type="password"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <ChangePasswordUserFormActions />
-              <Box ml={1} component="span">
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  LinkComponent={Link}
-                  href="/admin-panel/users"
-                >
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin-panel-users-edit:title2")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <FormTextInput<ChangeUserPasswordFormData>
+              name="password"
+              type="password"
+              label={t("admin-panel-users-edit:inputs.password.label")}
+            />
+            <FormTextInput<ChangeUserPasswordFormData>
+              name="passwordConfirmation"
+              label={t("admin-panel-users-edit:inputs.passwordConfirmation.label")}
+              type="password"
+            />
+            <div className="flex gap-2 pt-2">
+              <ChangePasswordFormActions />
+              <Button variant="secondary" render={<Link href="/admin-panel/users" />}>
                   {t("admin-panel-users-edit:actions.cancel")}
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </FormProvider>
   );
 }
 
 function EditUser() {
   return (
-    <>
+    <div className="mx-auto max-w-md space-y-6 p-6">
       <FormEditUser />
       <FormChangePasswordUser />
-    </>
+    </div>
   );
 }
 

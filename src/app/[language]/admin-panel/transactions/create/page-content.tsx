@@ -1,24 +1,21 @@
 "use client";
 
-import Button from "@mui/material/Button";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import FormTextInput from "@/components/form/text-input/form-text-input";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import Link from "@/components/link";
 import useLeavePage from "@/services/leave-page/use-leave-page";
-import Box from "@mui/material/Box";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import { usePostTransactionService } from "@/services/api/services/transactions";
 import { useRouter } from "next/navigation";
-import FormSelectInput from "@/components/form/select/form-select";
 import { TransactionTypeEnum } from "@/services/api/types/transaction";
+import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
+import FormSelectInput from "@/components/form/select/form-select-shadcn";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 type CreateFormData = {
   userId: string;
@@ -63,12 +60,7 @@ function CreateTransactionFormActions() {
   useLeavePage(isDirty);
 
   return (
-    <Button
-      variant="contained"
-      color="primary"
-      type="submit"
-      disabled={isSubmitting}
-    >
+    <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-transactions-create:actions.submit")}
     </Button>
   );
@@ -127,16 +119,13 @@ function FormCreateTransaction() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit} autoComplete="create-new-transaction">
-          <Grid container spacing={2} mb={3} mt={3}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6">
-                {t("admin-panel-transactions-create:title")}
-              </Typography>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
+      <div className="mx-auto max-w-md p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("admin-panel-transactions-create:title")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} autoComplete="create-new-transaction" className="space-y-4">
               <FormTextInput<CreateFormData>
                 name="userId"
                 testId="userId"
@@ -144,9 +133,6 @@ function FormCreateTransaction() {
                   "admin-panel-transactions-create:inputs.userId.label"
                 )}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
               <FormTextInput<CreateFormData>
                 name="points"
                 testId="points"
@@ -155,9 +141,6 @@ function FormCreateTransaction() {
                   "admin-panel-transactions-create:inputs.points.label"
                 )}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
               <FormSelectInput<CreateFormData, { id: string }>
                 name="type"
                 testId="type"
@@ -172,36 +155,23 @@ function FormCreateTransaction() {
                   )
                 }
               />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
               <FormTextInput<CreateFormData>
                 name="description"
                 testId="description"
                 label={t(
                   "admin-panel-transactions-create:inputs.description.label"
                 )}
-                multiline
-                minRows={3}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <CreateTransactionFormActions />
-              <Box ml={1} component="span">
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  LinkComponent={Link}
-                  href="/admin-panel/transactions"
-                >
-                  {t("admin-panel-transactions-create:actions.cancel")}
+              <div className="flex gap-2 pt-2">
+                <CreateTransactionFormActions />
+                <Button variant="secondary" render={<Link href="/admin-panel/transactions" />}>
+                    {t("admin-panel-transactions-create:actions.cancel")}
                 </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </FormProvider>
   );
 }

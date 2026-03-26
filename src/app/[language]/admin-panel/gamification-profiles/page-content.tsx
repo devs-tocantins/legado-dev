@@ -3,104 +3,66 @@
 import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useTranslation } from "@/services/i18n/client";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import {
-  PropsWithChildren,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { PropsWithChildren, useCallback, useMemo, useState } from "react";
 import {
   useGetGamificationProfilesQuery,
   gamificationProfilesQueryKeys,
 } from "./queries/queries";
 import { TableVirtuoso } from "react-virtuoso";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
-import LinearProgress from "@mui/material/LinearProgress";
-import { styled } from "@mui/material/styles";
-import TableComponents from "@/components/table/table-components";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Button from "@mui/material/Button";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
-import Grow from "@mui/material/Grow";
-import Paper from "@mui/material/Paper";
-import Popper from "@mui/material/Popper";
-import MenuItem from "@mui/material/MenuItem";
-import MenuList from "@mui/material/MenuList";
+import TableComponents from "@/components/table/table-components-shadcn";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
-import Link from "@/components/link";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
 import { useDeleteGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import {
   GamificationProfileFilterType,
   GamificationProfileSortType,
 } from "./gamification-profile-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
 type GamificationProfileKeys = keyof GamificationProfile;
 
-const TableCellLoadingContainer = styled(TableCell)(() => ({
-  padding: 0,
-}));
-
-function TableSortCellWrapper(
+function SortableHeader(
   props: PropsWithChildren<{
-    width?: number;
+    column: GamificationProfileKeys;
     orderBy: GamificationProfileKeys;
     order: SortEnum;
-    column: GamificationProfileKeys;
-    handleRequestSort: (
+    onSort: (
       event: React.MouseEvent<unknown>,
       property: GamificationProfileKeys
     ) => void;
+    className?: string;
   }>
 ) {
   return (
-    <TableCell
-      style={{ width: props.width }}
-      sortDirection={props.orderBy === props.column ? props.order : false}
-    >
-      <TableSortLabel
-        active={props.orderBy === props.column}
-        direction={props.orderBy === props.column ? props.order : SortEnum.ASC}
-        onClick={(event) => props.handleRequestSort(event, props.column)}
+    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+      <button
+        className="inline-flex items-center gap-1 hover:text-foreground"
+        onClick={(e) => props.onSort(e, props.column)}
       >
         {props.children}
-      </TableSortLabel>
-    </TableCell>
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    </th>
   );
 }
 
 function Actions({ profile }: { profile: GamificationProfile }) {
-  const [open, setOpen] = useState(false);
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteGamificationProfileService();
   const queryClient = useQueryClient();
-  const anchorRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation("admin-panel-gamification-profiles");
-
-  const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
-  };
-
-  const handleClose = (event: Event) => {
-    if (
-      anchorRef.current &&
-      anchorRef.current.contains(event.target as HTMLElement)
-    ) {
-      return;
-    }
-    setOpen(false);
-  };
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog({
@@ -109,8 +71,6 @@ function Actions({ profile }: { profile: GamificationProfile }) {
     });
 
     if (isConfirmed) {
-      setOpen(false);
-
       const searchParams = new URLSearchParams(window.location.search);
       const searchParamsFilter = searchParams.get("filter");
       const searchParamsSort = searchParams.get("sort");
@@ -158,77 +118,25 @@ function Actions({ profile }: { profile: GamificationProfile }) {
     }
   };
 
-  const mainButton = (
-    <Button
-      size="small"
-      variant="contained"
-      LinkComponent={Link}
-      href={`/admin-panel/gamification-profiles/edit/${profile.id}`}
-    >
-      {t("admin-panel-gamification-profiles:actions.edit")}
-    </Button>
-  );
-
   return (
-    <>
-      <ButtonGroup
-        variant="contained"
-        ref={anchorRef}
-        aria-label="split button"
-        size="small"
-      >
-        {mainButton}
-        <Button
-          size="small"
-          aria-controls={open ? "split-button-menu" : undefined}
-          aria-expanded={open ? "true" : undefined}
-          aria-label="select merge strategy"
-          aria-haspopup="menu"
-          onClick={handleToggle}
-        >
-          <ArrowDropDownIcon />
-        </Button>
-      </ButtonGroup>
-      <Popper
-        sx={{
-          zIndex: 1,
-        }}
-        open={open}
-        anchorEl={anchorRef.current}
-        role={undefined}
-        transition
-        disablePortal
-      >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "center top" : "center bottom",
-            }}
+    <div className="flex items-center gap-1">
+      <Button size="sm" render={<Link href={`/admin-panel/gamification-profiles/edit/${profile.id}`} />}>
+          {t("admin-panel-gamification-profiles:actions.edit")}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
+            <MoreHorizontal className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={handleDelete}
           >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  <MenuItem
-                    sx={{
-                      bgcolor: "error.main",
-                      color: `var(--mui-palette-common-white)`,
-                      "&:hover": {
-                        bgcolor: "error.light",
-                      },
-                    }}
-                    onClick={handleDelete}
-                  >
-                    {t("admin-panel-gamification-profiles:actions.delete")}
-                  </MenuItem>
-                </MenuList>
-              </ClickAwayListener>
-            </Paper>
-          </Grow>
-        )}
-      </Popper>
-    </>
+            {t("admin-panel-gamification-profiles:actions.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -293,110 +201,101 @@ function GamificationProfiles() {
   }, [data]);
 
   return (
-    <Container maxWidth="xl">
-      <Grid container spacing={3} pt={3}>
-        <Grid container spacing={3} size={{ xs: 12 }}>
-          <Grid size="grow">
-            <Typography variant="h3">
-              {t("admin-panel-gamification-profiles:title")}
-            </Typography>
-          </Grid>
-          <Grid container size="auto" wrap="nowrap" spacing={2}>
-            <Grid size="auto">
-              <Button
-                variant="contained"
-                LinkComponent={Link}
-                href="/admin-panel/gamification-profiles/create"
-                color="success"
-              >
-                {t("admin-panel-gamification-profiles:actions.create")}
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t("admin-panel-gamification-profiles:title")}
+        </h1>
+        <div className="flex items-center gap-2">
+          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/gamification-profiles/create" />}>
+              {t("admin-panel-gamification-profiles:actions.create")}
+          </Button>
+        </div>
+      </div>
 
-        <Grid size={{ xs: 12 }} mb={2}>
-          <TableVirtuoso
-            style={{ height: 500 }}
-            data={result}
-            components={TableComponents}
-            endReached={handleScroll}
-            overscan={20}
-            useWindowScroll
-            increaseViewportBy={400}
-            fixedHeaderContent={() => (
-              <>
-                <TableRow>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="id"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-gamification-profiles:table.column1")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 200 }}>
-                    {t("admin-panel-gamification-profiles:table.column2")}
-                  </TableCell>
-                  <TableSortCellWrapper
-                    width={120}
-                    orderBy={orderBy}
-                    order={order}
-                    column="totalPoints"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-gamification-profiles:table.column3")}
-                  </TableSortCellWrapper>
-                  <TableSortCellWrapper
-                    width={100}
-                    orderBy={orderBy}
-                    order={order}
-                    column="level"
-                    handleRequestSort={handleRequestSort}
-                  >
-                    {t("admin-panel-gamification-profiles:table.column4")}
-                  </TableSortCellWrapper>
-                  <TableCell style={{ width: 180 }}>
-                    {t("admin-panel-gamification-profiles:table.column5")}
-                  </TableCell>
-                  <TableCell style={{ width: 130 }}></TableCell>
-                </TableRow>
-                {isFetchingNextPage && (
-                  <TableRow>
-                    <TableCellLoadingContainer colSpan={6}>
-                      <LinearProgress />
-                    </TableCellLoadingContainer>
-                  </TableRow>
-                )}
-              </>
-            )}
-            itemContent={(index, profile) => (
-              <>
-                <TableCell style={{ width: 100 }}>{profile?.id}</TableCell>
-                <TableCell style={{ width: 200 }}>
-                  {profile?.user?.email ?? "-"}
-                </TableCell>
-                <TableCell style={{ width: 120 }}>
-                  {profile?.totalPoints}
-                </TableCell>
-                <TableCell style={{ width: 100 }}>
-                  {profile?.level}
-                </TableCell>
-                <TableCell style={{ width: 180 }}>
-                  {profile?.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString()
-                    : ""}
-                </TableCell>
-                <TableCell style={{ width: 130 }}>
-                  {!!profile && <Actions profile={profile} />}
-                </TableCell>
-              </>
-            )}
-          />
-        </Grid>
-      </Grid>
-    </Container>
+      <div className="rounded-md border">
+        <TableVirtuoso
+          style={{ height: 500 }}
+          data={result}
+          components={TableComponents}
+          endReached={handleScroll}
+          overscan={20}
+          useWindowScroll
+          increaseViewportBy={400}
+          fixedHeaderContent={() => (
+            <>
+              <tr className="border-b">
+                <SortableHeader
+                  column="id"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[100px]"
+                >
+                  {t("admin-panel-gamification-profiles:table.column1")}
+                </SortableHeader>
+                <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {t("admin-panel-gamification-profiles:table.column2")}
+                </th>
+                <SortableHeader
+                  column="totalPoints"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[120px]"
+                >
+                  {t("admin-panel-gamification-profiles:table.column3")}
+                </SortableHeader>
+                <SortableHeader
+                  column="level"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[100px]"
+                >
+                  {t("admin-panel-gamification-profiles:table.column4")}
+                </SortableHeader>
+                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {t("admin-panel-gamification-profiles:table.column5")}
+                </th>
+                <th className="h-10 w-[130px] px-3"></th>
+              </tr>
+              {isFetchingNextPage && (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <div className="h-1 w-full overflow-hidden bg-muted">
+                      <div className="h-full w-1/3 animate-pulse bg-primary" />
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </>
+          )}
+          itemContent={(_index, profile) => (
+            <>
+              <td className="p-3 w-[100px]">{profile?.id}</td>
+              <td className="p-3 w-[200px]">
+                {profile?.user?.email ?? "-"}
+              </td>
+              <td className="p-3 w-[120px]">
+                {profile?.totalPoints}
+              </td>
+              <td className="p-3 w-[100px]">
+                {profile?.level}
+              </td>
+              <td className="p-3 w-[180px]">
+                {profile?.createdAt
+                  ? new Date(profile.createdAt).toLocaleDateString()
+                  : ""}
+              </td>
+              <td className="p-3 w-[130px]">
+                {!!profile && <Actions profile={profile} />}
+              </td>
+            </>
+          )}
+        />
+      </div>
+    </div>
   );
 }
 

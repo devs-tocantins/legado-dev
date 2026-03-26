@@ -1,16 +1,14 @@
 "use client";
 
 import { useTranslation } from "@/services/i18n/client";
-import Button from "@mui/material/Button";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Popover from "@mui/material/Popover";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ActivityFilterType } from "./activity-filter-types";
-import FormSelectInput from "@/components/form/select/form-select";
 import { ActivityTypeEnum } from "@/services/api/types/activity";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import FormSelectInput from "@/components/form/select/form-select-shadcn";
 
 type ActivityFilterFormData = ActivityFilterType;
 
@@ -20,91 +18,52 @@ function ActivityFilter() {
   const searchParams = useSearchParams();
 
   const methods = useForm<ActivityFilterFormData>({
-    defaultValues: {
-      type: undefined,
-    },
+    defaultValues: { type: undefined },
   });
 
   const { handleSubmit, reset } = methods;
 
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
-  const id = open ? "activity-filter-popover" : undefined;
-
   useEffect(() => {
     const filter = searchParams.get("filter");
     if (filter) {
-      handleClose();
-      const filterParsed = JSON.parse(filter);
-      reset(filterParsed);
+      reset(JSON.parse(filter));
     }
   }, [searchParams, reset]);
 
   return (
-    <FormProvider {...methods}>
-      <Popover
-        id={id}
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-      >
-        <Container
-          sx={{
-            minWidth: 300,
-          }}
-        >
+    <Popover>
+      <PopoverTrigger>
+        <Button variant="outline">
+          {t("admin-panel-activities:filter.actions.filter")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <FormProvider {...methods}>
           <form
             onSubmit={handleSubmit((data) => {
               const searchParams = new URLSearchParams(window.location.search);
               searchParams.set("filter", JSON.stringify(data));
-              router.push(
-                window.location.pathname + "?" + searchParams.toString()
-              );
+              router.push(window.location.pathname + "?" + searchParams.toString());
             })}
+            className="space-y-4"
           >
-            <Grid container spacing={2} mb={3} mt={3}>
-              <Grid size={{ xs: 12 }}>
-                <FormSelectInput<ActivityFilterFormData, { id: string }>
-                  name="type"
-                  testId="type"
-                  label={t("admin-panel-activities:filter.inputs.type.label")}
-                  options={Object.values(ActivityTypeEnum).map((value) => ({
-                    id: value,
-                  }))}
-                  keyValue="id"
-                  renderOption={(option) =>
-                    t(
-                      `admin-panel-activities:filter.inputs.type.options.${option.id}`
-                    )
-                  }
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Button variant="contained" type="submit">
-                  {t("admin-panel-activities:filter.actions.apply")}
-                </Button>
-              </Grid>
-            </Grid>
+            <FormSelectInput<ActivityFilterFormData, { id: string }>
+              name="type"
+              testId="type"
+              label={t("admin-panel-activities:filter.inputs.type.label")}
+              options={Object.values(ActivityTypeEnum).map((v) => ({ id: v }))}
+              keyValue="id"
+              renderOption={(option) =>
+                t(`admin-panel-activities:filter.inputs.type.options.${option.id}`)
+              }
+            />
+            <Button type="submit" className="w-full">
+              {t("admin-panel-activities:filter.actions.apply")}
+            </Button>
           </form>
-        </Container>
-      </Popover>
-      <Button aria-describedby={id} variant="contained" onClick={handleClick}>
-        {t("admin-panel-activities:filter.actions.filter")}
-      </Button>
-    </FormProvider>
+        </FormProvider>
+      </PopoverContent>
+    </Popover>
   );
 }
 
