@@ -1,0 +1,41 @@
+{
+  "title": "Transações",
+  "table": {
+    "column1": "ID",
+    "column2": "Usuário",
+    "column3": "Pontos",
+    "column4": "Tipo",
+    "column5": "Descrição",
+    "column6": "Criado em"
+  },
+  "type": {
+    "credit": "Crédito",
+    "debit": "Débito"
+  },
+  "actions": {
+    "create": "Nova Transação",
+    "edit": "Editar",
+    "delete": "Excluir"
+  },
+  "confirm": {
+    "delete": {
+      "title": "Confirmar Exclusão",
+      "message": "Tem certeza que deseja excluir esta transação?"
+    }
+  },
+  "filter": {
+    "actions": {
+      "filter": "Filtrar",
+      "apply": "Aplicar"
+    },
+    "inputs": {
+      "type": {
+        "label": "Tipo",
+        "options": {
+          "credit": "Crédito",
+          "debit": "Débito"
+        }
+      }
+    }
+  }
+}

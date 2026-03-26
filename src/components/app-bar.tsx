@@ -116,7 +116,46 @@ function ResponsiveAppBar() {
                       {t("common:navigation.users")}
                     </Typography>
                   </MenuItem>,
-                  // mobile-menu-items
+                  <MenuItem
+                    key="activities"
+                    onClick={handleCloseNavMenu}
+                    component={Link}
+                    href="/admin-panel/activities"
+                  >
+                    <Typography textAlign="center">
+                      {t("common:navigation.activities")}
+                    </Typography>
+                  </MenuItem>,
+                  <MenuItem
+                    key="submissions"
+                    onClick={handleCloseNavMenu}
+                    component={Link}
+                    href="/admin-panel/submissions"
+                  >
+                    <Typography textAlign="center">
+                      {t("common:navigation.submissions")}
+                    </Typography>
+                  </MenuItem>,
+                  <MenuItem
+                    key="transactions"
+                    onClick={handleCloseNavMenu}
+                    component={Link}
+                    href="/admin-panel/transactions"
+                  >
+                    <Typography textAlign="center">
+                      {t("common:navigation.transactions")}
+                    </Typography>
+                  </MenuItem>,
+                  <MenuItem
+                    key="gamification-profiles"
+                    onClick={handleCloseNavMenu}
+                    component={Link}
+                    href="/admin-panel/gamification-profiles"
+                  >
+                    <Typography textAlign="center">
+                      {t("common:navigation.gamificationProfiles")}
+                    </Typography>
+                  </MenuItem>,
                 ]}
               {isLoaded &&
                 !user && [
@@ -185,7 +224,38 @@ function ResponsiveAppBar() {
                   >
                     {t("common:navigation.users")}
                   </Button>
-                  {/* desktop-menu-items */}
+                  <Button
+                    onClick={handleCloseNavMenu}
+                    sx={{ my: 2, color: "white", display: "block" }}
+                    component={Link}
+                    href="/admin-panel/activities"
+                  >
+                    {t("common:navigation.activities")}
+                  </Button>
+                  <Button
+                    onClick={handleCloseNavMenu}
+                    sx={{ my: 2, color: "white", display: "block" }}
+                    component={Link}
+                    href="/admin-panel/submissions"
+                  >
+                    {t("common:navigation.submissions")}
+                  </Button>
+                  <Button
+                    onClick={handleCloseNavMenu}
+                    sx={{ my: 2, color: "white", display: "block" }}
+                    component={Link}
+                    href="/admin-panel/transactions"
+                  >
+                    {t("common:navigation.transactions")}
+                  </Button>
+                  <Button
+                    onClick={handleCloseNavMenu}
+                    sx={{ my: 2, color: "white", display: "block" }}
+                    component={Link}
+                    href="/admin-panel/gamification-profiles"
+                  >
+                    {t("common:navigation.gamificationProfiles")}
+                  </Button>
                 </>
               )}
           </Box>

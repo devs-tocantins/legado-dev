@@ -1,0 +1,43 @@
+{
+  "title": "Criar Atividade",
+  "inputs": {
+    "name": {
+      "label": "Nome",
+      "validation": {
+        "required": "Nome é obrigatório"
+      }
+    },
+    "description": {
+      "label": "Descrição"
+    },
+    "points": {
+      "label": "Pontos",
+      "validation": {
+        "required": "Pontos é obrigatório",
+        "min": "Pontos deve ser maior que 0"
+      }
+    },
+    "type": {
+      "label": "Tipo",
+      "validation": {
+        "required": "Tipo é obrigatório"
+      },
+      "options": {
+        "quiz": "Quiz",
+        "survey": "Pesquisa",
+        "challenge": "Desafio",
+        "event": "Evento",
+        "other": "Outro"
+      }
+    }
+  },
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "activity": {
+      "success": "Atividade criada com sucesso"
+    }
+  }
+}

@@ -7,6 +7,10 @@
     "signUp": "Cadastrar",
     "profile": "Perfil",
     "users": "Usuários",
+    "activities": "Atividades",
+    "submissions": "Submissões",
+    "transactions": "Transações",
+    "gamificationProfiles": "Perfis de Gamificação",
     "logout": "Sair"
   },
   "formInputs": {

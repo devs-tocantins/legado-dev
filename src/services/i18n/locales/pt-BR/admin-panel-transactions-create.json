@@ -1,0 +1,40 @@
+{
+  "title": "Nova Transação",
+  "inputs": {
+    "userId": {
+      "label": "ID do Usuário",
+      "validation": {
+        "required": "Usuário é obrigatório"
+      }
+    },
+    "points": {
+      "label": "Pontos",
+      "validation": {
+        "required": "Pontos é obrigatório",
+        "min": "Pontos deve ser maior que 0"
+      }
+    },
+    "type": {
+      "label": "Tipo",
+      "validation": {
+        "required": "Tipo é obrigatório"
+      },
+      "options": {
+        "credit": "Crédito",
+        "debit": "Débito"
+      }
+    },
+    "description": {
+      "label": "Descrição"
+    }
+  },
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "transaction": {
+      "success": "Transação criada com sucesso"
+    }
+  }
+}

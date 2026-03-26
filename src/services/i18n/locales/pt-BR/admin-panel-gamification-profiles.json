@@ -1,0 +1,21 @@
+{
+  "title": "Perfis de Gamificação",
+  "table": {
+    "column1": "ID",
+    "column2": "Usuário",
+    "column3": "Pontos Totais",
+    "column4": "Nível",
+    "column5": "Criado em"
+  },
+  "actions": {
+    "create": "Novo Perfil",
+    "edit": "Editar",
+    "delete": "Excluir"
+  },
+  "confirm": {
+    "delete": {
+      "title": "Confirmar Exclusão",
+      "message": "Tem certeza que deseja excluir este perfil de gamificação?"
+    }
+  }
+}

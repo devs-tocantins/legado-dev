@@ -1,0 +1,39 @@
+{
+  "title": "Atividades",
+  "table": {
+    "column1": "ID",
+    "column2": "Nome",
+    "column3": "Tipo",
+    "column4": "Pontos",
+    "column5": "Criado em"
+  },
+  "actions": {
+    "create": "Criar Atividade",
+    "edit": "Editar",
+    "delete": "Excluir"
+  },
+  "confirm": {
+    "delete": {
+      "title": "Confirmar Exclusão",
+      "message": "Tem certeza que deseja excluir esta atividade?"
+    }
+  },
+  "filter": {
+    "actions": {
+      "filter": "Filtrar",
+      "apply": "Aplicar"
+    },
+    "inputs": {
+      "type": {
+        "label": "Tipo",
+        "options": {
+          "quiz": "Quiz",
+          "survey": "Pesquisa",
+          "challenge": "Desafio",
+          "event": "Evento",
+          "other": "Outro"
+        }
+      }
+    }
+  }
+}

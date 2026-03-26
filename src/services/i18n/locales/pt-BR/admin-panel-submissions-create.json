@@ -1,0 +1,23 @@
+{
+  "title": "Nova Submissão",
+  "inputs": {
+    "activityId": {
+      "label": "Atividade",
+      "validation": {
+        "required": "Atividade é obrigatória"
+      }
+    },
+    "proofUrl": {
+      "label": "URL do Comprovante"
+    }
+  },
+  "actions": {
+    "submit": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "submission": {
+      "success": "Submissão criada com sucesso"
+    }
+  }
+}

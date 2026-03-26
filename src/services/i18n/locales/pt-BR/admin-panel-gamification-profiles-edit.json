@@ -1,0 +1,26 @@
+{
+  "title": "Editar Perfil de Gamificação",
+  "inputs": {
+    "totalPoints": {
+      "label": "Pontos Totais",
+      "validation": {
+        "required": "Pontos totais é obrigatório"
+      }
+    },
+    "level": {
+      "label": "Nível",
+      "validation": {
+        "required": "Nível é obrigatório"
+      }
+    }
+  },
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "profile": {
+      "success": "Perfil de gamificação atualizado com sucesso"
+    }
+  }
+}

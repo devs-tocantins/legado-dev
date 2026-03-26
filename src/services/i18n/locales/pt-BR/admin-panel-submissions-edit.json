@@ -1,0 +1,31 @@
+{
+  "title": "Editar Submissão",
+  "inputs": {
+    "status": {
+      "label": "Status",
+      "validation": {
+        "required": "Status é obrigatório"
+      },
+      "options": {
+        "pending": "Pendente",
+        "approved": "Aprovado",
+        "rejected": "Rejeitado"
+      }
+    },
+    "reviewNote": {
+      "label": "Nota de Revisão"
+    },
+    "proofUrl": {
+      "label": "URL do Comprovante"
+    }
+  },
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "submission": {
+      "success": "Submissão atualizada com sucesso"
+    }
+  }
+}

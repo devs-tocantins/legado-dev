@@ -4,7 +4,7 @@ import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Link from "@/components/link";
+import MuiLink from "@mui/material/Link";
 
 type Props = {
   params: Promise<{ language: string }>;
@@ -41,9 +41,11 @@ export default async function Home(props: Props) {
           <Button
             variant="contained"
             color="primary"
-            LinkComponent={Link}
+            component={MuiLink}
             href="/sign-in"
             data-testid="sign-in-button"
+            underline="none"
+            sx={{ color: "white" }}
           >
             {t("signIn")}
           </Button>

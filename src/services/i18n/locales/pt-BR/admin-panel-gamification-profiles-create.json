@@ -1,0 +1,26 @@
+{
+  "title": "Novo Perfil de Gamificação",
+  "inputs": {
+    "userId": {
+      "label": "ID do Usuário",
+      "validation": {
+        "required": "Usuário é obrigatório"
+      }
+    },
+    "totalPoints": {
+      "label": "Pontos Totais"
+    },
+    "level": {
+      "label": "Nível"
+    }
+  },
+  "actions": {
+    "submit": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "profile": {
+      "success": "Perfil de gamificação criado com sucesso"
+    }
+  }
+}
