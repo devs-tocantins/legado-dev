@@ -5,7 +5,8 @@
       "label": "Valor",
       "validation": {
         "required": "Valor e obrigatorio",
-        "min": "Valor deve ser maior que 0"
+        "min": "Valor deve ser no minimo 1",
+        "integer": "Valor deve ser um numero inteiro"
       }
     },
     "category": {

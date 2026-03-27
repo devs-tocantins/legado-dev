@@ -14,11 +14,15 @@
       "label": "Recompensa (XP)",
       "validation": {
         "required": "Recompensa e obrigatoria",
-        "min": "Recompensa deve ser maior que 0"
+        "min": "Recompensa deve ser no minimo 1",
+        "integer": "Recompensa deve ser um numero inteiro"
       }
     },
     "cooldownHours": {
-      "label": "Cooldown (horas)"
+      "label": "Cooldown (horas)",
+      "validation": {
+        "integer": "Cooldown deve ser um numero inteiro"
+      }
     },
     "requiresProof": {
       "label": "Requer Comprovante"

@@ -28,7 +28,14 @@ const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-transactions-create");
   return yup.object().shape({
     profileId: yup.string().required(t("admin-panel-transactions-create:inputs.profileId.validation.required")),
-    amount: yup.number().min(1, t("admin-panel-transactions-create:inputs.amount.validation.min")).required(t("admin-panel-transactions-create:inputs.amount.validation.required")),
+    amount: yup
+      .number()
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? NaN : value
+      )
+      .integer(t("admin-panel-transactions-create:inputs.amount.validation.integer"))
+      .min(1, t("admin-panel-transactions-create:inputs.amount.validation.min"))
+      .required(t("admin-panel-transactions-create:inputs.amount.validation.required")),
     category: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-transactions-create:inputs.category.validation.required")),
     description: yup.string().default(""),
   });

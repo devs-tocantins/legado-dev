@@ -24,14 +24,27 @@ type CreateFormData = {
   cooldownHours: number;
 };
 
+const toInteger = (value: number, originalValue: unknown) =>
+  String(originalValue).trim() === "" ? NaN : value;
+
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-activities-create");
   return yup.object().shape({
     title: yup.string().required(t("admin-panel-activities-create:inputs.title.validation.required")),
     description: yup.string().default(""),
-    fixedReward: yup.number().min(1, t("admin-panel-activities-create:inputs.fixedReward.validation.min")).required(t("admin-panel-activities-create:inputs.fixedReward.validation.required")),
+    fixedReward: yup
+      .number()
+      .transform(toInteger)
+      .integer(t("admin-panel-activities-create:inputs.fixedReward.validation.integer"))
+      .min(1, t("admin-panel-activities-create:inputs.fixedReward.validation.min"))
+      .required(t("admin-panel-activities-create:inputs.fixedReward.validation.required")),
     requiresProof: yup.boolean().default(false),
-    cooldownHours: yup.number().min(0).default(0),
+    cooldownHours: yup
+      .number()
+      .transform(toInteger)
+      .integer(t("admin-panel-activities-create:inputs.cooldownHours.validation.integer"))
+      .min(0)
+      .default(0),
   });
 };
 

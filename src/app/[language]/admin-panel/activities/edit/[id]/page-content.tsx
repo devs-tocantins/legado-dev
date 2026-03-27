@@ -25,14 +25,27 @@ type EditFormData = {
   cooldownHours: number;
 };
 
+const toInteger = (value: number, originalValue: unknown) =>
+  String(originalValue).trim() === "" ? NaN : value;
+
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-activities-edit");
   return yup.object().shape({
     title: yup.string().required(t("admin-panel-activities-edit:inputs.title.validation.required")),
     description: yup.string().default(""),
-    fixedReward: yup.number().min(1, t("admin-panel-activities-edit:inputs.fixedReward.validation.min")).required(t("admin-panel-activities-edit:inputs.fixedReward.validation.required")),
+    fixedReward: yup
+      .number()
+      .transform(toInteger)
+      .integer(t("admin-panel-activities-edit:inputs.fixedReward.validation.integer"))
+      .min(1, t("admin-panel-activities-edit:inputs.fixedReward.validation.min"))
+      .required(t("admin-panel-activities-edit:inputs.fixedReward.validation.required")),
     requiresProof: yup.boolean().default(false),
-    cooldownHours: yup.number().min(0).default(0),
+    cooldownHours: yup
+      .number()
+      .transform(toInteger)
+      .integer(t("admin-panel-activities-edit:inputs.cooldownHours.validation.integer"))
+      .min(0)
+      .default(0),
   });
 };
 
