@@ -1,19 +1,19 @@
-import { Activity } from "./activity";
-import { User } from "./user";
-
 export enum SubmissionStatusEnum {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
 }
 
 export type Submission = {
   id: string;
-  user?: User;
-  activity?: Activity;
-  status: SubmissionStatusEnum;
+  profileId: string;
+  activityId: string;
   proofUrl?: string;
-  reviewNote?: string;
+  status: SubmissionStatusEnum;
+  feedback?: string | null;
+  awardedXp: number;
+  reviewerId?: number | null;
+  reviewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };

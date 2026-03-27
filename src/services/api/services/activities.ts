@@ -10,9 +10,7 @@ import { RequestConfigType } from "./types/request-config";
 export type ActivitiesRequest = {
   page: number;
   limit: number;
-  filters?: {
-    type?: string;
-  };
+  filters?: Record<string, unknown>;
   sort?: Array<{
     orderBy: keyof Activity;
     order: SortEnum;
@@ -68,10 +66,15 @@ export function useGetActivityService() {
   );
 }
 
-export type ActivityPostRequest = Pick<
-  Activity,
-  "name" | "description" | "points" | "type"
->;
+export type ActivityPostRequest = {
+  title: string;
+  description?: string;
+  fixedReward: number;
+  requiresProof: boolean;
+  cooldownHours: number;
+  isHidden?: boolean;
+  secretCode?: string;
+};
 
 export type ActivityPostResponse = Activity;
 
@@ -92,7 +95,15 @@ export function usePostActivityService() {
 
 export type ActivityPatchRequest = {
   id: Activity["id"];
-  data: Partial<Pick<Activity, "name" | "description" | "points" | "type">>;
+  data: Partial<{
+    title: string;
+    description: string;
+    fixedReward: number;
+    requiresProof: boolean;
+    cooldownHours: number;
+    isHidden: boolean;
+    secretCode: string;
+  }>;
 };
 
 export type ActivityPatchResponse = Activity;

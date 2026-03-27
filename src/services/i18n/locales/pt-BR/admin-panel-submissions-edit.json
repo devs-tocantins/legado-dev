@@ -1,19 +1,19 @@
 {
-  "title": "Editar Submissão",
+  "title": "Editar Submissao",
   "inputs": {
     "status": {
       "label": "Status",
       "validation": {
-        "required": "Status é obrigatório"
+        "required": "Status e obrigatorio"
       },
       "options": {
-        "pending": "Pendente",
-        "approved": "Aprovado",
-        "rejected": "Rejeitado"
+        "PENDING": "Pendente",
+        "APPROVED": "Aprovado",
+        "REJECTED": "Rejeitado"
       }
     },
-    "reviewNote": {
-      "label": "Nota de Revisão"
+    "feedback": {
+      "label": "Feedback"
     },
     "proofUrl": {
       "label": "URL do Comprovante"
@@ -25,7 +25,7 @@
   },
   "alerts": {
     "submission": {
-      "success": "Submissão atualizada com sucesso"
+      "success": "Submissao atualizada com sucesso"
     }
   }
 }

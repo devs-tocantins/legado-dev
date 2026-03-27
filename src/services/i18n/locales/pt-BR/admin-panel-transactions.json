@@ -1,26 +1,27 @@
 {
-  "title": "Transações",
+  "title": "Transacoes",
   "table": {
     "column1": "ID",
-    "column2": "Usuário",
-    "column3": "Pontos",
-    "column4": "Tipo",
-    "column5": "Descrição",
-    "column6": "Criado em"
+    "column2": "Categoria",
+    "column3": "Valor",
+    "column4": "Descricao",
+    "column5": "Criado em"
   },
-  "type": {
-    "credit": "Crédito",
-    "debit": "Débito"
+  "category": {
+    "XP_REWARD": "Recompensa XP",
+    "TOKEN_REWARD": "Recompensa Token",
+    "STORE_PURCHASE": "Compra na Loja",
+    "MANUAL_ADJUSTMENT": "Ajuste Manual"
   },
   "actions": {
-    "create": "Nova Transação",
+    "create": "Nova Transacao",
     "edit": "Editar",
     "delete": "Excluir"
   },
   "confirm": {
     "delete": {
-      "title": "Confirmar Exclusão",
-      "message": "Tem certeza que deseja excluir esta transação?"
+      "title": "Confirmar Exclusao",
+      "message": "Tem certeza que deseja excluir esta transacao?"
     }
   },
   "filter": {
@@ -29,11 +30,13 @@
       "apply": "Aplicar"
     },
     "inputs": {
-      "type": {
-        "label": "Tipo",
+      "category": {
+        "label": "Categoria",
         "options": {
-          "credit": "Crédito",
-          "debit": "Débito"
+          "XP_REWARD": "Recompensa XP",
+          "TOKEN_REWARD": "Recompensa Token",
+          "STORE_PURCHASE": "Compra na Loja",
+          "MANUAL_ADJUSTMENT": "Ajuste Manual"
         }
       }
     }

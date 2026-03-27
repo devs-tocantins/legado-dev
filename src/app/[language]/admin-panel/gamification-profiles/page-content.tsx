@@ -38,19 +38,13 @@ function SortableHeader(
     column: GamificationProfileKeys;
     orderBy: GamificationProfileKeys;
     order: SortEnum;
-    onSort: (
-      event: React.MouseEvent<unknown>,
-      property: GamificationProfileKeys
-    ) => void;
+    onSort: (event: React.MouseEvent<unknown>, property: GamificationProfileKeys) => void;
     className?: string;
   }>
 ) {
   return (
     <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
-      <button
-        className="inline-flex items-center gap-1 hover:text-foreground"
-        onClick={(e) => props.onSort(e, props.column)}
-      >
+      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={(e) => props.onSort(e, props.column)}>
         {props.children}
         <ArrowUpDown className="h-3 w-3" />
       </button>
@@ -72,33 +66,15 @@ function Actions({ profile }: { profile: GamificationProfile }) {
 
     if (isConfirmed) {
       const searchParams = new URLSearchParams(window.location.search);
-      const searchParamsFilter = searchParams.get("filter");
-      const searchParamsSort = searchParams.get("sort");
-
       let filter: GamificationProfileFilterType | undefined = undefined;
-      let sort: GamificationProfileSortType | undefined = {
-        order: SortEnum.DESC,
-        orderBy: "id",
-      };
-
-      if (searchParamsFilter) {
-        filter = JSON.parse(searchParamsFilter);
-      }
-
-      if (searchParamsSort) {
-        sort = JSON.parse(searchParamsSort);
-      }
+      let sort: GamificationProfileSortType | undefined = { order: SortEnum.DESC, orderBy: "id" };
+      if (searchParams.get("filter")) filter = JSON.parse(searchParams.get("filter")!);
+      if (searchParams.get("sort")) sort = JSON.parse(searchParams.get("sort")!);
 
       const previousData = queryClient.getQueryData<
         InfiniteData<{ nextPage: number; data: GamificationProfile[] }>
-      >(
-        gamificationProfilesQueryKeys.list().sub.by({ sort, filter }).key
-      );
-
-      await queryClient.cancelQueries({
-        queryKey: gamificationProfilesQueryKeys.list().key,
-      });
-
+      >(gamificationProfilesQueryKeys.list().sub.by({ sort, filter }).key);
+      await queryClient.cancelQueries({ queryKey: gamificationProfilesQueryKeys.list().key });
       const newData = {
         ...previousData,
         pages: previousData?.pages.map((page) => ({
@@ -106,32 +82,22 @@ function Actions({ profile }: { profile: GamificationProfile }) {
           data: page?.data.filter((item) => item.id !== profile.id),
         })),
       };
-
-      queryClient.setQueryData(
-        gamificationProfilesQueryKeys.list().sub.by({ sort, filter }).key,
-        newData
-      );
-
-      await fetchDelete({
-        id: profile.id,
-      });
+      queryClient.setQueryData(gamificationProfilesQueryKeys.list().sub.by({ sort, filter }).key, newData);
+      await fetchDelete({ id: profile.id });
     }
   };
 
   return (
     <div className="flex items-center gap-1">
       <Button size="sm" render={<Link href={`/admin-panel/gamification-profiles/edit/${profile.id}`} />}>
-          {t("admin-panel-gamification-profiles:actions.edit")}
+        {t("admin-panel-gamification-profiles:actions.edit")}
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
-            <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={handleDelete}
-          >
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
             {t("admin-panel-gamification-profiles:actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -148,40 +114,22 @@ function GamificationProfiles() {
     order: SortEnum;
     orderBy: GamificationProfileKeys;
   }>(() => {
-    const searchParamsSort = searchParams.get("sort");
-    if (searchParamsSort) {
-      return JSON.parse(searchParamsSort);
-    }
-    return { order: SortEnum.DESC, orderBy: "id" };
+    const s = searchParams.get("sort");
+    return s ? JSON.parse(s) : { order: SortEnum.DESC, orderBy: "id" };
   });
 
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: GamificationProfileKeys
-  ) => {
+  const handleRequestSort = (_: React.MouseEvent<unknown>, property: GamificationProfileKeys) => {
     const isAsc = orderBy === property && order === SortEnum.ASC;
-    const searchParams = new URLSearchParams(window.location.search);
+    const sp = new URLSearchParams(window.location.search);
     const newOrder = isAsc ? SortEnum.DESC : SortEnum.ASC;
-    const newOrderBy = property;
-    searchParams.set(
-      "sort",
-      JSON.stringify({ order: newOrder, orderBy: newOrderBy })
-    );
-    setSort({
-      order: newOrder,
-      orderBy: newOrderBy,
-    });
-    router.push(window.location.pathname + "?" + searchParams.toString());
+    sp.set("sort", JSON.stringify({ order: newOrder, orderBy: property }));
+    setSort({ order: newOrder, orderBy: property });
+    router.push(window.location.pathname + "?" + sp.toString());
   };
 
   const filter = useMemo(() => {
-    const searchParamsFilter = searchParams.get("filter");
-    if (searchParamsFilter) {
-      return JSON.parse(
-        searchParamsFilter
-      ) as GamificationProfileFilterType;
-    }
-    return undefined;
+    const f = searchParams.get("filter");
+    return f ? (JSON.parse(f) as GamificationProfileFilterType) : undefined;
   }, [searchParams]);
 
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
@@ -193,11 +141,8 @@ function GamificationProfiles() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const result = useMemo(() => {
-    const result =
-      (data?.pages.flatMap(
-        (page) => page?.data
-      ) as GamificationProfile[]) ?? ([] as GamificationProfile[]);
-    return removeDuplicatesFromArrayObjects(result, "id");
+    const r = (data?.pages.flatMap((page) => page?.data) as GamificationProfile[]) ?? [];
+    return removeDuplicatesFromArrayObjects(r, "id");
   }, [data]);
 
   return (
@@ -208,7 +153,7 @@ function GamificationProfiles() {
         </h1>
         <div className="flex items-center gap-2">
           <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/gamification-profiles/create" />}>
-              {t("admin-panel-gamification-profiles:actions.create")}
+            {t("admin-panel-gamification-profiles:actions.create")}
           </Button>
         </div>
       </div>
@@ -225,37 +170,19 @@ function GamificationProfiles() {
           fixedHeaderContent={() => (
             <>
               <tr className="border-b">
-                <SortableHeader
-                  column="id"
-                  orderBy={orderBy}
-                  order={order}
-                  onSort={handleRequestSort}
-                  className="w-[100px]"
-                >
+                <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
                   {t("admin-panel-gamification-profiles:table.column1")}
                 </SortableHeader>
-                <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">
+                <th className="h-10 w-[150px] px-3 text-left align-middle font-medium text-muted-foreground">
                   {t("admin-panel-gamification-profiles:table.column2")}
                 </th>
-                <SortableHeader
-                  column="totalPoints"
-                  orderBy={orderBy}
-                  order={order}
-                  onSort={handleRequestSort}
-                  className="w-[120px]"
-                >
+                <SortableHeader column="totalXp" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[120px]">
                   {t("admin-panel-gamification-profiles:table.column3")}
                 </SortableHeader>
-                <SortableHeader
-                  column="level"
-                  orderBy={orderBy}
-                  order={order}
-                  onSort={handleRequestSort}
-                  className="w-[100px]"
-                >
+                <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
                   {t("admin-panel-gamification-profiles:table.column4")}
-                </SortableHeader>
-                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">
+                </th>
+                <th className="h-10 w-[100px] px-3 text-left align-middle font-medium text-muted-foreground">
                   {t("admin-panel-gamification-profiles:table.column5")}
                 </th>
                 <th className="h-10 w-[130px] px-3"></th>
@@ -273,21 +200,11 @@ function GamificationProfiles() {
           )}
           itemContent={(_index, profile) => (
             <>
-              <td className="p-3 w-[100px]">{profile?.id}</td>
-              <td className="p-3 w-[200px]">
-                {profile?.user?.email ?? "-"}
-              </td>
-              <td className="p-3 w-[120px]">
-                {profile?.totalPoints}
-              </td>
-              <td className="p-3 w-[100px]">
-                {profile?.level}
-              </td>
-              <td className="p-3 w-[180px]">
-                {profile?.createdAt
-                  ? new Date(profile.createdAt).toLocaleDateString()
-                  : ""}
-              </td>
+              <td className="p-3 w-[100px]">{profile?.id?.substring(0, 8)}...</td>
+              <td className="p-3 w-[150px]">{profile?.username ?? "-"}</td>
+              <td className="p-3 w-[120px]">{profile?.totalXp} XP</td>
+              <td className="p-3 w-[120px]">{profile?.currentMonthlyXp} XP</td>
+              <td className="p-3 w-[100px]">{profile?.gratitudeTokens}</td>
               <td className="p-3 w-[130px]">
                 {!!profile && <Actions profile={profile} />}
               </td>
@@ -299,6 +216,4 @@ function GamificationProfiles() {
   );
 }
 
-export default withPageRequiredAuth(GamificationProfiles, {
-  roles: [RoleEnum.ADMIN],
-});
+export default withPageRequiredAuth(GamificationProfiles, { roles: [RoleEnum.ADMIN] });

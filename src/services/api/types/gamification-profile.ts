@@ -1,10 +1,11 @@
-import { User } from "./user";
-
 export type GamificationProfile = {
   id: string;
-  user?: User;
-  totalPoints: number;
-  level: number;
+  userId: number;
+  username: string;
+  totalXp: number;
+  currentMonthlyXp: number;
+  currentYearlyXp: number;
+  gratitudeTokens: number;
   createdAt: string;
   updatedAt: string;
 };

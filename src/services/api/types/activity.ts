@@ -1,17 +1,12 @@
-export enum ActivityTypeEnum {
-  QUIZ = "quiz",
-  SURVEY = "survey",
-  CHALLENGE = "challenge",
-  EVENT = "event",
-  OTHER = "other",
-}
-
 export type Activity = {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  points: number;
-  type: ActivityTypeEnum;
+  fixedReward: number;
+  isHidden: boolean;
+  secretCode?: string | null;
+  requiresProof: boolean;
+  cooldownHours: number;
   createdAt: string;
   updatedAt: string;
 };

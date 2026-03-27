@@ -1,3 +1,27 @@
 {
-  "newTitle": "Enviar Comprovante de Atividade"
+  "newTitle": "Enviar Comprovante de Atividade",
+  "inputs": {
+    "profileId": {
+      "label": "ID do Perfil",
+      "validation": {
+        "required": "Perfil e obrigatorio"
+      }
+    },
+    "activityId": {
+      "label": "ID da Atividade",
+      "validation": {
+        "required": "Atividade e obrigatoria"
+      }
+    },
+    "proofUrl": {
+      "label": "URL do Comprovante"
+    }
+  },
+  "actions": {
+    "submit": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "alerts": {
+    "success": "Submissao enviada com sucesso"
+  }
 }

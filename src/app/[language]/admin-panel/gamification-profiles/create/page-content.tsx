@@ -16,24 +16,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 type CreateFormData = {
-  userId: string;
-  totalPoints: number;
-  level: number;
+  userId: number;
+  username: string;
 };
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-gamification-profiles-create");
-
   return yup.object().shape({
-    userId: yup
-      .string()
-      .required(
-        t(
-          "admin-panel-gamification-profiles-create:inputs.userId.validation.required"
-        )
-      ),
-    totalPoints: yup.number().default(0),
-    level: yup.number().default(1),
+    userId: yup.number().required(t("admin-panel-gamification-profiles-create:inputs.userId.validation.required")),
+    username: yup.string().required(t("admin-panel-gamification-profiles-create:inputs.username.validation.required")),
   });
 };
 
@@ -41,7 +32,6 @@ function CreateGamificationProfileFormActions() {
   const { t } = useTranslation("admin-panel-gamification-profiles-create");
   const { isSubmitting, isDirty } = useFormState();
   useLeavePage(isDirty);
-
   return (
     <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-gamification-profiles-create:actions.submit")}
@@ -54,16 +44,11 @@ function FormCreateGamificationProfile() {
   const fetchPost = usePostGamificationProfileService();
   const { t } = useTranslation("admin-panel-gamification-profiles-create");
   const validationSchema = useValidationSchema();
-
   const { enqueueSnackbar } = useSnackbar();
 
   const methods = useForm<CreateFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: {
-      userId: "",
-      totalPoints: 0,
-      level: 1,
-    },
+    defaultValues: { userId: 0, username: "" },
   });
 
   const { handleSubmit, setError } = methods;
@@ -71,29 +56,16 @@ function FormCreateGamificationProfile() {
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPost({
       userId: formData.userId,
-      totalPoints: formData.totalPoints,
-      level: formData.level,
+      username: formData.username,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach(
-        (key) => {
-          setError(key, {
-            type: "manual",
-            message: t(
-              `admin-panel-gamification-profiles-create:inputs.${key}.validation.server.${data.errors[key]}`
-            ),
-          });
-        }
-      );
+      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach((key) => {
+        setError(key, { type: "manual", message: t(`admin-panel-gamification-profiles-create:inputs.${key}.validation.server.${data.errors[key]}`) });
+      });
       return;
     }
     if (status === HTTP_CODES_ENUM.CREATED) {
-      enqueueSnackbar(
-        t("admin-panel-gamification-profiles-create:alerts.profile.success"),
-        {
-          variant: "success",
-        }
-      );
+      enqueueSnackbar(t("admin-panel-gamification-profiles-create:alerts.profile.success"), { variant: "success" });
       router.push("/admin-panel/gamification-profiles");
     }
   });
@@ -106,41 +78,13 @@ function FormCreateGamificationProfile() {
             <CardTitle>{t("admin-panel-gamification-profiles-create:title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={onSubmit}
-              autoComplete="create-new-gamification-profile"
-              className="space-y-4"
-            >
-              <FormTextInput<CreateFormData>
-                name="userId"
-                testId="userId"
-                label={t(
-                  "admin-panel-gamification-profiles-create:inputs.userId.label"
-                )}
-              />
-
-              <FormTextInput<CreateFormData>
-                name="totalPoints"
-                testId="totalPoints"
-                type="number"
-                label={t(
-                  "admin-panel-gamification-profiles-create:inputs.totalPoints.label"
-                )}
-              />
-
-              <FormTextInput<CreateFormData>
-                name="level"
-                testId="level"
-                type="number"
-                label={t(
-                  "admin-panel-gamification-profiles-create:inputs.level.label"
-                )}
-              />
-
+            <form onSubmit={onSubmit} autoComplete="create-new-gamification-profile" className="space-y-4">
+              <FormTextInput<CreateFormData> name="userId" testId="userId" type="number" label={t("admin-panel-gamification-profiles-create:inputs.userId.label")} />
+              <FormTextInput<CreateFormData> name="username" testId="username" label={t("admin-panel-gamification-profiles-create:inputs.username.label")} />
               <div className="flex gap-2 pt-2">
                 <CreateGamificationProfileFormActions />
                 <Button variant="secondary" render={<Link href="/admin-panel/gamification-profiles" />}>
-                    {t("admin-panel-gamification-profiles-create:actions.cancel")}
+                  {t("admin-panel-gamification-profiles-create:actions.cancel")}
                 </Button>
               </div>
             </form>

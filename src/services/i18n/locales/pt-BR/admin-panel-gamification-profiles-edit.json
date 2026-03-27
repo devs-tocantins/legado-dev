@@ -1,16 +1,22 @@
 {
-  "title": "Editar Perfil de Gamificação",
+  "title": "Editar Perfil de Gamificacao",
   "inputs": {
-    "totalPoints": {
-      "label": "Pontos Totais",
+    "username": {
+      "label": "Username",
       "validation": {
-        "required": "Pontos totais é obrigatório"
+        "required": "Username e obrigatorio"
       }
     },
-    "level": {
-      "label": "Nível",
+    "totalXp": {
+      "label": "XP Total",
       "validation": {
-        "required": "Nível é obrigatório"
+        "required": "XP total e obrigatorio"
+      }
+    },
+    "gratitudeTokens": {
+      "label": "Tokens de Gratidao",
+      "validation": {
+        "required": "Tokens e obrigatorio"
       }
     }
   },
@@ -20,7 +26,7 @@
   },
   "alerts": {
     "profile": {
-      "success": "Perfil de gamificação atualizado com sucesso"
+      "success": "Perfil de gamificacao atualizado com sucesso"
     }
   }
 }

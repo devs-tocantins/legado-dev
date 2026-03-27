@@ -5,12 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ActivityFilterType } from "./activity-filter-types";
-import { ActivityTypeEnum } from "@/services/api/types/activity";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import FormSelectInput from "@/components/form/select/form-select-shadcn";
+import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
 
-type ActivityFilterFormData = ActivityFilterType;
+type ActivityFilterFormData = {
+  requiresProof?: boolean;
+};
 
 function ActivityFilter() {
   const { t } = useTranslation("admin-panel-activities");
@@ -18,7 +19,7 @@ function ActivityFilter() {
   const searchParams = useSearchParams();
 
   const methods = useForm<ActivityFilterFormData>({
-    defaultValues: { type: undefined },
+    defaultValues: { requiresProof: undefined },
   });
 
   const { handleSubmit, reset } = methods;
@@ -42,20 +43,17 @@ function ActivityFilter() {
           <form
             onSubmit={handleSubmit((data) => {
               const searchParams = new URLSearchParams(window.location.search);
-              searchParams.set("filter", JSON.stringify(data));
+              const cleanData: ActivityFilterType = {};
+              if (data.requiresProof !== undefined) cleanData.requiresProof = data.requiresProof;
+              searchParams.set("filter", JSON.stringify(cleanData));
               router.push(window.location.pathname + "?" + searchParams.toString());
             })}
             className="space-y-4"
           >
-            <FormSelectInput<ActivityFilterFormData, { id: string }>
-              name="type"
-              testId="type"
-              label={t("admin-panel-activities:filter.inputs.type.label")}
-              options={Object.values(ActivityTypeEnum).map((v) => ({ id: v }))}
-              keyValue="id"
-              renderOption={(option) =>
-                t(`admin-panel-activities:filter.inputs.type.options.${option.id}`)
-              }
+            <FormCheckboxInput<ActivityFilterFormData>
+              name="requiresProof"
+              testId="requiresProof"
+              label={t("admin-panel-activities:filter.inputs.requiresProof.label")}
             />
             <Button type="submit" className="w-full">
               {t("admin-panel-activities:filter.actions.apply")}

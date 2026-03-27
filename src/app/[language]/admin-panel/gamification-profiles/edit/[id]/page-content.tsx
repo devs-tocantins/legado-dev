@@ -20,28 +20,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 type EditFormData = {
-  totalPoints: number;
-  level: number;
+  username: string;
+  totalXp: number;
+  gratitudeTokens: number;
 };
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-gamification-profiles-edit");
-
   return yup.object().shape({
-    totalPoints: yup
-      .number()
-      .required(
-        t(
-          "admin-panel-gamification-profiles-edit:inputs.totalPoints.validation.required"
-        )
-      ),
-    level: yup
-      .number()
-      .required(
-        t(
-          "admin-panel-gamification-profiles-edit:inputs.level.validation.required"
-        )
-      ),
+    username: yup.string().required(t("admin-panel-gamification-profiles-edit:inputs.username.validation.required")),
+    totalXp: yup.number().required(t("admin-panel-gamification-profiles-edit:inputs.totalXp.validation.required")),
+    gratitudeTokens: yup.number().required(t("admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.validation.required")),
   });
 };
 
@@ -49,7 +38,6 @@ function EditGamificationProfileFormActions() {
   const { t } = useTranslation("admin-panel-gamification-profiles-edit");
   const { isSubmitting, isDirty } = useFormState();
   useLeavePage(isDirty);
-
   return (
     <Button type="submit" disabled={isSubmitting}>
       {t("admin-panel-gamification-profiles-edit:actions.submit")}
@@ -68,10 +56,7 @@ function FormEditGamificationProfile() {
 
   const methods = useForm<EditFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: {
-      totalPoints: 0,
-      level: 1,
-    },
+    defaultValues: { username: "", totalXp: 0, gratitudeTokens: 0 },
   });
 
   const { handleSubmit, setError, reset } = methods;
@@ -80,49 +65,35 @@ function FormEditGamificationProfile() {
     const { data, status } = await fetchPatch({
       id: profileId,
       data: {
-        totalPoints: formData.totalPoints,
-        level: formData.level,
+        username: formData.username,
+        totalXp: formData.totalXp,
+        gratitudeTokens: formData.gratitudeTokens,
       },
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof EditFormData>).forEach(
-        (key) => {
-          setError(key, {
-            type: "manual",
-            message: t(
-              `admin-panel-gamification-profiles-edit:inputs.${key}.validation.server.${data.errors[key]}`
-            ),
-          });
-        }
-      );
+      (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
+        setError(key, { type: "manual", message: t(`admin-panel-gamification-profiles-edit:inputs.${key}.validation.server.${data.errors[key]}`) });
+      });
       return;
     }
     if (status === HTTP_CODES_ENUM.OK) {
       reset(formData);
-      enqueueSnackbar(
-        t("admin-panel-gamification-profiles-edit:alerts.profile.success"),
-        {
-          variant: "success",
-        }
-      );
+      enqueueSnackbar(t("admin-panel-gamification-profiles-edit:alerts.profile.success"), { variant: "success" });
     }
   });
 
   useEffect(() => {
-    const getInitialDataForEdit = async () => {
-      const { status, data: profile } = await fetchGet({
-        id: profileId,
-      });
-
+    const getInitialData = async () => {
+      const { status, data: profile } = await fetchGet({ id: profileId });
       if (status === HTTP_CODES_ENUM.OK) {
         reset({
-          totalPoints: profile?.totalPoints ?? 0,
-          level: profile?.level ?? 1,
+          username: profile?.username ?? "",
+          totalXp: profile?.totalXp ?? 0,
+          gratitudeTokens: profile?.gratitudeTokens ?? 0,
         });
       }
     };
-
-    getInitialDataForEdit();
+    getInitialData();
   }, [profileId, reset, fetchGet]);
 
   return (
@@ -134,30 +105,13 @@ function FormEditGamificationProfile() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormTextInput<EditFormData>
-                name="totalPoints"
-                testId="totalPoints"
-                type="number"
-                label={t(
-                  "admin-panel-gamification-profiles-edit:inputs.totalPoints.label"
-                )}
-              />
-
-              <FormTextInput<EditFormData>
-                name="level"
-                testId="level"
-                type="number"
-                label={t(
-                  "admin-panel-gamification-profiles-edit:inputs.level.label"
-                )}
-              />
-
+              <FormTextInput<EditFormData> name="username" testId="username" label={t("admin-panel-gamification-profiles-edit:inputs.username.label")} />
+              <FormTextInput<EditFormData> name="totalXp" testId="totalXp" type="number" label={t("admin-panel-gamification-profiles-edit:inputs.totalXp.label")} />
+              <FormTextInput<EditFormData> name="gratitudeTokens" testId="gratitudeTokens" type="number" label={t("admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.label")} />
               <div className="flex gap-2 pt-2">
                 <EditGamificationProfileFormActions />
                 <Button variant="secondary" render={<Link href="/admin-panel/gamification-profiles" />}>
-                    {t(
-                      "admin-panel-gamification-profiles-edit:actions.cancel"
-                    )}
+                  {t("admin-panel-gamification-profiles-edit:actions.cancel")}
                 </Button>
               </div>
             </form>

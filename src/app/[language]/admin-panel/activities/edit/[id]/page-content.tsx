@@ -11,27 +11,28 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import { useGetActivityService, usePatchActivityService } from "@/services/api/services/activities";
 import { useParams } from "next/navigation";
-import { ActivityTypeEnum } from "@/services/api/types/activity";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
-import FormSelectInput from "@/components/form/select/form-select-shadcn";
+import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 type EditFormData = {
-  name: string;
+  title: string;
   description: string;
-  points: number;
-  type: { id: string };
+  fixedReward: number;
+  requiresProof: boolean;
+  cooldownHours: number;
 };
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-activities-edit");
   return yup.object().shape({
-    name: yup.string().required(t("admin-panel-activities-edit:inputs.name.validation.required")),
+    title: yup.string().required(t("admin-panel-activities-edit:inputs.title.validation.required")),
     description: yup.string().default(""),
-    points: yup.number().min(1, t("admin-panel-activities-edit:inputs.points.validation.min")).required(t("admin-panel-activities-edit:inputs.points.validation.required")),
-    type: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-activities-edit:inputs.type.validation.required")),
+    fixedReward: yup.number().min(1, t("admin-panel-activities-edit:inputs.fixedReward.validation.min")).required(t("admin-panel-activities-edit:inputs.fixedReward.validation.required")),
+    requiresProof: yup.boolean().default(false),
+    cooldownHours: yup.number().min(0).default(0),
   });
 };
 
@@ -57,7 +58,7 @@ function FormEditActivity() {
 
   const methods = useForm<EditFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: { name: "", description: "", points: 0, type: undefined },
+    defaultValues: { title: "", description: "", fixedReward: 0, requiresProof: false, cooldownHours: 0 },
   });
 
   const { handleSubmit, setError, reset } = methods;
@@ -65,7 +66,13 @@ function FormEditActivity() {
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPatch({
       id: activityId,
-      data: { name: formData.name, description: formData.description, points: formData.points, type: formData.type.id as ActivityTypeEnum },
+      data: {
+        title: formData.title,
+        description: formData.description,
+        fixedReward: formData.fixedReward,
+        requiresProof: formData.requiresProof,
+        cooldownHours: formData.cooldownHours,
+      },
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
@@ -84,10 +91,11 @@ function FormEditActivity() {
       const { status, data: activity } = await fetchGet({ id: activityId });
       if (status === HTTP_CODES_ENUM.OK) {
         reset({
-          name: activity?.name ?? "",
+          title: activity?.title ?? "",
           description: activity?.description ?? "",
-          points: activity?.points ?? 0,
-          type: activity?.type ? { id: activity.type } : undefined,
+          fixedReward: activity?.fixedReward ?? 0,
+          requiresProof: activity?.requiresProof ?? false,
+          cooldownHours: activity?.cooldownHours ?? 0,
         });
       }
     };
@@ -103,17 +111,11 @@ function FormEditActivity() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormTextInput<EditFormData> name="name" testId="name" label={t("admin-panel-activities-edit:inputs.name.label")} />
+              <FormTextInput<EditFormData> name="title" testId="title" label={t("admin-panel-activities-edit:inputs.title.label")} />
               <FormTextInput<EditFormData> name="description" testId="description" label={t("admin-panel-activities-edit:inputs.description.label")} multiline minRows={3} />
-              <FormTextInput<EditFormData> name="points" testId="points" type="number" label={t("admin-panel-activities-edit:inputs.points.label")} />
-              <FormSelectInput<EditFormData, { id: string }>
-                name="type"
-                testId="type"
-                label={t("admin-panel-activities-edit:inputs.type.label")}
-                options={Object.values(ActivityTypeEnum).map((v) => ({ id: v }))}
-                keyValue="id"
-                renderOption={(option) => t(`admin-panel-activities-edit:inputs.type.options.${option.id}`)}
-              />
+              <FormTextInput<EditFormData> name="fixedReward" testId="fixedReward" type="number" label={t("admin-panel-activities-edit:inputs.fixedReward.label")} />
+              <FormTextInput<EditFormData> name="cooldownHours" testId="cooldownHours" type="number" label={t("admin-panel-activities-edit:inputs.cooldownHours.label")} />
+              <FormCheckboxInput<EditFormData> name="requiresProof" testId="requiresProof" label={t("admin-panel-activities-edit:inputs.requiresProof.label")} />
               <div className="flex gap-2 pt-2">
                 <EditActivityFormActions />
                 <Button variant="secondary" render={<Link href="/admin-panel/activities" />}>

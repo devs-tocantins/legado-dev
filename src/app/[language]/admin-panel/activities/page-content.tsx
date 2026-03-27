@@ -187,16 +187,16 @@ function Activities() {
                 <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
                   {t("admin-panel-activities:table.column1")}
                 </SortableHeader>
-                <SortableHeader column="name" orderBy={orderBy} order={order} onSort={handleRequestSort}>
+                <SortableHeader column="title" orderBy={orderBy} order={order} onSort={handleRequestSort}>
                   {t("admin-panel-activities:table.column2")}
                 </SortableHeader>
-                <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
+                <SortableHeader column="fixedReward" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[120px]">
                   {t("admin-panel-activities:table.column3")}
-                </th>
-                <SortableHeader column="points" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
-                  {t("admin-panel-activities:table.column4")}
                 </SortableHeader>
-                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">
+                <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
+                  {t("admin-panel-activities:table.column4")}
+                </th>
+                <th className="h-10 w-[100px] px-3 text-left align-middle font-medium text-muted-foreground">
                   {t("admin-panel-activities:table.column5")}
                 </th>
                 <th className="h-10 w-[150px] px-3"></th>
@@ -214,15 +214,15 @@ function Activities() {
           )}
           itemContent={(_index, activity) => (
             <>
-              <td className="p-3 w-[100px]">{activity?.id}</td>
-              <td className="p-3">{activity?.name}</td>
+              <td className="p-3 w-[100px]">{activity?.id?.substring(0, 8)}...</td>
+              <td className="p-3">{activity?.title}</td>
+              <td className="p-3 w-[120px]">{activity?.fixedReward} XP</td>
               <td className="p-3 w-[120px]">
-                {t(`admin-panel-activities:filter.inputs.type.options.${activity?.type}`)}
+                {activity?.requiresProof
+                  ? t("admin-panel-activities:table.yes")
+                  : t("admin-panel-activities:table.no")}
               </td>
-              <td className="p-3 w-[100px]">{activity?.points}</td>
-              <td className="p-3 w-[180px]">
-                {activity?.createdAt ? new Date(activity.createdAt).toLocaleDateString() : ""}
-              </td>
+              <td className="p-3 w-[100px]">{activity?.cooldownHours}h</td>
               <td className="p-3 w-[150px]">
                 {!!activity && <Actions activity={activity} />}
               </td>

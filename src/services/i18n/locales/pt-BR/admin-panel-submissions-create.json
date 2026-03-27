@@ -1,10 +1,16 @@
 {
-  "title": "Nova Submissão",
+  "title": "Nova Submissao",
   "inputs": {
-    "activityId": {
-      "label": "Atividade",
+    "profileId": {
+      "label": "ID do Perfil",
       "validation": {
-        "required": "Atividade é obrigatória"
+        "required": "Perfil e obrigatorio"
+      }
+    },
+    "activityId": {
+      "label": "ID da Atividade",
+      "validation": {
+        "required": "Atividade e obrigatoria"
       }
     },
     "proofUrl": {
@@ -17,7 +23,7 @@
   },
   "alerts": {
     "submission": {
-      "success": "Submissão criada com sucesso"
+      "success": "Submissao criada com sucesso"
     }
   }
 }

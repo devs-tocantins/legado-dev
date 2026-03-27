@@ -1,11 +1,11 @@
 {
-  "title": "Perfis de Gamificação",
+  "title": "Perfis de Gamificacao",
   "table": {
     "column1": "ID",
-    "column2": "Usuário",
-    "column3": "Pontos Totais",
-    "column4": "Nível",
-    "column5": "Criado em"
+    "column2": "Username",
+    "column3": "XP Total",
+    "column4": "XP Mensal",
+    "column5": "Tokens"
   },
   "actions": {
     "create": "Novo Perfil",
@@ -14,8 +14,8 @@
   },
   "confirm": {
     "delete": {
-      "title": "Confirmar Exclusão",
-      "message": "Tem certeza que deseja excluir este perfil de gamificação?"
+      "title": "Confirmar Exclusao",
+      "message": "Tem certeza que deseja excluir este perfil de gamificacao?"
     }
   }
 }

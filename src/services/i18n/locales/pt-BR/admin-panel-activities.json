@@ -2,10 +2,12 @@
   "title": "Atividades",
   "table": {
     "column1": "ID",
-    "column2": "Nome",
-    "column3": "Tipo",
-    "column4": "Pontos",
-    "column5": "Criado em"
+    "column2": "Titulo",
+    "column3": "Recompensa",
+    "column4": "Requer Prova",
+    "column5": "Cooldown",
+    "yes": "Sim",
+    "no": "Nao"
   },
   "actions": {
     "create": "Criar Atividade",
@@ -14,7 +16,7 @@
   },
   "confirm": {
     "delete": {
-      "title": "Confirmar Exclusão",
+      "title": "Confirmar Exclusao",
       "message": "Tem certeza que deseja excluir esta atividade?"
     }
   },
@@ -24,15 +26,8 @@
       "apply": "Aplicar"
     },
     "inputs": {
-      "type": {
-        "label": "Tipo",
-        "options": {
-          "quiz": "Quiz",
-          "survey": "Pesquisa",
-          "challenge": "Desafio",
-          "event": "Evento",
-          "other": "Outro"
-        }
+      "requiresProof": {
+        "label": "Requer Comprovante"
       }
     }
   }

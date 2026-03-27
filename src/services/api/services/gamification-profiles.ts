@@ -24,18 +24,12 @@ export function useGetGamificationProfilesService() {
   const fetch = useFetch();
 
   return useCallback(
-    (
-      data: GamificationProfilesRequest,
-      requestConfig?: RequestConfigType
-    ) => {
+    (data: GamificationProfilesRequest, requestConfig?: RequestConfigType) => {
       const requestUrl = new URL(`${API_URL}/v1/gamification-profiles`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
-        requestUrl.searchParams.append(
-          "filters",
-          JSON.stringify(data.filters)
-        );
+        requestUrl.searchParams.append("filters", JSON.stringify(data.filters));
       }
       if (data.sort) {
         requestUrl.searchParams.append("sort", JSON.stringify(data.sort));
@@ -60,10 +54,7 @@ export function useGetGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (
-      data: GamificationProfileRequest,
-      requestConfig?: RequestConfigType
-    ) => {
+    (data: GamificationProfileRequest, requestConfig?: RequestConfigType) => {
       return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
         method: "GET",
         ...requestConfig,
@@ -74,9 +65,8 @@ export function useGetGamificationProfileService() {
 }
 
 export type GamificationProfilePostRequest = {
-  userId: string;
-  totalPoints?: number;
-  level?: number;
+  userId: number;
+  username: string;
 };
 
 export type GamificationProfilePostResponse = GamificationProfile;
@@ -85,10 +75,7 @@ export function usePostGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (
-      data: GamificationProfilePostRequest,
-      requestConfig?: RequestConfigType
-    ) => {
+    (data: GamificationProfilePostRequest, requestConfig?: RequestConfigType) => {
       return fetch(`${API_URL}/v1/gamification-profiles`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -102,8 +89,9 @@ export function usePostGamificationProfileService() {
 export type GamificationProfilePatchRequest = {
   id: GamificationProfile["id"];
   data: Partial<{
-    totalPoints: number;
-    level: number;
+    username: string;
+    totalXp: number;
+    gratitudeTokens: number;
   }>;
 };
 
@@ -113,10 +101,7 @@ export function usePatchGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (
-      data: GamificationProfilePatchRequest,
-      requestConfig?: RequestConfigType
-    ) => {
+    (data: GamificationProfilePatchRequest, requestConfig?: RequestConfigType) => {
       return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
@@ -137,10 +122,7 @@ export function useDeleteGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (
-      data: GamificationProfileDeleteRequest,
-      requestConfig?: RequestConfigType
-    ) => {
+    (data: GamificationProfileDeleteRequest, requestConfig?: RequestConfigType) => {
       return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
         method: "DELETE",
         ...requestConfig,

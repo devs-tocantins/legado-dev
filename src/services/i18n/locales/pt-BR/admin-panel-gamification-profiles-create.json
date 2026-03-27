@@ -1,17 +1,17 @@
 {
-  "title": "Novo Perfil de Gamificação",
+  "title": "Novo Perfil de Gamificacao",
   "inputs": {
     "userId": {
-      "label": "ID do Usuário",
+      "label": "ID do Usuario",
       "validation": {
-        "required": "Usuário é obrigatório"
+        "required": "Usuario e obrigatorio"
       }
     },
-    "totalPoints": {
-      "label": "Pontos Totais"
-    },
-    "level": {
-      "label": "Nível"
+    "username": {
+      "label": "Username",
+      "validation": {
+        "required": "Username e obrigatorio"
+      }
     }
   },
   "actions": {
@@ -20,7 +20,7 @@
   },
   "alerts": {
     "profile": {
-      "success": "Perfil de gamificação criado com sucesso"
+      "success": "Perfil de gamificacao criado com sucesso"
     }
   }
 }

@@ -1,26 +1,26 @@
 {
-  "title": "Submissões",
+  "title": "Submissoes",
   "table": {
     "column1": "ID",
-    "column2": "Usuário",
+    "column2": "Perfil",
     "column3": "Atividade",
     "column4": "Status",
-    "column5": "Criado em"
+    "column5": "XP"
   },
   "status": {
-    "pending": "Pendente",
-    "approved": "Aprovado",
-    "rejected": "Rejeitado"
+    "PENDING": "Pendente",
+    "APPROVED": "Aprovado",
+    "REJECTED": "Rejeitado"
   },
   "actions": {
-    "create": "Nova Submissão",
+    "create": "Nova Submissao",
     "edit": "Editar",
     "delete": "Excluir"
   },
   "confirm": {
     "delete": {
-      "title": "Confirmar Exclusão",
-      "message": "Tem certeza que deseja excluir esta submissão?"
+      "title": "Confirmar Exclusao",
+      "message": "Tem certeza que deseja excluir esta submissao?"
     }
   },
   "filter": {
@@ -32,9 +32,9 @@
       "status": {
         "label": "Status",
         "options": {
-          "pending": "Pendente",
-          "approved": "Aprovado",
-          "rejected": "Rejeitado"
+          "PENDING": "Pendente",
+          "APPROVED": "Aprovado",
+          "REJECTED": "Rejeitado"
         }
       }
     }

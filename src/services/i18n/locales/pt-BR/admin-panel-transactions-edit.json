@@ -1,25 +1,27 @@
 {
-  "title": "Editar Transação",
+  "title": "Editar Transacao",
   "inputs": {
-    "points": {
-      "label": "Pontos",
+    "amount": {
+      "label": "Valor",
       "validation": {
-        "required": "Pontos é obrigatório",
-        "min": "Pontos deve ser maior que 0"
+        "required": "Valor e obrigatorio",
+        "min": "Valor deve ser maior que 0"
       }
     },
-    "type": {
-      "label": "Tipo",
+    "category": {
+      "label": "Categoria",
       "validation": {
-        "required": "Tipo é obrigatório"
+        "required": "Categoria e obrigatoria"
       },
       "options": {
-        "credit": "Crédito",
-        "debit": "Débito"
+        "XP_REWARD": "Recompensa XP",
+        "TOKEN_REWARD": "Recompensa Token",
+        "STORE_PURCHASE": "Compra na Loja",
+        "MANUAL_ADJUSTMENT": "Ajuste Manual"
       }
     },
     "description": {
-      "label": "Descrição"
+      "label": "Descricao"
     }
   },
   "actions": {
@@ -28,7 +30,7 @@
   },
   "alerts": {
     "transaction": {
-      "success": "Transação atualizada com sucesso"
+      "success": "Transacao atualizada com sucesso"
     }
   }
 }

@@ -111,8 +111,8 @@ function Submissions() {
 
   const statusVariant = (status: string) => {
     switch (status) {
-      case "approved": return "default" as const;
-      case "rejected": return "destructive" as const;
+      case "APPROVED": return "default" as const;
+      case "REJECTED": return "destructive" as const;
       default: return "secondary" as const;
     }
   };
@@ -140,9 +140,9 @@ function Submissions() {
               <tr className="border-b">
                 <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">{t("admin-panel-submissions:table.column1")}</SortableHeader>
                 <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column2")}</th>
-                <th className="h-10 px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column3")}</th>
+                <th className="h-10 w-[200px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column3")}</th>
                 <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column4")}</th>
-                <th className="h-10 w-[180px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column5")}</th>
+                <th className="h-10 w-[100px] px-3 text-left align-middle font-medium text-muted-foreground">{t("admin-panel-submissions:table.column5")}</th>
                 <th className="h-10 w-[150px] px-3"></th>
               </tr>
               {isFetchingNextPage && (<tr><td colSpan={6} className="p-0"><div className="h-1 w-full overflow-hidden bg-muted"><div className="h-full w-1/3 animate-pulse bg-primary" /></div></td></tr>)}
@@ -150,11 +150,11 @@ function Submissions() {
           )}
           itemContent={(_i, sub) => (
             <>
-              <td className="p-3 w-[100px]">{sub?.id}</td>
-              <td className="p-3 w-[200px]">{sub?.user?.email ?? "-"}</td>
-              <td className="p-3">{sub?.activity?.name ?? "-"}</td>
+              <td className="p-3 w-[100px]">{sub?.id?.substring(0, 8)}...</td>
+              <td className="p-3 w-[200px]">{sub?.profileId?.substring(0, 8) ?? "-"}...</td>
+              <td className="p-3 w-[200px]">{sub?.activityId?.substring(0, 8) ?? "-"}...</td>
               <td className="p-3 w-[120px]">{sub?.status && <Badge variant={statusVariant(sub.status)}>{t(`admin-panel-submissions:status.${sub.status}`)}</Badge>}</td>
-              <td className="p-3 w-[180px]">{sub?.createdAt ? new Date(sub.createdAt).toLocaleDateString() : ""}</td>
+              <td className="p-3 w-[100px]">{sub?.awardedXp ?? 0} XP</td>
               <td className="p-3 w-[150px]">{!!sub && <Actions submission={sub} />}</td>
             </>
           )}

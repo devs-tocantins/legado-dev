@@ -30,10 +30,7 @@ export function useGetSubmissionsService() {
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
-        requestUrl.searchParams.append(
-          "filters",
-          JSON.stringify(data.filters)
-        );
+        requestUrl.searchParams.append("filters", JSON.stringify(data.filters));
       }
       if (data.sort) {
         requestUrl.searchParams.append("sort", JSON.stringify(data.sort));
@@ -69,6 +66,7 @@ export function useGetSubmissionService() {
 }
 
 export type SubmissionPostRequest = {
+  profileId: string;
   activityId: string;
   proofUrl?: string;
 };
@@ -94,7 +92,7 @@ export type SubmissionPatchRequest = {
   id: Submission["id"];
   data: Partial<{
     status: string;
-    reviewNote: string;
+    feedback: string;
     proofUrl: string;
   }>;
 };

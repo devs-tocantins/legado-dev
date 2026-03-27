@@ -10,27 +10,28 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import { usePostActivityService } from "@/services/api/services/activities";
 import { useRouter } from "next/navigation";
-import { ActivityTypeEnum } from "@/services/api/types/activity";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
-import FormSelectInput from "@/components/form/select/form-select-shadcn";
+import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 type CreateFormData = {
-  name: string;
+  title: string;
   description: string;
-  points: number;
-  type: { id: string };
+  fixedReward: number;
+  requiresProof: boolean;
+  cooldownHours: number;
 };
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-activities-create");
   return yup.object().shape({
-    name: yup.string().required(t("admin-panel-activities-create:inputs.name.validation.required")),
+    title: yup.string().required(t("admin-panel-activities-create:inputs.title.validation.required")),
     description: yup.string().default(""),
-    points: yup.number().min(1, t("admin-panel-activities-create:inputs.points.validation.min")).required(t("admin-panel-activities-create:inputs.points.validation.required")),
-    type: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-activities-create:inputs.type.validation.required")),
+    fixedReward: yup.number().min(1, t("admin-panel-activities-create:inputs.fixedReward.validation.min")).required(t("admin-panel-activities-create:inputs.fixedReward.validation.required")),
+    requiresProof: yup.boolean().default(false),
+    cooldownHours: yup.number().min(0).default(0),
   });
 };
 
@@ -54,17 +55,18 @@ function FormCreateActivity() {
 
   const methods = useForm<CreateFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: { name: "", description: "", points: 0, type: undefined },
+    defaultValues: { title: "", description: "", fixedReward: 0, requiresProof: false, cooldownHours: 0 },
   });
 
   const { handleSubmit, setError } = methods;
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPost({
-      name: formData.name,
+      title: formData.title,
       description: formData.description,
-      points: formData.points,
-      type: formData.type.id as ActivityTypeEnum,
+      fixedReward: formData.fixedReward,
+      requiresProof: formData.requiresProof,
+      cooldownHours: formData.cooldownHours,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach((key) => {
@@ -87,17 +89,11 @@ function FormCreateActivity() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormTextInput<CreateFormData> name="name" testId="name" label={t("admin-panel-activities-create:inputs.name.label")} />
+              <FormTextInput<CreateFormData> name="title" testId="title" label={t("admin-panel-activities-create:inputs.title.label")} />
               <FormTextInput<CreateFormData> name="description" testId="description" label={t("admin-panel-activities-create:inputs.description.label")} multiline minRows={3} />
-              <FormTextInput<CreateFormData> name="points" testId="points" type="number" label={t("admin-panel-activities-create:inputs.points.label")} />
-              <FormSelectInput<CreateFormData, { id: string }>
-                name="type"
-                testId="type"
-                label={t("admin-panel-activities-create:inputs.type.label")}
-                options={Object.values(ActivityTypeEnum).map((v) => ({ id: v }))}
-                keyValue="id"
-                renderOption={(option) => t(`admin-panel-activities-create:inputs.type.options.${option.id}`)}
-              />
+              <FormTextInput<CreateFormData> name="fixedReward" testId="fixedReward" type="number" label={t("admin-panel-activities-create:inputs.fixedReward.label")} />
+              <FormTextInput<CreateFormData> name="cooldownHours" testId="cooldownHours" type="number" label={t("admin-panel-activities-create:inputs.cooldownHours.label")} />
+              <FormCheckboxInput<CreateFormData> name="requiresProof" testId="requiresProof" label={t("admin-panel-activities-create:inputs.requiresProof.label")} />
               <div className="flex gap-2 pt-2">
                 <CreateActivityFormActions />
                 <Button variant="secondary" render={<Link href="/admin-panel/activities" />}>

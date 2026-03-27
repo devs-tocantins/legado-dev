@@ -1,34 +1,27 @@
 {
   "title": "Editar Atividade",
   "inputs": {
-    "name": {
-      "label": "Nome",
+    "title": {
+      "label": "Titulo",
       "validation": {
-        "required": "Nome é obrigatório"
+        "required": "Titulo e obrigatorio"
       }
     },
     "description": {
-      "label": "Descrição"
+      "label": "Descricao"
     },
-    "points": {
-      "label": "Pontos",
+    "fixedReward": {
+      "label": "Recompensa (XP)",
       "validation": {
-        "required": "Pontos é obrigatório",
-        "min": "Pontos deve ser maior que 0"
+        "required": "Recompensa e obrigatoria",
+        "min": "Recompensa deve ser maior que 0"
       }
     },
-    "type": {
-      "label": "Tipo",
-      "validation": {
-        "required": "Tipo é obrigatório"
-      },
-      "options": {
-        "quiz": "Quiz",
-        "survey": "Pesquisa",
-        "challenge": "Desafio",
-        "event": "Evento",
-        "other": "Outro"
-      }
+    "cooldownHours": {
+      "label": "Cooldown (horas)"
+    },
+    "requiresProof": {
+      "label": "Requer Comprovante"
     }
   },
   "actions": {

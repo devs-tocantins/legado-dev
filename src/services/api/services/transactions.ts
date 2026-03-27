@@ -11,7 +11,7 @@ export type TransactionsRequest = {
   page: number;
   limit: number;
   filters?: {
-    type?: string;
+    category?: string;
   };
   sort?: Array<{
     orderBy: keyof Transaction;
@@ -30,10 +30,7 @@ export function useGetTransactionsService() {
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
-        requestUrl.searchParams.append(
-          "filters",
-          JSON.stringify(data.filters)
-        );
+        requestUrl.searchParams.append("filters", JSON.stringify(data.filters));
       }
       if (data.sort) {
         requestUrl.searchParams.append("sort", JSON.stringify(data.sort));
@@ -69,9 +66,9 @@ export function useGetTransactionService() {
 }
 
 export type TransactionPostRequest = {
-  userId: string;
-  points: number;
-  type: string;
+  profile: string;
+  category: string;
+  amount: number;
   description?: string;
 };
 
@@ -95,8 +92,8 @@ export function usePostTransactionService() {
 export type TransactionPatchRequest = {
   id: Transaction["id"];
   data: Partial<{
-    points: number;
-    type: string;
+    amount: number;
+    category: string;
     description: string;
   }>;
 };

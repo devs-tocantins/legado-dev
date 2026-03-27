@@ -18,13 +18,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
-type EditFormData = { status: { id: string }; reviewNote: string; proofUrl: string };
+type EditFormData = { status: { id: string }; feedback: string; proofUrl: string };
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-submissions-edit");
   return yup.object().shape({
     status: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-submissions-edit:inputs.status.validation.required")),
-    reviewNote: yup.string().default(""),
+    feedback: yup.string().default(""),
     proofUrl: yup.string().default(""),
   });
 };
@@ -47,7 +47,7 @@ function FormEditSubmission() {
 
   const methods = useForm<EditFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: { status: undefined, reviewNote: "", proofUrl: "" },
+    defaultValues: { status: undefined, feedback: "", proofUrl: "" },
   });
 
   const { handleSubmit, setError, reset } = methods;
@@ -55,7 +55,7 @@ function FormEditSubmission() {
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPatch({
       id: submissionId,
-      data: { status: formData.status.id, reviewNote: formData.reviewNote || undefined, proofUrl: formData.proofUrl || undefined },
+      data: { status: formData.status.id, feedback: formData.feedback || undefined, proofUrl: formData.proofUrl || undefined },
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
@@ -75,7 +75,7 @@ function FormEditSubmission() {
       if (status === HTTP_CODES_ENUM.OK) {
         reset({
           status: sub?.status ? { id: sub.status } : undefined,
-          reviewNote: sub?.reviewNote ?? "",
+          feedback: sub?.feedback ?? "",
           proofUrl: sub?.proofUrl ?? "",
         });
       }
@@ -98,7 +98,7 @@ function FormEditSubmission() {
                 keyValue="id"
                 renderOption={(option) => t(`admin-panel-submissions-edit:inputs.status.options.${option.id}`)}
               />
-              <FormTextInput<EditFormData> name="reviewNote" testId="reviewNote" label={t("admin-panel-submissions-edit:inputs.reviewNote.label")} multiline minRows={3} />
+              <FormTextInput<EditFormData> name="feedback" testId="feedback" label={t("admin-panel-submissions-edit:inputs.feedback.label")} multiline minRows={3} />
               <FormTextInput<EditFormData> name="proofUrl" testId="proofUrl" label={t("admin-panel-submissions-edit:inputs.proofUrl.label")} />
               <div className="flex gap-2 pt-2">
                 <EditFormActions />
