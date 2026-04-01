@@ -1,33 +1,29 @@
 "use client";
-import Button from "@mui/material/Button";
-import LinkItem from "@mui/material/Link";
+
 import withPageRequiredGuest from "@/services/auth/with-page-required-guest";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { useAuthLoginService } from "@/services/api/services/auth";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import useAuthTokens from "@/services/auth/use-auth-tokens";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import FormTextInput from "@/components/form/text-input/form-text-input";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "@/components/link";
-import Box from "@mui/material/Box";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
-import SocialAuth from "@/services/social-auth/social-auth";
-import Divider from "@mui/material/Divider";
-import Chip from "@mui/material/Chip";
 import { isGoogleAuthEnabled } from "@/services/social-auth/google/google-config";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
+import SocialAuth from "@/services/social-auth/social-auth";
+import { Button } from "@/components/ui/button";
+import { Zap, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 type SignInFormData = {
   email: string;
   password: string;
 };
 
-const useValidationSchema = () => {
+function useValidationSchema() {
   const { t } = useTranslation("sign-in");
 
   return yup.object().shape({
@@ -40,41 +36,40 @@ const useValidationSchema = () => {
       .min(6, t("sign-in:inputs.password.validation.min"))
       .required(t("sign-in:inputs.password.validation.required")),
   });
-};
+}
 
-function FormActions() {
+function SubmitButton() {
   const { t } = useTranslation("sign-in");
   const { isSubmitting } = useFormState();
 
   return (
     <Button
-      variant="contained"
-      color="primary"
       type="submit"
       disabled={isSubmitting}
       data-testid="sign-in-submit"
+      className="w-full"
+      size="lg"
     >
-      {t("sign-in:actions.submit")}
+      {isSubmitting ? "Entrando..." : t("sign-in:actions.submit")}
     </Button>
   );
 }
 
-function Form() {
+function SignInForm() {
   const { setUser } = useAuthActions();
   const { setTokensInfo } = useAuthTokens();
   const fetchAuthLogin = useAuthLoginService();
   const { t } = useTranslation("sign-in");
   const validationSchema = useValidationSchema();
+  const [showPassword, setShowPassword] = useState(false);
 
   const methods = useForm<SignInFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
-  const { handleSubmit, setError } = methods;
+  const { register, handleSubmit, setError, control } = methods;
+  const { errors } = useFormState({ control });
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchAuthLogin(formData);
@@ -90,7 +85,6 @@ function Form() {
           });
         }
       );
-
       return;
     }
 
@@ -106,76 +100,127 @@ function Form() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit}>
-          <Grid container spacing={2} mb={2}>
-            <Grid size={{ xs: 12 }} mt={3}>
-              <Typography variant="h6">{t("sign-in:title")}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<SignInFormData>
-                name="email"
-                label={t("sign-in:inputs.email.label")}
+      <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-background">
+        <div className="w-full max-w-sm">
+          {/* Logo */}
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
+              <Zap className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold">{t("sign-in:title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Acesse sua conta na plataforma
+            </p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="email">
+                {t("sign-in:inputs.email.label")}
+              </label>
+              <input
+                id="email"
                 type="email"
-                testId="email"
                 autoFocus
+                data-testid="email"
+                placeholder="seu@email.com"
+                {...register("email")}
+                className={cn(
+                  "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
+                  errors.email && "border-destructive focus:ring-destructive/30"
+                )}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<SignInFormData>
-                name="password"
-                label={t("sign-in:inputs.password.label")}
-                type="password"
-                testId="password"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <LinkItem
-                component={Link}
-                href="/forgot-password"
-                data-testid="forgot-password"
-              >
-                {t("sign-in:actions.forgotPassword")}
-              </LinkItem>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormActions />
-
-              {IS_SIGN_UP_ENABLED && (
-                <Box ml={1} component="span">
-                  <Button
-                    variant="contained"
-                    color="inherit"
-                    LinkComponent={Link}
-                    href="/sign-up"
-                    data-testid="create-account"
-                  >
-                    {t("sign-in:actions.createAccount")}
-                  </Button>
-                </Box>
+              {errors.email && (
+                <p className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
               )}
-            </Grid>
+            </div>
 
-            {isGoogleAuthEnabled && (
-              <Grid size={{ xs: 12 }}>
-                <Divider sx={{ mb: 2 }}>
-                  <Chip label={t("sign-in:or")} />
-                </Divider>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium" htmlFor="password">
+                  {t("sign-in:inputs.password.label")}
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  data-testid="forgot-password"
+                >
+                  {t("sign-in:actions.forgotPassword")}
+                </Link>
+              </div>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  data-testid="password"
+                  placeholder="••••••••"
+                  {...register("password")}
+                  className={cn(
+                    "w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
+                    errors.password &&
+                      "border-destructive focus:ring-destructive/30"
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
-                <SocialAuth />
-              </Grid>
+            <SubmitButton />
+
+            {IS_SIGN_UP_ENABLED && (
+              <p className="text-center text-sm text-muted-foreground">
+                Não tem conta?{" "}
+                <Link
+                  href="/sign-up"
+                  className="font-medium text-primary hover:underline"
+                  data-testid="create-account"
+                >
+                  {t("sign-in:actions.createAccount")}
+                </Link>
+              </p>
             )}
-          </Grid>
-        </form>
-      </Container>
+          </form>
+
+          {isGoogleAuthEnabled && (
+            <>
+              <div className="my-4 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">
+                  {t("sign-in:or")}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <SocialAuth />
+            </>
+          )}
+        </div>
+      </div>
     </FormProvider>
   );
 }
 
 function SignIn() {
-  return <Form />;
+  return <SignInForm />;
 }
 
 export default withPageRequiredGuest(SignIn);

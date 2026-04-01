@@ -2,7 +2,10 @@ import { useGetSubmissionsService } from "@/services/api/services/submissions";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { createQueryKeys } from "@/services/react-query/query-key-factory";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { SubmissionFilterType, SubmissionSortType } from "../submission-filter-types";
+import {
+  SubmissionFilterType,
+  SubmissionSortType,
+} from "../submission-filter-types";
 
 export const submissionsQueryKeys = createQueryKeys(["submissions"], {
   list: () => ({

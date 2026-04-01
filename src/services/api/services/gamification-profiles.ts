@@ -75,7 +75,10 @@ export function usePostGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (data: GamificationProfilePostRequest, requestConfig?: RequestConfigType) => {
+    (
+      data: GamificationProfilePostRequest,
+      requestConfig?: RequestConfigType
+    ) => {
       return fetch(`${API_URL}/v1/gamification-profiles`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -101,7 +104,10 @@ export function usePatchGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (data: GamificationProfilePatchRequest, requestConfig?: RequestConfigType) => {
+    (
+      data: GamificationProfilePatchRequest,
+      requestConfig?: RequestConfigType
+    ) => {
       return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
@@ -122,11 +128,127 @@ export function useDeleteGamificationProfileService() {
   const fetch = useFetch();
 
   return useCallback(
-    (data: GamificationProfileDeleteRequest, requestConfig?: RequestConfigType) => {
+    (
+      data: GamificationProfileDeleteRequest,
+      requestConfig?: RequestConfigType
+    ) => {
       return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<GamificationProfileDeleteResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type GamificationProfileByUsernameResponse = GamificationProfile;
+
+export function useGetGamificationProfileByUsernameService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (username: string, requestConfig?: RequestConfigType) => {
+      return fetch(
+        `${API_URL}/v1/gamification-profiles/by-username/${encodeURIComponent(username)}`,
+        {
+          method: "GET",
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<GamificationProfileByUsernameResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type ApprovedSubmissionsResponse = InfinityPaginationType<{
+  id: string;
+  activityId: string;
+  awardedXp: number;
+  createdAt: string;
+}>;
+
+export function useGetProfileApprovedSubmissionsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      profileId: string,
+      params: { page: number; limit: number },
+      requestConfig?: RequestConfigType
+    ) => {
+      const url = new URL(
+        `${API_URL}/v1/gamification-profiles/${profileId}/approved-submissions`
+      );
+      url.searchParams.append("page", params.page.toString());
+      url.searchParams.append("limit", params.limit.toString());
+      return fetch(url, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ApprovedSubmissionsResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type UpdateMyGamificationProfileRequest = {
+  username: string;
+};
+
+export type UpdateMyGamificationProfileResponse = GamificationProfile;
+
+export function useUpdateMyGamificationProfileService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: UpdateMyGamificationProfileRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      return fetch(`${API_URL}/v1/gamification-profiles/me`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<UpdateMyGamificationProfileResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type MyGamificationProfileResponse = GamificationProfile;
+
+export function useGetMyGamificationProfileService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/v1/gamification-profiles/me`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<MyGamificationProfileResponse>);
+    },
+    [fetch]
+  );
+}
+
+// POST /gamification-profiles/transfer - P2P token transfer
+export type TransferTokensRequest = {
+  recipientProfileId: string;
+  amount: number;
+  message?: string;
+};
+
+export type TransferTokensResponse = GamificationProfile;
+
+export function useTransferTokensService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: TransferTokensRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/v1/gamification-profiles/transfer`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TransferTokensResponse>);
     },
     [fetch]
   );

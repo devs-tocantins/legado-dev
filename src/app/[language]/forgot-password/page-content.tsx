@@ -1,17 +1,17 @@
 "use client";
-import Button from "@mui/material/Button";
+
 import withPageRequiredGuest from "@/services/auth/with-page-required-guest";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { useAuthForgotPasswordService } from "@/services/api/services/auth";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import FormTextInput from "@/components/form/text-input/form-text-input";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
+import { Button } from "@/components/ui/button";
+import Link from "@/components/link";
+import { Zap, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ForgotPasswordFormData = {
   email: string;
@@ -19,7 +19,6 @@ type ForgotPasswordFormData = {
 
 const useValidationSchema = () => {
   const { t } = useTranslation("forgot-password");
-
   return yup.object().shape({
     email: yup
       .string()
@@ -31,16 +30,15 @@ const useValidationSchema = () => {
 function FormActions() {
   const { t } = useTranslation("forgot-password");
   const { isSubmitting } = useFormState();
-
   return (
     <Button
-      variant="contained"
-      color="primary"
       type="submit"
       disabled={isSubmitting}
+      className="w-full"
+      size="lg"
       data-testid="send-email"
     >
-      {t("forgot-password:actions.submit")}
+      {isSubmitting ? "Enviando..." : t("forgot-password:actions.submit")}
     </Button>
   );
 }
@@ -53,16 +51,14 @@ function Form() {
 
   const methods = useForm<ForgotPasswordFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: {
-      email: "",
-    },
+    defaultValues: { email: "" },
   });
 
-  const { handleSubmit, setError } = methods;
+  const { handleSubmit, setError, register, control } = methods;
+  const { errors } = useFormState({ control });
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchAuthForgotPassword(formData);
-
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof ForgotPasswordFormData>).forEach(
         (key) => {
@@ -74,10 +70,8 @@ function Form() {
           });
         }
       );
-
       return;
     }
-
     if (status === HTTP_CODES_ENUM.NO_CONTENT) {
       enqueueSnackbar(t("forgot-password:alerts.success"), {
         variant: "success",
@@ -87,27 +81,60 @@ function Form() {
 
   return (
     <FormProvider {...methods}>
-      <Container maxWidth="xs">
-        <form onSubmit={onSubmit}>
-          <Grid container spacing={2} mb={2}>
-            <Grid size={{ xs: 12 }} mt={3}>
-              <Typography variant="h6">{t("forgot-password:title")}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormTextInput<ForgotPasswordFormData>
-                name="email"
-                label={t("forgot-password:inputs.email.label")}
-                type="email"
-                testId="email"
-              />
-            </Grid>
+      <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-background">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
+              <Zap className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold">{t("forgot-password:title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Enviaremos um link para redefinir sua senha
+            </p>
+          </div>
 
-            <Grid size={{ xs: 12 }}>
-              <FormActions />
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label
+                className="text-sm font-medium flex items-center gap-1.5"
+                htmlFor="email"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                {t("forgot-password:inputs.email.label")}
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoFocus
+                data-testid="email"
+                placeholder="seu@email.com"
+                {...register("email")}
+                className={cn(
+                  "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all",
+                  errors.email && "border-destructive focus:ring-destructive/30"
+                )}
+              />
+              {errors.email && (
+                <p className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            <FormActions />
+
+            <p className="text-center text-sm text-muted-foreground">
+              Lembrou a senha?{" "}
+              <Link
+                href="/sign-in"
+                className="font-medium text-primary hover:underline"
+              >
+                Entrar
+              </Link>
+            </p>
+          </form>
+        </div>
+      </div>
     </FormProvider>
   );
 }

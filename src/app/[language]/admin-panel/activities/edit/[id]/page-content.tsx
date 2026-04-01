@@ -9,13 +9,16 @@ import { useSnackbar } from "@/hooks/use-snackbar";
 import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
-import { useGetActivityService, usePatchActivityService } from "@/services/api/services/activities";
+import {
+  useGetActivityService,
+  usePatchActivityService,
+} from "@/services/api/services/activities";
 import { useParams } from "next/navigation";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
 type EditFormData = {
   title: string;
@@ -31,19 +34,32 @@ const toInteger = (value: number, originalValue: unknown) =>
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-activities-edit");
   return yup.object().shape({
-    title: yup.string().required(t("admin-panel-activities-edit:inputs.title.validation.required")),
+    title: yup
+      .string()
+      .required(
+        t("admin-panel-activities-edit:inputs.title.validation.required")
+      ),
     description: yup.string().default(""),
     fixedReward: yup
       .number()
       .transform(toInteger)
-      .integer(t("admin-panel-activities-edit:inputs.fixedReward.validation.integer"))
-      .min(1, t("admin-panel-activities-edit:inputs.fixedReward.validation.min"))
-      .required(t("admin-panel-activities-edit:inputs.fixedReward.validation.required")),
+      .integer(
+        t("admin-panel-activities-edit:inputs.fixedReward.validation.integer")
+      )
+      .min(
+        1,
+        t("admin-panel-activities-edit:inputs.fixedReward.validation.min")
+      )
+      .required(
+        t("admin-panel-activities-edit:inputs.fixedReward.validation.required")
+      ),
     requiresProof: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
-      .integer(t("admin-panel-activities-edit:inputs.cooldownHours.validation.integer"))
+      .integer(
+        t("admin-panel-activities-edit:inputs.cooldownHours.validation.integer")
+      )
       .min(0)
       .default(0),
   });
@@ -71,7 +87,13 @@ function FormEditActivity() {
 
   const methods = useForm<EditFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: { title: "", description: "", fixedReward: 0, requiresProof: false, cooldownHours: 0 },
+    defaultValues: {
+      title: "",
+      description: "",
+      fixedReward: 0,
+      requiresProof: false,
+      cooldownHours: 0,
+    },
   });
 
   const { handleSubmit, setError, reset } = methods;
@@ -89,13 +111,21 @@ function FormEditActivity() {
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
-        setError(key, { type: "manual", message: t(`admin-panel-activities-edit:inputs.${key}.validation.server.${data.errors[key]}`) });
+        setError(key, {
+          type: "manual",
+          message: t(
+            `admin-panel-activities-edit:inputs.${key}.validation.server.${data.errors[key]}`
+          ),
+        });
       });
       return;
     }
     if (status === HTTP_CODES_ENUM.OK) {
       reset(formData);
-      enqueueSnackbar(t("admin-panel-activities-edit:alerts.activity.success"), { variant: "success" });
+      enqueueSnackbar(
+        t("admin-panel-activities-edit:alerts.activity.success"),
+        { variant: "success" }
+      );
     }
   });
 
@@ -124,14 +154,49 @@ function FormEditActivity() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormTextInput<EditFormData> name="title" testId="title" label={t("admin-panel-activities-edit:inputs.title.label")} />
-              <FormTextInput<EditFormData> name="description" testId="description" label={t("admin-panel-activities-edit:inputs.description.label")} multiline minRows={3} />
-              <FormTextInput<EditFormData> name="fixedReward" testId="fixedReward" type="number" label={t("admin-panel-activities-edit:inputs.fixedReward.label")} />
-              <FormTextInput<EditFormData> name="cooldownHours" testId="cooldownHours" type="number" label={t("admin-panel-activities-edit:inputs.cooldownHours.label")} />
-              <FormCheckboxInput<EditFormData> name="requiresProof" testId="requiresProof" label={t("admin-panel-activities-edit:inputs.requiresProof.label")} />
+              <FormTextInput<EditFormData>
+                name="title"
+                testId="title"
+                label={t("admin-panel-activities-edit:inputs.title.label")}
+              />
+              <FormTextInput<EditFormData>
+                name="description"
+                testId="description"
+                label={t(
+                  "admin-panel-activities-edit:inputs.description.label"
+                )}
+                multiline
+                minRows={3}
+              />
+              <FormTextInput<EditFormData>
+                name="fixedReward"
+                testId="fixedReward"
+                type="number"
+                label={t(
+                  "admin-panel-activities-edit:inputs.fixedReward.label"
+                )}
+              />
+              <FormTextInput<EditFormData>
+                name="cooldownHours"
+                testId="cooldownHours"
+                type="number"
+                label={t(
+                  "admin-panel-activities-edit:inputs.cooldownHours.label"
+                )}
+              />
+              <FormCheckboxInput<EditFormData>
+                name="requiresProof"
+                testId="requiresProof"
+                label={t(
+                  "admin-panel-activities-edit:inputs.requiresProof.label"
+                )}
+              />
               <div className="flex gap-2 pt-2">
                 <EditActivityFormActions />
-                <Button variant="secondary" render={<Link href="/admin-panel/activities" />}>
+                <Button
+                  variant="secondary"
+                  render={<Link href="/admin-panel/activities" />}
+                >
                   {t("admin-panel-activities-edit:actions.cancel")}
                 </Button>
               </div>

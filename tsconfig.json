@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/proxy.ts",
+    "src/i18n-middleware.ts",
     "./.next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

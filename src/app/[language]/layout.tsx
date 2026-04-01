@@ -1,11 +1,6 @@
 import ResponsiveAppBar from "@/components/app-bar";
 import AuthProvider from "@/services/auth/auth-provider";
 import "../globals.css";
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-import CssBaseline from "@mui/material/CssBaseline";
 import { dir } from "i18next";
 import "@/services/i18n/config";
 import { languages } from "@/services/i18n/config";
@@ -56,8 +51,6 @@ export default async function RootLayout(props: {
         <QueryClientProvider client={queryClient}>
           <ReactQueryDevtools initialIsOpen={false} />
           <ThemeProvider>
-            <CssBaseline />
-
             <StoreLanguageProvider>
               <ConfirmDialogProvider>
                 <AuthProvider>
@@ -65,10 +58,7 @@ export default async function RootLayout(props: {
                     <LeavePageProvider>
                       <ResponsiveAppBar />
                       {children}
-                      <ToastContainer
-                        position="bottom-left"
-                        hideProgressBar
-                      />
+                      <ToastContainer position="bottom-left" hideProgressBar />
                     </LeavePageProvider>
                   </GoogleAuthProvider>
                 </AuthProvider>

@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
 import {
   useAuthConfirmNewEmailService,
   useAuthGetMeService,
 } from "@/services/api/services/auth";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import useAuth from "@/services/auth/use-auth";
+import { Loader2 } from "lucide-react";
 
 export default function ConfirmNewEmail() {
   const { enqueueSnackbar } = useSnackbar();
@@ -34,9 +31,7 @@ export default function ConfirmNewEmail() {
 
       if (!hash) return;
 
-      const { status } = await fetchConfirmNewEmail({
-        hash,
-      });
+      const { status } = await fetchConfirmNewEmail({ hash });
 
       if (status === HTTP_CODES_ENUM.NO_CONTENT) {
         enqueueSnackbar(t("confirm-new-email:emailConfirmed"), {
@@ -45,11 +40,9 @@ export default function ConfirmNewEmail() {
 
         if (user) {
           const { data, status: statusGetMe } = await fetchAuthGetMe();
-
           if (statusGetMe === HTTP_CODES_ENUM.OK) {
             setUser(data);
           }
-
           router.replace("/profile");
         } else {
           router.replace("/");
@@ -63,7 +56,6 @@ export default function ConfirmNewEmail() {
     };
 
     confirm();
-
     // Do not add user to the dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -77,21 +69,11 @@ export default function ConfirmNewEmail() {
   ]);
 
   return (
-    <Container maxWidth="sm">
-      <Grid container>
-        <Grid size={{ xs: 12 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              p: 2,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        </Grid>
-      </Grid>
-    </Container>
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm">Confirmando novo email...</p>
+      </div>
+    </div>
   );
 }

@@ -6,7 +6,11 @@ import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ActivityFilterType } from "./activity-filter-types";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
 
 type ActivityFilterFormData = {
@@ -44,16 +48,21 @@ function ActivityFilter() {
             onSubmit={handleSubmit((data) => {
               const searchParams = new URLSearchParams(window.location.search);
               const cleanData: ActivityFilterType = {};
-              if (data.requiresProof !== undefined) cleanData.requiresProof = data.requiresProof;
+              if (data.requiresProof !== undefined)
+                cleanData.requiresProof = data.requiresProof;
               searchParams.set("filter", JSON.stringify(cleanData));
-              router.push(window.location.pathname + "?" + searchParams.toString());
+              router.push(
+                window.location.pathname + "?" + searchParams.toString()
+              );
             })}
             className="space-y-4"
           >
             <FormCheckboxInput<ActivityFilterFormData>
               name="requiresProof"
               testId="requiresProof"
-              label={t("admin-panel-activities:filter.inputs.requiresProof.label")}
+              label={t(
+                "admin-panel-activities:filter.inputs.requiresProof.label"
+              )}
             />
             <Button type="submit" className="w-full">
               {t("admin-panel-activities:filter.actions.apply")}

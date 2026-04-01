@@ -2,7 +2,10 @@ import { useGetTransactionsService } from "@/services/api/services/transactions"
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { createQueryKeys } from "@/services/react-query/query-key-factory";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { TransactionFilterType, TransactionSortType } from "../transaction-filter-types";
+import {
+  TransactionFilterType,
+  TransactionSortType,
+} from "../transaction-filter-types";
 
 export const transactionsQueryKeys = createQueryKeys(["transactions"], {
   list: () => ({

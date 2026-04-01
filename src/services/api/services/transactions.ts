@@ -65,6 +65,31 @@ export function useGetTransactionService() {
   );
 }
 
+export type MyTransactionsRequest = {
+  page: number;
+  limit: number;
+};
+
+export type MyTransactionsResponse = InfinityPaginationType<Transaction>;
+
+export function useGetMyTransactionsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: MyTransactionsRequest, requestConfig?: RequestConfigType) => {
+      const requestUrl = new URL(`${API_URL}/v1/transactions/me`);
+      requestUrl.searchParams.append("page", data.page.toString());
+      requestUrl.searchParams.append("limit", data.limit.toString());
+
+      return fetch(requestUrl, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<MyTransactionsResponse>);
+    },
+    [fetch]
+  );
+}
+
 export type TransactionPostRequest = {
   profile: string;
   category: string;

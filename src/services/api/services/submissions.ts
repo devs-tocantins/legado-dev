@@ -66,7 +66,6 @@ export function useGetSubmissionService() {
 }
 
 export type SubmissionPostRequest = {
-  profileId: string;
   activityId: string;
   proofUrl?: string;
 };
@@ -129,6 +128,106 @@ export function useDeleteSubmissionService() {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<SubmissionDeleteResponse>);
+    },
+    [fetch]
+  );
+}
+
+// POST /submissions/redeem - secret code redemption
+export type RedeemSecretCodeRequest = {
+  secretCode: string;
+};
+
+export type RedeemSecretCodeResponse = Submission;
+
+export function useRedeemSecretCodeService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: RedeemSecretCodeRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/v1/submissions/redeem`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<RedeemSecretCodeResponse>);
+    },
+    [fetch]
+  );
+}
+
+// GET /submissions/me - personal history
+export type MySubmissionsRequest = {
+  page: number;
+  limit: number;
+};
+
+export type MySubmissionsResponse = InfinityPaginationType<Submission>;
+
+export function useGetMySubmissionsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: MySubmissionsRequest, requestConfig?: RequestConfigType) => {
+      const requestUrl = new URL(`${API_URL}/v1/submissions/me`);
+      requestUrl.searchParams.append("page", data.page.toString());
+      requestUrl.searchParams.append("limit", data.limit.toString());
+
+      return fetch(requestUrl, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<MySubmissionsResponse>);
+    },
+    [fetch]
+  );
+}
+
+// GET /submissions/pending - moderation queue
+export type PendingSubmissionsRequest = {
+  page: number;
+  limit: number;
+};
+
+export type PendingSubmissionsResponse = InfinityPaginationType<Submission>;
+
+export function useGetPendingSubmissionsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: PendingSubmissionsRequest, requestConfig?: RequestConfigType) => {
+      const requestUrl = new URL(`${API_URL}/v1/submissions/pending`);
+      requestUrl.searchParams.append("page", data.page.toString());
+      requestUrl.searchParams.append("limit", data.limit.toString());
+
+      return fetch(requestUrl, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<PendingSubmissionsResponse>);
+    },
+    [fetch]
+  );
+}
+
+// PATCH /submissions/:id/review - moderation action
+export type ReviewSubmissionRequest = {
+  id: Submission["id"];
+  data: {
+    status: "APPROVED" | "REJECTED";
+    feedback?: string;
+  };
+};
+
+export type ReviewSubmissionResponse = Submission;
+
+export function useReviewSubmissionService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: ReviewSubmissionRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/v1/submissions/${data.id}/review`, {
+        method: "PATCH",
+        body: JSON.stringify(data.data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ReviewSubmissionResponse>);
     },
     [fetch]
   );

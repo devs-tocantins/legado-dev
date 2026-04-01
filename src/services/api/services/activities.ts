@@ -28,10 +28,7 @@ export function useGetActivitiesService() {
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
-        requestUrl.searchParams.append(
-          "filters",
-          JSON.stringify(data.filters)
-        );
+        requestUrl.searchParams.append("filters", JSON.stringify(data.filters));
       }
       if (data.sort) {
         requestUrl.searchParams.append("sort", JSON.stringify(data.sort));

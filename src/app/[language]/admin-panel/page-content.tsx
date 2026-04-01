@@ -9,9 +9,7 @@ function AdminPanel() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <h1 className="text-3xl font-bold tracking-tight mb-3">
-        {t("title")}
-      </h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-3">{t("title")}</h1>
       <p className="text-muted-foreground">{t("description")}</p>
     </div>
   );

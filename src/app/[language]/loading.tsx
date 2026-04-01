@@ -1,12 +1,7 @@
-import Box from "@mui/material/Box";
-import LinearProgress from "@mui/material/LinearProgress";
-
-function Loading() {
+export default function Loading() {
   return (
-    <Box sx={{ width: "100%" }}>
-      <LinearProgress />
-    </Box>
+    <div className="w-full h-0.5 overflow-hidden bg-muted">
+      <div className="h-full w-1/3 animate-[loading_1s_ease-in-out_infinite] bg-primary" />
+    </div>
   );
 }
-
-export default Loading;

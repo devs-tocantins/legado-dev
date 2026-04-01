@@ -29,7 +29,11 @@ const TableComponents = {
     }
   ) {
     return (
-      <thead {...props} ref={props.ref} className="[&_tr]:border-b bg-muted/50" />
+      <thead
+        {...props}
+        ref={props.ref}
+        className="[&_tr]:border-b bg-muted/50"
+      />
     );
   } as unknown as TableComponentsType["TableHead"],
   TableFoot: function TableFoot(
@@ -52,7 +56,13 @@ const TableComponents = {
       ref?: Ref<HTMLTableSectionElement>;
     }
   ) {
-    return <tbody {...props} ref={props.ref} className="[&_tr:last-child]:border-0" />;
+    return (
+      <tbody
+        {...props}
+        ref={props.ref}
+        className="[&_tr:last-child]:border-0"
+      />
+    );
   },
 };
 

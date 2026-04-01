@@ -9,21 +9,33 @@ import { useSnackbar } from "@/hooks/use-snackbar";
 import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
-import { useGetSubmissionService, usePatchSubmissionService } from "@/services/api/services/submissions";
+import {
+  useGetSubmissionService,
+  usePatchSubmissionService,
+} from "@/services/api/services/submissions";
 import { useParams } from "next/navigation";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormSelectInput from "@/components/form/select/form-select-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
-type EditFormData = { status: { id: string }; feedback: string; proofUrl: string };
+type EditFormData = {
+  status: { id: string };
+  feedback: string;
+  proofUrl: string;
+};
 
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-submissions-edit");
   return yup.object().shape({
-    status: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-submissions-edit:inputs.status.validation.required")),
+    status: yup
+      .object()
+      .shape({ id: yup.string().required() })
+      .required(
+        t("admin-panel-submissions-edit:inputs.status.validation.required")
+      ),
     feedback: yup.string().default(""),
     proofUrl: yup.string().default(""),
   });
@@ -33,7 +45,11 @@ function EditFormActions() {
   const { t } = useTranslation("admin-panel-submissions-edit");
   const { isSubmitting, isDirty } = useFormState();
   useLeavePage(isDirty);
-  return <Button type="submit" disabled={isSubmitting}>{t("admin-panel-submissions-edit:actions.submit")}</Button>;
+  return (
+    <Button type="submit" disabled={isSubmitting}>
+      {t("admin-panel-submissions-edit:actions.submit")}
+    </Button>
+  );
 }
 
 function FormEditSubmission() {
@@ -55,17 +71,29 @@ function FormEditSubmission() {
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPatch({
       id: submissionId,
-      data: { status: formData.status.id, feedback: formData.feedback || undefined, proofUrl: formData.proofUrl || undefined },
+      data: {
+        status: formData.status.id,
+        feedback: formData.feedback || undefined,
+        proofUrl: formData.proofUrl || undefined,
+      },
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
-        setError(key, { type: "manual", message: t(`admin-panel-submissions-edit:inputs.${key}.validation.server.${data.errors[key]}`) });
+        setError(key, {
+          type: "manual",
+          message: t(
+            `admin-panel-submissions-edit:inputs.${key}.validation.server.${data.errors[key]}`
+          ),
+        });
       });
       return;
     }
     if (status === HTTP_CODES_ENUM.OK) {
       reset(formData);
-      enqueueSnackbar(t("admin-panel-submissions-edit:alerts.submission.success"), { variant: "success" });
+      enqueueSnackbar(
+        t("admin-panel-submissions-edit:alerts.submission.success"),
+        { variant: "success" }
+      );
     }
   });
 
@@ -87,22 +115,45 @@ function FormEditSubmission() {
     <FormProvider {...methods}>
       <div className="mx-auto max-w-md p-6">
         <Card>
-          <CardHeader><CardTitle>{t("admin-panel-submissions-edit:title")}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>{t("admin-panel-submissions-edit:title")}</CardTitle>
+          </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
               <FormSelectInput<EditFormData, { id: string }>
                 name="status"
                 testId="status"
                 label={t("admin-panel-submissions-edit:inputs.status.label")}
-                options={Object.values(SubmissionStatusEnum).map((v) => ({ id: v }))}
+                options={Object.values(SubmissionStatusEnum).map((v) => ({
+                  id: v,
+                }))}
                 keyValue="id"
-                renderOption={(option) => t(`admin-panel-submissions-edit:inputs.status.options.${option.id}`)}
+                renderOption={(option) =>
+                  t(
+                    `admin-panel-submissions-edit:inputs.status.options.${option.id}`
+                  )
+                }
               />
-              <FormTextInput<EditFormData> name="feedback" testId="feedback" label={t("admin-panel-submissions-edit:inputs.feedback.label")} multiline minRows={3} />
-              <FormTextInput<EditFormData> name="proofUrl" testId="proofUrl" label={t("admin-panel-submissions-edit:inputs.proofUrl.label")} />
+              <FormTextInput<EditFormData>
+                name="feedback"
+                testId="feedback"
+                label={t("admin-panel-submissions-edit:inputs.feedback.label")}
+                multiline
+                minRows={3}
+              />
+              <FormTextInput<EditFormData>
+                name="proofUrl"
+                testId="proofUrl"
+                label={t("admin-panel-submissions-edit:inputs.proofUrl.label")}
+              />
               <div className="flex gap-2 pt-2">
                 <EditFormActions />
-                <Button variant="secondary" render={<Link href="/admin-panel/submissions" />}>{t("admin-panel-submissions-edit:actions.cancel")}</Button>
+                <Button
+                  variant="secondary"
+                  render={<Link href="/admin-panel/submissions" />}
+                >
+                  {t("admin-panel-submissions-edit:actions.cancel")}
+                </Button>
               </div>
             </form>
           </CardContent>
@@ -112,5 +163,7 @@ function FormEditSubmission() {
   );
 }
 
-function EditSubmission() { return <FormEditSubmission />; }
+function EditSubmission() {
+  return <FormEditSubmission />;
+}
 export default withPageRequiredAuth(EditSubmission);

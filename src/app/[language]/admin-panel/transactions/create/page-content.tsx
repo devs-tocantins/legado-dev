@@ -15,7 +15,7 @@ import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormSelectInput from "@/components/form/select/form-select-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
 type CreateFormData = {
   profileId: string;
@@ -27,16 +27,31 @@ type CreateFormData = {
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-transactions-create");
   return yup.object().shape({
-    profileId: yup.string().required(t("admin-panel-transactions-create:inputs.profileId.validation.required")),
+    profileId: yup
+      .string()
+      .required(
+        t(
+          "admin-panel-transactions-create:inputs.profileId.validation.required"
+        )
+      ),
     amount: yup
       .number()
       .transform((value, originalValue) =>
         String(originalValue).trim() === "" ? NaN : value
       )
-      .integer(t("admin-panel-transactions-create:inputs.amount.validation.integer"))
+      .integer(
+        t("admin-panel-transactions-create:inputs.amount.validation.integer")
+      )
       .min(1, t("admin-panel-transactions-create:inputs.amount.validation.min"))
-      .required(t("admin-panel-transactions-create:inputs.amount.validation.required")),
-    category: yup.object().shape({ id: yup.string().required() }).required(t("admin-panel-transactions-create:inputs.category.validation.required")),
+      .required(
+        t("admin-panel-transactions-create:inputs.amount.validation.required")
+      ),
+    category: yup
+      .object()
+      .shape({ id: yup.string().required() })
+      .required(
+        t("admin-panel-transactions-create:inputs.category.validation.required")
+      ),
     description: yup.string().default(""),
   });
 };
@@ -61,7 +76,12 @@ function FormCreateTransaction() {
 
   const methods = useForm<CreateFormData>({
     resolver: yupResolver(validationSchema),
-    defaultValues: { profileId: "", amount: 0, category: undefined, description: "" },
+    defaultValues: {
+      profileId: "",
+      amount: 0,
+      category: undefined,
+      description: "",
+    },
   });
 
   const { handleSubmit, setError } = methods;
@@ -74,13 +94,23 @@ function FormCreateTransaction() {
       description: formData.description || undefined,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach((key) => {
-        setError(key, { type: "manual", message: t(`admin-panel-transactions-create:inputs.${key}.validation.server.${data.errors[key]}`) });
-      });
+      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach(
+        (key) => {
+          setError(key, {
+            type: "manual",
+            message: t(
+              `admin-panel-transactions-create:inputs.${key}.validation.server.${data.errors[key]}`
+            ),
+          });
+        }
+      );
       return;
     }
     if (status === HTTP_CODES_ENUM.CREATED) {
-      enqueueSnackbar(t("admin-panel-transactions-create:alerts.transaction.success"), { variant: "success" });
+      enqueueSnackbar(
+        t("admin-panel-transactions-create:alerts.transaction.success"),
+        { variant: "success" }
+      );
       router.push("/admin-panel/transactions");
     }
   });
@@ -93,21 +123,53 @@ function FormCreateTransaction() {
             <CardTitle>{t("admin-panel-transactions-create:title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} autoComplete="create-new-transaction" className="space-y-4">
-              <FormTextInput<CreateFormData> name="profileId" testId="profileId" label={t("admin-panel-transactions-create:inputs.profileId.label")} />
-              <FormTextInput<CreateFormData> name="amount" testId="amount" type="number" label={t("admin-panel-transactions-create:inputs.amount.label")} />
+            <form
+              onSubmit={onSubmit}
+              autoComplete="create-new-transaction"
+              className="space-y-4"
+            >
+              <FormTextInput<CreateFormData>
+                name="profileId"
+                testId="profileId"
+                label={t(
+                  "admin-panel-transactions-create:inputs.profileId.label"
+                )}
+              />
+              <FormTextInput<CreateFormData>
+                name="amount"
+                testId="amount"
+                type="number"
+                label={t("admin-panel-transactions-create:inputs.amount.label")}
+              />
               <FormSelectInput<CreateFormData, { id: string }>
                 name="category"
                 testId="category"
-                label={t("admin-panel-transactions-create:inputs.category.label")}
-                options={Object.values(TransactionCategoryEnum).map((v) => ({ id: v }))}
+                label={t(
+                  "admin-panel-transactions-create:inputs.category.label"
+                )}
+                options={Object.values(TransactionCategoryEnum).map((v) => ({
+                  id: v,
+                }))}
                 keyValue="id"
-                renderOption={(option) => t(`admin-panel-transactions-create:inputs.category.options.${option.id}`)}
+                renderOption={(option) =>
+                  t(
+                    `admin-panel-transactions-create:inputs.category.options.${option.id}`
+                  )
+                }
               />
-              <FormTextInput<CreateFormData> name="description" testId="description" label={t("admin-panel-transactions-create:inputs.description.label")} />
+              <FormTextInput<CreateFormData>
+                name="description"
+                testId="description"
+                label={t(
+                  "admin-panel-transactions-create:inputs.description.label"
+                )}
+              />
               <div className="flex gap-2 pt-2">
                 <CreateTransactionFormActions />
-                <Button variant="secondary" render={<Link href="/admin-panel/transactions" />}>
+                <Button
+                  variant="secondary"
+                  render={<Link href="/admin-panel/transactions" />}
+                >
                   {t("admin-panel-transactions-create:actions.cancel")}
                 </Button>
               </div>

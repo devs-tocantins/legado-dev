@@ -20,7 +20,7 @@ import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormSelectInput from "@/components/form/select/form-select-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
 type EditUserFormData = {
   email: string;
@@ -42,13 +42,19 @@ const useValidationEditUserSchema = () => {
     email: yup
       .string()
       .email(t("admin-panel-users-edit:inputs.email.validation.invalid"))
-      .required(t("admin-panel-users-edit:inputs.firstName.validation.required")),
+      .required(
+        t("admin-panel-users-edit:inputs.firstName.validation.required")
+      ),
     firstName: yup
       .string()
-      .required(t("admin-panel-users-edit:inputs.firstName.validation.required")),
+      .required(
+        t("admin-panel-users-edit:inputs.firstName.validation.required")
+      ),
     lastName: yup
       .string()
-      .required(t("admin-panel-users-edit:inputs.lastName.validation.required")),
+      .required(
+        t("admin-panel-users-edit:inputs.lastName.validation.required")
+      ),
     role: yup
       .object()
       .shape({
@@ -66,7 +72,9 @@ const useValidationChangePasswordSchema = () => {
     password: yup
       .string()
       .min(6, t("admin-panel-users-edit:inputs.password.validation.min"))
-      .required(t("admin-panel-users-edit:inputs.password.validation.required")),
+      .required(
+        t("admin-panel-users-edit:inputs.password.validation.required")
+      ),
     passwordConfirmation: yup
       .string()
       .oneOf(
@@ -74,7 +82,9 @@ const useValidationChangePasswordSchema = () => {
         t("admin-panel-users-edit:inputs.passwordConfirmation.validation.match")
       )
       .required(
-        t("admin-panel-users-edit:inputs.passwordConfirmation.validation.required")
+        t(
+          "admin-panel-users-edit:inputs.passwordConfirmation.validation.required"
+        )
       ),
   });
 };
@@ -208,8 +218,11 @@ function FormEditUser() {
             />
             <div className="flex gap-2 pt-2">
               <EditUserFormActions />
-              <Button variant="secondary" render={<Link href="/admin-panel/users" />}>
-                  {t("admin-panel-users-edit:actions.cancel")}
+              <Button
+                variant="secondary"
+                render={<Link href="/admin-panel/users" />}
+              >
+                {t("admin-panel-users-edit:actions.cancel")}
               </Button>
             </div>
           </form>
@@ -278,13 +291,18 @@ function FormChangePasswordUser() {
             />
             <FormTextInput<ChangeUserPasswordFormData>
               name="passwordConfirmation"
-              label={t("admin-panel-users-edit:inputs.passwordConfirmation.label")}
+              label={t(
+                "admin-panel-users-edit:inputs.passwordConfirmation.label"
+              )}
               type="password"
             />
             <div className="flex gap-2 pt-2">
               <ChangePasswordFormActions />
-              <Button variant="secondary" render={<Link href="/admin-panel/users" />}>
-                  {t("admin-panel-users-edit:actions.cancel")}
+              <Button
+                variant="secondary"
+                render={<Link href="/admin-panel/users" />}
+              >
+                {t("admin-panel-users-edit:actions.cancel")}
               </Button>
             </div>
           </form>

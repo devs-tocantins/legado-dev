@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getServerTranslation } from "@/services/i18n";
 import NewSubmissionPageContent from "./page-content";
 
@@ -16,5 +17,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <NewSubmissionPageContent />;
+  return (
+    <Suspense>
+      <NewSubmissionPageContent />
+    </Suspense>
+  );
 }

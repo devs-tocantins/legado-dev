@@ -16,7 +16,7 @@ import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormSelectInput from "@/components/form/select/form-select-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
 type CreateFormData = {
   email: string;
@@ -35,25 +35,37 @@ const useValidationSchema = () => {
     email: yup
       .string()
       .email(t("admin-panel-users-create:inputs.email.validation.invalid"))
-      .required(t("admin-panel-users-create:inputs.firstName.validation.required")),
+      .required(
+        t("admin-panel-users-create:inputs.firstName.validation.required")
+      ),
     firstName: yup
       .string()
-      .required(t("admin-panel-users-create:inputs.firstName.validation.required")),
+      .required(
+        t("admin-panel-users-create:inputs.firstName.validation.required")
+      ),
     lastName: yup
       .string()
-      .required(t("admin-panel-users-create:inputs.lastName.validation.required")),
+      .required(
+        t("admin-panel-users-create:inputs.lastName.validation.required")
+      ),
     password: yup
       .string()
       .min(6, t("admin-panel-users-create:inputs.password.validation.min"))
-      .required(t("admin-panel-users-create:inputs.password.validation.required")),
+      .required(
+        t("admin-panel-users-create:inputs.password.validation.required")
+      ),
     passwordConfirmation: yup
       .string()
       .oneOf(
         [yup.ref("password")],
-        t("admin-panel-users-create:inputs.passwordConfirmation.validation.match")
+        t(
+          "admin-panel-users-create:inputs.passwordConfirmation.validation.match"
+        )
       )
       .required(
-        t("admin-panel-users-create:inputs.passwordConfirmation.validation.required")
+        t(
+          "admin-panel-users-create:inputs.passwordConfirmation.validation.required"
+        )
       ),
     role: yup
       .object()
@@ -102,14 +114,16 @@ function FormCreateUser() {
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPostUser(formData);
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach((key) => {
-        setError(key, {
-          type: "manual",
-          message: t(
-            `admin-panel-users-create:inputs.${key}.validation.server.${data.errors[key]}`
-          ),
-        });
-      });
+      (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach(
+        (key) => {
+          setError(key, {
+            type: "manual",
+            message: t(
+              `admin-panel-users-create:inputs.${key}.validation.server.${data.errors[key]}`
+            ),
+          });
+        }
+      );
       return;
     }
     if (status === HTTP_CODES_ENUM.CREATED) {
@@ -128,7 +142,11 @@ function FormCreateUser() {
             <CardTitle>{t("admin-panel-users-create:title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} autoComplete="create-new-user" className="space-y-4">
+            <form
+              onSubmit={onSubmit}
+              autoComplete="create-new-user"
+              className="space-y-4"
+            >
               <FormTextInput<CreateFormData>
                 name="email"
                 testId="new-user-email"
@@ -145,7 +163,9 @@ function FormCreateUser() {
               <FormTextInput<CreateFormData>
                 name="passwordConfirmation"
                 testId="new-user-password-confirmation"
-                label={t("admin-panel-users-create:inputs.passwordConfirmation.label")}
+                label={t(
+                  "admin-panel-users-create:inputs.passwordConfirmation.label"
+                )}
                 type="password"
               />
               <FormTextInput<CreateFormData>
@@ -170,8 +190,11 @@ function FormCreateUser() {
               />
               <div className="flex gap-2 pt-2">
                 <CreateUserFormActions />
-                <Button variant="secondary" render={<Link href="/admin-panel/users" />}>
-                    {t("admin-panel-users-create:actions.cancel")}
+                <Button
+                  variant="secondary"
+                  render={<Link href="/admin-panel/users" />}
+                >
+                  {t("admin-panel-users-create:actions.cancel")}
                 </Button>
               </div>
             </form>

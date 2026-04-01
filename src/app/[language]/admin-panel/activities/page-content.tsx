@@ -16,7 +16,7 @@ import ActivityFilter from "./activity-filter";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActivityFilterType, ActivitySortType } from "./activity-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,7 +38,9 @@ function SortableHeader(
   }>
 ) {
   return (
-    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+    <th
+      className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}
+    >
       <button
         className="inline-flex items-center gap-1 hover:text-foreground"
         onClick={(e) => props.onSort(e, props.column)}
@@ -68,7 +70,10 @@ function Actions({ activity }: { activity: Activity }) {
       const searchParamsSort = searchParams.get("sort");
 
       let filter: ActivityFilterType | undefined = undefined;
-      let sort: ActivitySortType | undefined = { order: SortEnum.DESC, orderBy: "id" };
+      let sort: ActivitySortType | undefined = {
+        order: SortEnum.DESC,
+        orderBy: "id",
+      };
 
       if (searchParamsFilter) filter = JSON.parse(searchParamsFilter);
       if (searchParamsSort) sort = JSON.parse(searchParamsSort);
@@ -77,7 +82,9 @@ function Actions({ activity }: { activity: Activity }) {
         InfiniteData<{ nextPage: number; data: Activity[] }>
       >(activitiesQueryKeys.list().sub.by({ sort, filter }).key);
 
-      await queryClient.cancelQueries({ queryKey: activitiesQueryKeys.list().key });
+      await queryClient.cancelQueries({
+        queryKey: activitiesQueryKeys.list().key,
+      });
 
       const newData = {
         ...previousData,
@@ -98,12 +105,17 @@ function Actions({ activity }: { activity: Activity }) {
 
   return (
     <div className="flex items-center gap-1">
-      <Button size="sm" render={<Link href={`/admin-panel/activities/edit/${activity.id}`} />}>
-          {t("admin-panel-activities:actions.edit")}
+      <Button
+        size="sm"
+        render={<Link href={`/admin-panel/activities/edit/${activity.id}`} />}
+      >
+        {t("admin-panel-activities:actions.edit")}
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
-            <MoreHorizontal className="h-4 w-4" />
+        <DropdownMenuTrigger
+          render={<Button variant="outline" size="icon" className="h-8 w-8" />}
+        >
+          <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
@@ -131,11 +143,17 @@ function Activities() {
     return { order: SortEnum.DESC, orderBy: "id" };
   });
 
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: ActivityKeys) => {
+  const handleRequestSort = (
+    event: React.MouseEvent<unknown>,
+    property: ActivityKeys
+  ) => {
     const isAsc = orderBy === property && order === SortEnum.ASC;
     const searchParams = new URLSearchParams(window.location.search);
     const newOrder = isAsc ? SortEnum.DESC : SortEnum.ASC;
-    searchParams.set("sort", JSON.stringify({ order: newOrder, orderBy: property }));
+    searchParams.set(
+      "sort",
+      JSON.stringify({ order: newOrder, orderBy: property })
+    );
     setSort({ order: newOrder, orderBy: property });
     router.push(window.location.pathname + "?" + searchParams.toString());
   };
@@ -154,7 +172,9 @@ function Activities() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const result = useMemo(() => {
-    const r = (data?.pages.flatMap((page) => page?.data) as Activity[]) ?? ([] as Activity[]);
+    const r =
+      (data?.pages.flatMap((page) => page?.data) as Activity[]) ??
+      ([] as Activity[]);
     return removeDuplicatesFromArrayObjects(r, "id");
   }, [data]);
 
@@ -166,8 +186,11 @@ function Activities() {
         </h1>
         <div className="flex items-center gap-2">
           <ActivityFilter />
-          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/activities/create" />}>
-              {t("admin-panel-activities:actions.create")}
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            render={<Link href="/admin-panel/activities/create" />}
+          >
+            {t("admin-panel-activities:actions.create")}
           </Button>
         </div>
       </div>
@@ -184,13 +207,30 @@ function Activities() {
           fixedHeaderContent={() => (
             <>
               <tr className="border-b">
-                <SortableHeader column="id" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[100px]">
+                <SortableHeader
+                  column="id"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[100px]"
+                >
                   {t("admin-panel-activities:table.column1")}
                 </SortableHeader>
-                <SortableHeader column="title" orderBy={orderBy} order={order} onSort={handleRequestSort}>
+                <SortableHeader
+                  column="title"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                >
                   {t("admin-panel-activities:table.column2")}
                 </SortableHeader>
-                <SortableHeader column="fixedReward" orderBy={orderBy} order={order} onSort={handleRequestSort} className="w-[120px]">
+                <SortableHeader
+                  column="fixedReward"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[120px]"
+                >
                   {t("admin-panel-activities:table.column3")}
                 </SortableHeader>
                 <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
@@ -214,7 +254,9 @@ function Activities() {
           )}
           itemContent={(_index, activity) => (
             <>
-              <td className="p-3 w-[100px]">{activity?.id?.substring(0, 8)}...</td>
+              <td className="p-3 w-[100px]">
+                {activity?.id?.substring(0, 8)}...
+              </td>
               <td className="p-3">{activity?.title}</td>
               <td className="p-3 w-[120px]">{activity?.fixedReward} XP</td>
               <td className="p-3 w-[120px]">

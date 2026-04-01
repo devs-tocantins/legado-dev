@@ -10,4 +10,8 @@ export type FetchJsonResponse<T> =
         | HTTP_CODES_ENUM.SERVICE_UNAVAILABLE;
       data: undefined;
     }
+  | { status: HTTP_CODES_ENUM.CONFLICT; data: unknown }
+  | { status: HTTP_CODES_ENUM.NOT_FOUND; data: unknown }
+  | { status: HTTP_CODES_ENUM.FORBIDDEN; data: unknown }
+  | { status: HTTP_CODES_ENUM.BAD_REQUEST; data: unknown }
   | ValidationErrors;

@@ -17,7 +17,7 @@ import { useParams } from "next/navigation";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 
 type EditFormData = {
   username: string;
@@ -28,9 +28,27 @@ type EditFormData = {
 const useValidationSchema = () => {
   const { t } = useTranslation("admin-panel-gamification-profiles-edit");
   return yup.object().shape({
-    username: yup.string().required(t("admin-panel-gamification-profiles-edit:inputs.username.validation.required")),
-    totalXp: yup.number().required(t("admin-panel-gamification-profiles-edit:inputs.totalXp.validation.required")),
-    gratitudeTokens: yup.number().required(t("admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.validation.required")),
+    username: yup
+      .string()
+      .required(
+        t(
+          "admin-panel-gamification-profiles-edit:inputs.username.validation.required"
+        )
+      ),
+    totalXp: yup
+      .number()
+      .required(
+        t(
+          "admin-panel-gamification-profiles-edit:inputs.totalXp.validation.required"
+        )
+      ),
+    gratitudeTokens: yup
+      .number()
+      .required(
+        t(
+          "admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.validation.required"
+        )
+      ),
   });
 };
 
@@ -72,13 +90,21 @@ function FormEditGamificationProfile() {
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof EditFormData>).forEach((key) => {
-        setError(key, { type: "manual", message: t(`admin-panel-gamification-profiles-edit:inputs.${key}.validation.server.${data.errors[key]}`) });
+        setError(key, {
+          type: "manual",
+          message: t(
+            `admin-panel-gamification-profiles-edit:inputs.${key}.validation.server.${data.errors[key]}`
+          ),
+        });
       });
       return;
     }
     if (status === HTTP_CODES_ENUM.OK) {
       reset(formData);
-      enqueueSnackbar(t("admin-panel-gamification-profiles-edit:alerts.profile.success"), { variant: "success" });
+      enqueueSnackbar(
+        t("admin-panel-gamification-profiles-edit:alerts.profile.success"),
+        { variant: "success" }
+      );
     }
   });
 
@@ -101,16 +127,41 @@ function FormEditGamificationProfile() {
       <div className="mx-auto max-w-md p-6">
         <Card>
           <CardHeader>
-            <CardTitle>{t("admin-panel-gamification-profiles-edit:title")}</CardTitle>
+            <CardTitle>
+              {t("admin-panel-gamification-profiles-edit:title")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormTextInput<EditFormData> name="username" testId="username" label={t("admin-panel-gamification-profiles-edit:inputs.username.label")} />
-              <FormTextInput<EditFormData> name="totalXp" testId="totalXp" type="number" label={t("admin-panel-gamification-profiles-edit:inputs.totalXp.label")} />
-              <FormTextInput<EditFormData> name="gratitudeTokens" testId="gratitudeTokens" type="number" label={t("admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.label")} />
+              <FormTextInput<EditFormData>
+                name="username"
+                testId="username"
+                label={t(
+                  "admin-panel-gamification-profiles-edit:inputs.username.label"
+                )}
+              />
+              <FormTextInput<EditFormData>
+                name="totalXp"
+                testId="totalXp"
+                type="number"
+                label={t(
+                  "admin-panel-gamification-profiles-edit:inputs.totalXp.label"
+                )}
+              />
+              <FormTextInput<EditFormData>
+                name="gratitudeTokens"
+                testId="gratitudeTokens"
+                type="number"
+                label={t(
+                  "admin-panel-gamification-profiles-edit:inputs.gratitudeTokens.label"
+                )}
+              />
               <div className="flex gap-2 pt-2">
                 <EditGamificationProfileFormActions />
-                <Button variant="secondary" render={<Link href="/admin-panel/gamification-profiles" />}>
+                <Button
+                  variant="secondary"
+                  render={<Link href="/admin-panel/gamification-profiles" />}
+                >
                   {t("admin-panel-gamification-profiles-edit:actions.cancel")}
                 </Button>
               </div>

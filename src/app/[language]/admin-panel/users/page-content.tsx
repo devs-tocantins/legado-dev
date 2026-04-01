@@ -17,7 +17,7 @@ import UserFilter from "./user-filter";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserFilterType, UserSortType } from "./user-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -35,15 +35,14 @@ function SortableHeader(
     column: UsersKeys;
     orderBy: UsersKeys;
     order: SortEnum;
-    onSort: (
-      event: React.MouseEvent<unknown>,
-      property: UsersKeys
-    ) => void;
+    onSort: (event: React.MouseEvent<unknown>, property: UsersKeys) => void;
     className?: string;
   }>
 ) {
   return (
-    <th className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}>
+    <th
+      className={`h-10 px-3 text-left align-middle font-medium text-muted-foreground ${props.className ?? ""}`}
+    >
       <button
         className="inline-flex items-center gap-1 hover:text-foreground"
         onClick={(e) => props.onSort(e, props.column)}
@@ -108,13 +107,20 @@ function Actions({ user }: { user: User }) {
 
   return (
     <div className="flex items-center gap-1">
-      <Button size="sm" render={<Link href={`/admin-panel/users/edit/${user.id}`} />}>
-          {t("admin-panel-users:actions.edit")}
+      <Button
+        size="sm"
+        render={<Link href={`/admin-panel/users/edit/${user.id}`} />}
+      >
+        {t("admin-panel-users:actions.edit")}
       </Button>
       {canDelete && (
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="h-8 w-8" />}>
-              <MoreHorizontal className="h-4 w-4" />
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" size="icon" className="h-8 w-8" />
+            }
+          >
+            <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
@@ -189,8 +195,11 @@ function Users() {
         </h1>
         <div className="flex items-center gap-2">
           <UserFilter />
-          <Button className="bg-green-600 hover:bg-green-700" render={<Link href="/admin-panel/users/create" />}>
-              {tUsers("admin-panel-users:actions.create")}
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            render={<Link href="/admin-panel/users/create" />}
+          >
+            {tUsers("admin-panel-users:actions.create")}
           </Button>
         </div>
       </div>

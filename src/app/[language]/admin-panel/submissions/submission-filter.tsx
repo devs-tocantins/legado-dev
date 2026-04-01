@@ -7,7 +7,11 @@ import { FormProvider, useForm } from "react-hook-form";
 import { SubmissionFilterType } from "./submission-filter-types";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import FormSelectInput from "@/components/form/select/form-select-shadcn";
 
 function SubmissionFilter() {
@@ -15,7 +19,9 @@ function SubmissionFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const methods = useForm<SubmissionFilterType>({ defaultValues: { status: undefined } });
+  const methods = useForm<SubmissionFilterType>({
+    defaultValues: { status: undefined },
+  });
   const { handleSubmit, reset } = methods;
 
   useEffect(() => {
@@ -26,7 +32,9 @@ function SubmissionFilter() {
   return (
     <Popover>
       <PopoverTrigger>
-        <Button variant="outline">{t("admin-panel-submissions:filter.actions.filter")}</Button>
+        <Button variant="outline">
+          {t("admin-panel-submissions:filter.actions.filter")}
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <FormProvider {...methods}>
@@ -42,11 +50,19 @@ function SubmissionFilter() {
               name="status"
               testId="status"
               label={t("admin-panel-submissions:filter.inputs.status.label")}
-              options={Object.values(SubmissionStatusEnum).map((v) => ({ id: v }))}
+              options={Object.values(SubmissionStatusEnum).map((v) => ({
+                id: v,
+              }))}
               keyValue="id"
-              renderOption={(option) => t(`admin-panel-submissions:filter.inputs.status.options.${option.id}`)}
+              renderOption={(option) =>
+                t(
+                  `admin-panel-submissions:filter.inputs.status.options.${option.id}`
+                )
+              }
             />
-            <Button type="submit" className="w-full">{t("admin-panel-submissions:filter.actions.apply")}</Button>
+            <Button type="submit" className="w-full">
+              {t("admin-panel-submissions:filter.actions.apply")}
+            </Button>
           </form>
         </FormProvider>
       </PopoverContent>
