@@ -13,6 +13,7 @@ import { Ref, useContext } from "react";
 function Link(
   props: React.ComponentProps<typeof NextLink> & {
     ref?: Ref<HTMLAnchorElement>;
+    children?: React.ReactNode;
   }
 ) {
   const language = useLanguage();
