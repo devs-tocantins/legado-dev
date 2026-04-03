@@ -44,6 +44,7 @@
     "dotenv": "17.3.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.0",
+    "framer-motion": "^12.38.0",
     "i18next": "25.10.5",
     "i18next-browser-languagedetector": "8.2.1",
     "i18next-resources-to-backend": "1.2.1",
