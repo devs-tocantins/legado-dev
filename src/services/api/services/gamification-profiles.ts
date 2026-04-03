@@ -25,7 +25,7 @@ export function useGetGamificationProfilesService() {
 
   return useCallback(
     (data: GamificationProfilesRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/gamification-profiles`);
+      const requestUrl = new URL(`${API_URL}/api/v1/gamification-profiles`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
@@ -55,7 +55,7 @@ export function useGetGamificationProfileService() {
 
   return useCallback(
     (data: GamificationProfileRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/${data.id}`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<GamificationProfileResponse>);
@@ -79,7 +79,7 @@ export function usePostGamificationProfileService() {
       data: GamificationProfilePostRequest,
       requestConfig?: RequestConfigType
     ) => {
-      return fetch(`${API_URL}/v1/gamification-profiles`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -108,7 +108,7 @@ export function usePatchGamificationProfileService() {
       data: GamificationProfilePatchRequest,
       requestConfig?: RequestConfigType
     ) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,
@@ -132,7 +132,7 @@ export function useDeleteGamificationProfileService() {
       data: GamificationProfileDeleteRequest,
       requestConfig?: RequestConfigType
     ) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<GamificationProfileDeleteResponse>);
@@ -149,7 +149,7 @@ export function useGetGamificationProfileByUsernameService() {
   return useCallback(
     (username: string, requestConfig?: RequestConfigType) => {
       return fetch(
-        `${API_URL}/v1/gamification-profiles/by-username/${encodeURIComponent(username)}`,
+        `${API_URL}/api/v1/gamification-profiles/by-username/${encodeURIComponent(username)}`,
         {
           method: "GET",
           ...requestConfig,
@@ -177,7 +177,7 @@ export function useGetProfileApprovedSubmissionsService() {
       requestConfig?: RequestConfigType
     ) => {
       const url = new URL(
-        `${API_URL}/v1/gamification-profiles/${profileId}/approved-submissions`
+        `${API_URL}/api/v1/gamification-profiles/${profileId}/approved-submissions`
       );
       url.searchParams.append("page", params.page.toString());
       url.searchParams.append("limit", params.limit.toString());
@@ -204,7 +204,7 @@ export function useUpdateMyGamificationProfileService() {
       data: UpdateMyGamificationProfileRequest,
       requestConfig?: RequestConfigType
     ) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/me`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/me`, {
         method: "PATCH",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -221,7 +221,7 @@ export function useGetMyGamificationProfileService() {
 
   return useCallback(
     (requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/me`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/me`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<MyGamificationProfileResponse>);
@@ -244,7 +244,7 @@ export function useTransferTokensService() {
 
   return useCallback(
     (data: TransferTokensRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/gamification-profiles/transfer`, {
+      return fetch(`${API_URL}/api/v1/gamification-profiles/transfer`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,

@@ -24,7 +24,7 @@ export function useGetActivitiesService() {
 
   return useCallback(
     (data: ActivitiesRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/activities`);
+      const requestUrl = new URL(`${API_URL}/api/v1/activities`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
@@ -54,7 +54,7 @@ export function useGetActivityService() {
 
   return useCallback(
     (data: ActivityRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/activities/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/activities/${data.id}`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<ActivityResponse>);
@@ -80,7 +80,7 @@ export function usePostActivityService() {
 
   return useCallback(
     (data: ActivityPostRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/activities`, {
+      return fetch(`${API_URL}/api/v1/activities`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -110,7 +110,7 @@ export function usePatchActivityService() {
 
   return useCallback(
     (data: ActivityPatchRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/activities/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/activities/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,
@@ -131,7 +131,7 @@ export function useDeleteActivityService() {
 
   return useCallback(
     (data: ActivityDeleteRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/activities/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/activities/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<ActivityDeleteResponse>);

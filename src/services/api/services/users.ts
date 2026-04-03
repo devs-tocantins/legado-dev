@@ -27,7 +27,7 @@ export function useGetUsersService() {
 
   return useCallback(
     (data: UsersRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/users`);
+      const requestUrl = new URL(`${API_URL}/api/v1/users`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
@@ -57,7 +57,7 @@ export function useGetUserService() {
 
   return useCallback(
     (data: UserRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/users/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/users/${data.id}`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<UserResponse>);
@@ -80,7 +80,7 @@ export function usePostUserService() {
 
   return useCallback(
     (data: UserPostRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/users`, {
+      return fetch(`${API_URL}/api/v1/users`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -106,7 +106,7 @@ export function usePatchUserService() {
 
   return useCallback(
     (data: UserPatchRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/users/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/users/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,
@@ -127,7 +127,7 @@ export function useDeleteUsersService() {
 
   return useCallback(
     (data: UsersDeleteRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/users/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/users/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<UsersDeleteResponse>);

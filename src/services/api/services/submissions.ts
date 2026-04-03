@@ -26,7 +26,7 @@ export function useGetSubmissionsService() {
 
   return useCallback(
     (data: SubmissionsRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/submissions`);
+      const requestUrl = new URL(`${API_URL}/api/v1/submissions`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
@@ -56,7 +56,7 @@ export function useGetSubmissionService() {
 
   return useCallback(
     (data: SubmissionRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/submissions/${data.id}`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<SubmissionResponse>);
@@ -77,7 +77,7 @@ export function usePostSubmissionService() {
 
   return useCallback(
     (data: SubmissionPostRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions`, {
+      return fetch(`${API_URL}/api/v1/submissions`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -103,7 +103,7 @@ export function usePatchSubmissionService() {
 
   return useCallback(
     (data: SubmissionPatchRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/submissions/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,
@@ -124,7 +124,7 @@ export function useDeleteSubmissionService() {
 
   return useCallback(
     (data: SubmissionDeleteRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/submissions/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<SubmissionDeleteResponse>);
@@ -145,7 +145,7 @@ export function useRedeemSecretCodeService() {
 
   return useCallback(
     (data: RedeemSecretCodeRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions/redeem`, {
+      return fetch(`${API_URL}/api/v1/submissions/redeem`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -168,7 +168,7 @@ export function useGetMySubmissionsService() {
 
   return useCallback(
     (data: MySubmissionsRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/submissions/me`);
+      const requestUrl = new URL(`${API_URL}/api/v1/submissions/me`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
 
@@ -194,7 +194,7 @@ export function useGetPendingSubmissionsService() {
 
   return useCallback(
     (data: PendingSubmissionsRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/submissions/pending`);
+      const requestUrl = new URL(`${API_URL}/api/v1/submissions/pending`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
 
@@ -223,7 +223,7 @@ export function useReviewSubmissionService() {
 
   return useCallback(
     (data: ReviewSubmissionRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/submissions/${data.id}/review`, {
+      return fetch(`${API_URL}/api/v1/submissions/${data.id}/review`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,

@@ -26,7 +26,7 @@ export function useGetTransactionsService() {
 
   return useCallback(
     (data: TransactionsRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/transactions`);
+      const requestUrl = new URL(`${API_URL}/api/v1/transactions`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
       if (data.filters) {
@@ -56,7 +56,7 @@ export function useGetTransactionService() {
 
   return useCallback(
     (data: TransactionRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/transactions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/transactions/${data.id}`, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<TransactionResponse>);
@@ -77,7 +77,7 @@ export function useGetMyTransactionsService() {
 
   return useCallback(
     (data: MyTransactionsRequest, requestConfig?: RequestConfigType) => {
-      const requestUrl = new URL(`${API_URL}/v1/transactions/me`);
+      const requestUrl = new URL(`${API_URL}/api/v1/transactions/me`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
 
@@ -104,7 +104,7 @@ export function usePostTransactionService() {
 
   return useCallback(
     (data: TransactionPostRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/transactions`, {
+      return fetch(`${API_URL}/api/v1/transactions`, {
         method: "POST",
         body: JSON.stringify(data),
         ...requestConfig,
@@ -130,7 +130,7 @@ export function usePatchTransactionService() {
 
   return useCallback(
     (data: TransactionPatchRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/transactions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/transactions/${data.id}`, {
         method: "PATCH",
         body: JSON.stringify(data.data),
         ...requestConfig,
@@ -151,7 +151,7 @@ export function useDeleteTransactionService() {
 
   return useCallback(
     (data: TransactionDeleteRequest, requestConfig?: RequestConfigType) => {
-      return fetch(`${API_URL}/v1/transactions/${data.id}`, {
+      return fetch(`${API_URL}/api/v1/transactions/${data.id}`, {
         method: "DELETE",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<TransactionDeleteResponse>);

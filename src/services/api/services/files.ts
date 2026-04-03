@@ -19,7 +19,7 @@ export function useFileUploadService() {
   return useCallback(
     async (data: FileUploadRequest, requestConfig?: RequestConfigType) => {
       if (process.env.NEXT_PUBLIC_FILE_DRIVER === "s3-presigned") {
-        const result = await fetchClient(`${API_URL}/v1/files/upload`, {
+        const result = await fetchClient(`${API_URL}/api/v1/files/upload`, {
           method: "POST",
           body: JSON.stringify({
             fileName: data.name,
@@ -43,7 +43,7 @@ export function useFileUploadService() {
         const formData = new FormData();
         formData.append("file", data);
 
-        return fetchClient(`${API_URL}/v1/files/upload`, {
+        return fetchClient(`${API_URL}/api/v1/files/upload`, {
           method: "POST",
           body: formData,
           ...requestConfig,
