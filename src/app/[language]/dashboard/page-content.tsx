@@ -137,8 +137,8 @@ function DashboardPageContent() {
       label: "XP Total",
       value: formatXp(profile?.totalXp ?? 0),
       icon: Zap,
-      color: "text-violet-500",
-      bg: "bg-violet-500/10",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
     },
     {
       label: "XP Mensal",

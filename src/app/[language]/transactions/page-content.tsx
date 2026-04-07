@@ -33,8 +33,8 @@ const CATEGORY_META: Record<
   [TransactionCategoryEnum.XP_REWARD]: {
     label: "XP Recompensa",
     icon: Zap,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
     sign: "+",
   },
   [TransactionCategoryEnum.MODERATOR_REWARD]: {

@@ -144,8 +144,8 @@ function PublicProfilePageContent() {
       label: "XP Total",
       value: formatXp(totalXp),
       icon: Zap,
-      color: "text-violet-500",
-      bg: "bg-violet-500/10",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
     },
     {
       label: "XP Mensal",
@@ -239,7 +239,7 @@ function PublicProfilePageContent() {
                 "bg-slate-400": level.name === "Novato",
                 "bg-emerald-500": level.name === "Contribuidor",
                 "bg-sky-500": level.name === "Colaborador Ativo",
-                "bg-violet-500": level.name === "Referência",
+                "bg-blue-500": level.name === "Referência",
                 "bg-amber-500": level.name === "Mentor",
                 "bg-rose-500": level.name === "Lenda",
               })}

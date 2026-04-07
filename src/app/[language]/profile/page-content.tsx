@@ -109,7 +109,7 @@ function Profile() {
               {/* XP + Tokens */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Zap className="h-4 w-4 text-violet-500 shrink-0" />
+                  <Zap className="h-4 w-4 text-blue-500 shrink-0" />
                   <div>
                     <p className="text-base font-bold leading-none">
                       {formatXp(profile.totalXp)}
