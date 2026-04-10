@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import useAuth from "@/services/auth/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -41,9 +42,21 @@ import {
   ArrowRight,
   Receipt,
   KeyRound,
+  CheckCircle2,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
+import { useMemo } from "react";
+
+function StatusIcon({ status }: { status: SubmissionStatusEnum }) {
+  if (status === SubmissionStatusEnum.APPROVED)
+    return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
+  if (status === SubmissionStatusEnum.REJECTED)
+    return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
+  return <Clock className="h-4 w-4 text-amber-500 shrink-0" />;
+}
 
 function StatusBadge({ status }: { status: SubmissionStatusEnum }) {
   if (status === SubmissionStatusEnum.APPROVED) return <Badge>Aprovado</Badge>;
@@ -51,6 +64,12 @@ function StatusBadge({ status }: { status: SubmissionStatusEnum }) {
     return <Badge variant="destructive">Rejeitado</Badge>;
   return <Badge variant="secondary">Pendente</Badge>;
 }
+
+const SUBMISSION_BORDER: Record<SubmissionStatusEnum, string> = {
+  [SubmissionStatusEnum.APPROVED]: "border-l-emerald-500",
+  [SubmissionStatusEnum.REJECTED]: "border-l-destructive",
+  [SubmissionStatusEnum.PENDING]: "border-l-amber-500",
+};
 
 function DashboardPageContent() {
   const { user } = useAuth();
@@ -137,29 +156,21 @@ function DashboardPageContent() {
       label: "XP Total",
       value: formatXp(profile?.totalXp ?? 0),
       icon: Zap,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
     },
     {
       label: "XP Mensal",
       value: formatXp(profile?.currentMonthlyXp ?? 0),
       icon: CalendarDays,
-      color: "text-sky-500",
-      bg: "bg-sky-500/10",
     },
     {
       label: "XP Anual",
       value: formatXp(profile?.currentYearlyXp ?? 0),
       icon: TrendingUp,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
     },
     {
       label: "Tokens",
       value: profile?.gratitudeTokens ?? 0,
       icon: Coins,
-      color: "text-amber-500",
-      bg: "bg-amber-500/10",
     },
   ];
 
@@ -177,20 +188,19 @@ function DashboardPageContent() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="py-3">
-            <CardContent className="px-4 flex items-center gap-3">
-              <div
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                  bg
-                )}
-              >
-                <Icon className={cn("h-4 w-4", color)} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold leading-none">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+        {stats.map(({ label, value, icon: Icon }) => (
+          <Card key={label}>
+            <CardContent className="px-4 py-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-2xl font-bold font-mono leading-none">
+                    {value}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {label}
+                  </p>
+                </div>
+                <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -217,23 +227,25 @@ function DashboardPageContent() {
               </p>
             </div>
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatXp(level.minXp)} XP</span>
+              <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                <span>{formatXp(level.minXp)}</span>
                 <span>{progress}%</span>
                 <span>
-                  {level.maxXp === Infinity ? "∞" : formatXp(level.maxXp)} XP
+                  {level.maxXp === Infinity ? "∞" : formatXp(level.maxXp)}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${progress}%` }}
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-primary"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
                 />
               </div>
             </div>
             {profile && (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground font-mono">
                   @{profile.username}
                 </p>
                 <Button
@@ -272,12 +284,16 @@ function DashboardPageContent() {
                 Nenhuma submissão ainda.
               </p>
             ) : (
-              <div className="divide-y">
+              <div className="space-y-1">
                 {recentSubmissions.map((sub) => (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between py-2"
+                    className={cn(
+                      "flex items-center gap-3 py-2.5 px-3 rounded-md border-l-2",
+                      SUBMISSION_BORDER[sub.status]
+                    )}
                   >
+                    <StatusIcon status={sub.status} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
                         {activityMap.get(sub.activityId) ?? (
@@ -290,10 +306,10 @@ function DashboardPageContent() {
                         {new Date(sub.createdAt).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       {sub.status === SubmissionStatusEnum.APPROVED && (
-                        <span className="text-xs font-semibold text-emerald-500">
-                          +{sub.awardedXp} XP
+                        <span className="text-xs font-semibold font-mono text-emerald-500">
+                          +{sub.awardedXp}
                         </span>
                       )}
                       <StatusBadge status={sub.status} />
