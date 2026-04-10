@@ -1,5 +1,26 @@
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import ResponsiveAppBar from "@/components/app-bar";
+import BottomNav from "@/components/bottom-nav";
 import AuthProvider from "@/services/auth/auth-provider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 import "../globals.css";
 import { dir } from "i18next";
 import "@/services/i18n/config";
@@ -46,7 +67,10 @@ export default async function RootLayout(props: {
 
   return (
     <html lang={language} dir={dir(language)} suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}
+        suppressHydrationWarning
+      >
         <InitColorSchemeScript />
         <QueryClientProvider client={queryClient}>
           <ReactQueryDevtools initialIsOpen={false} />
@@ -57,7 +81,8 @@ export default async function RootLayout(props: {
                   <GoogleAuthProvider>
                     <LeavePageProvider>
                       <ResponsiveAppBar />
-                      {children}
+                      <div className="pb-16 md:pb-0">{children}</div>
+                      <BottomNav />
                       <ToastContainer position="bottom-left" hideProgressBar />
                     </LeavePageProvider>
                   </GoogleAuthProvider>

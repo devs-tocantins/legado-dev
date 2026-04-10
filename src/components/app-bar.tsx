@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Zap,
   Trophy,
   BookOpen,
   ClipboardList,
@@ -29,11 +28,41 @@ import {
   LayoutDashboard,
   LogOut,
   User,
-  ChevronDown,
   Settings,
   Receipt,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
+import { getLevel } from "@/lib/gamification";
+import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
+
+// ─── Logo Placeholder ─────────────────────────────────────────────────────────
+// Will be replaced by the real SVG logo when brand assets are available.
+
+function LogoMark() {
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-primary bg-primary/10">
+      <span className="text-xs font-bold font-heading text-primary select-none">
+        DT
+      </span>
+    </div>
+  );
+}
+
+// ─── Level badge ──────────────────────────────────────────────────────────────
+
+function LevelBadge({ totalXp }: { totalXp: number }) {
+  const level = getLevel(totalXp);
+  return (
+    <span className={cn("text-[10px] font-semibold", level.color)}>
+      {level.name}
+    </span>
+  );
+}
+
+// ─── Main AppBar ──────────────────────────────────────────────────────────────
 
 function ResponsiveAppBar() {
   const { user, isLoaded } = useAuth();
@@ -42,14 +71,29 @@ function ResponsiveAppBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
+  const fetchMyProfile = useGetMyGamificationProfileService();
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile-appbar"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const isAdmin = !!user?.role && Number(user.role.id) === RoleEnum.ADMIN;
-  const isModerator =
-    !!user?.role &&
-    [RoleEnum.ADMIN, RoleEnum.MODERATOR].includes(Number(user.role.id));
+  // Theme toggle
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved) {
+      const dark = saved === "dark";
+      document.documentElement.classList.toggle("dark", dark);
+      setIsDark(dark);
+    } else {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    }
+  }, []);
 
   const toggleTheme = () => {
     const next = !isDark;
@@ -58,14 +102,12 @@ function ResponsiveAppBar() {
     setIsDark(next);
   };
 
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved) {
-      const dark = saved === "dark";
-      document.documentElement.classList.toggle("dark", dark);
-      setIsDark(dark);
-    }
-  }, []);
+  const isAdmin = !!user?.role && Number(user.role.id) === RoleEnum.ADMIN;
+  const isModerator =
+    !!user?.role &&
+    [RoleEnum.ADMIN, RoleEnum.MODERATOR].includes(Number(user.role.id));
+
+  const isActive = (href: string) => pathname?.includes(href) && href !== "/";
 
   const navLinks = user
     ? [
@@ -83,20 +125,18 @@ function ResponsiveAppBar() {
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
       ];
 
-  const isActive = (href: string) => pathname?.includes(href);
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         {/* Logo */}
         <Link
           href={user ? "/dashboard" : "/"}
-          className="mr-6 flex items-center gap-2 font-bold tracking-tight"
+          className="mr-6 flex items-center gap-2.5 font-bold tracking-tight"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <Zap className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="hidden sm:block text-sm">Devs Tocantins</span>
+          <LogoMark />
+          <span className="hidden sm:block text-sm font-heading font-semibold">
+            Devs Tocantins
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -106,10 +146,10 @@ function ResponsiveAppBar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors border-b-2",
                 isActive(href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -120,10 +160,10 @@ function ResponsiveAppBar() {
             <Link
               href="/admin-panel"
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors border-b-2",
                 isActive("/admin-panel")
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50"
               )}
             >
               <Settings className="h-3.5 w-3.5" />
@@ -134,11 +174,12 @@ function ResponsiveAppBar() {
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-1.5">
+          {/* Theme toggle */}
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="h-8 w-8"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             {isDark ? (
               <Sun className="h-4 w-4" />
@@ -147,46 +188,79 @@ function ResponsiveAppBar() {
             )}
           </Button>
 
+          {/* User area */}
           {!isLoaded ? (
             <div className="h-7 w-7 animate-pulse rounded-full bg-muted" />
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors" />
+                  <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none" />
                 }
               >
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={user.photo?.path} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                  <AvatarFallback className="bg-primary/15 text-primary text-xs font-bold font-heading">
                     {user.firstName?.[0]}
                     {user.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:block text-sm font-medium max-w-[120px] truncate">
-                  {user.firstName}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-3 py-2">
-                  <p className="text-sm font-semibold">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user.email}
-                  </p>
+                <div className="hidden sm:flex sm:flex-col sm:items-start sm:gap-0">
+                  <span className="text-xs font-semibold leading-none">
+                    {user.firstName}
+                  </span>
+                  {profile?.username && (
+                    <span className="text-[10px] text-muted-foreground font-mono leading-none mt-0.5">
+                      @{profile.username}
+                    </span>
+                  )}
                 </div>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-52">
+                {/* User info header */}
+                <div className="px-3 py-2.5 space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold font-heading truncate">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    {profile && <LevelBadge totalXp={profile.totalXp ?? 0} />}
+                  </div>
+                  {profile?.username && (
+                    <p className="text-xs font-mono text-muted-foreground">
+                      @{profile.username}
+                    </p>
+                  )}
+                  {!profile?.username && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user.email}
+                    </p>
+                  )}
+                </div>
+
                 <DropdownMenuSeparator />
+
+                {profile?.username && (
+                  <DropdownMenuItem
+                    render={<Link href={`/u/${profile.username}`} />}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Ver perfil público
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem render={<Link href="/profile" />}>
                   <User className="mr-2 h-4 w-4" />
-                  Meu Perfil
+                  Minha conta
                 </DropdownMenuItem>
+
                 <DropdownMenuItem render={<Link href="/dashboard" />}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   Dashboard
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   onClick={logOut}
                   className="text-destructive focus:text-destructive"
@@ -213,12 +287,13 @@ function ResponsiveAppBar() {
             </div>
           )}
 
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger — only for pages that need it (admin, etc) */}
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden h-8 w-8"
             onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
           >
             {mobileOpen ? (
               <X className="h-4 w-4" />
@@ -229,26 +304,25 @@ function ResponsiveAppBar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile dropdown menu — for moderator/admin links not in bottom nav */}
       {mobileOpen && (
-        <nav className="border-t bg-background md:hidden">
+        <nav className="border-t border-border/50 bg-background/95 md:hidden">
           <div className="flex flex-col gap-0.5 p-3">
-            {navLinks.map(({ href, label, icon: Icon }) => (
+            {isModerator && (
               <Link
-                key={href}
-                href={href}
+                href="/moderation"
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive(href)
-                    ? "bg-primary/10 text-primary"
+                  isActive("/moderation")
+                    ? "bg-primary/8 text-primary"
                     : "text-foreground hover:bg-muted"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <ShieldCheck className="h-4 w-4" />
+                Moderação
               </Link>
-            ))}
+            )}
             {isAdmin && (
               <Link
                 href="/admin-panel"
@@ -261,7 +335,6 @@ function ResponsiveAppBar() {
             )}
             {!user && (
               <>
-                <div className="my-1 h-px bg-border" />
                 <Link
                   href="/sign-in"
                   onClick={() => setMobileOpen(false)}
