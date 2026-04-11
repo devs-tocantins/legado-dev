@@ -9,6 +9,7 @@ import {
   animate,
 } from "framer-motion";
 import { useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "@/components/link";
 import {
   Zap,
@@ -19,13 +20,11 @@ import {
   BookOpen,
   Shield,
 } from "lucide-react";
-
-// ─── Tokens ───────────────────────────────────────────────────────────────────
-// Community identity: navy + blue + orange/amber
-
-const BLUE = "#3b82f6";
-const ORANGE = "#f97316";
-const NAVY = "#050d1c";
+import { useGetGamificationProfilesService } from "@/services/api/services/gamification-profiles";
+import { SortEnum } from "@/services/api/types/sort-type";
+import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
+import { getLevel, formatXp } from "@/lib/gamification";
+import { cn } from "@/lib/utils";
 
 // ─── Animation primitives ─────────────────────────────────────────────────────
 
@@ -48,7 +47,7 @@ const staggerContainer = (delay = 0.11, childDelay = 0) => ({
   },
 });
 
-// ─── Constellation — nodes & edges (deterministic) ───────────────────────────
+// ─── Constellation — deterministic nodes & edges ──────────────────────────────
 
 const NODES = [
   { id: 0, cx: 3, cy: 8, r: 1.4 },
@@ -93,47 +92,53 @@ const FEATURES = [
     icon: BookOpen,
     title: "Catálogo de Atividades",
     desc: "Artigos, palestras, mentorias, open source — cada forma de contribuir tem seu peso documentado e pontuado.",
-    accent: BLUE,
+    accent: "text-primary",
+    accentBg: "bg-primary/10",
   },
   {
     icon: Trophy,
     title: "Rankings em Tempo Real",
     desc: "Ranking mensal, anual e Hall da Fama. A competição saudável que move pessoas e transforma comunidades.",
-    accent: ORANGE,
+    accent: "text-amber-500",
+    accentBg: "bg-amber-500/10",
   },
   {
     icon: Shield,
     title: "Moderação Justa",
     desc: "Tudo o que entra passou por validação humana. Sem fraude, sem favorecimento, sem subjetividade.",
-    accent: "#22c55e",
+    accent: "text-emerald-500",
+    accentBg: "bg-emerald-500/10",
   },
   {
     icon: Star,
     title: "Tokens de Gratidão",
     desc: "Todo mês você recebe tokens para reconhecer quem fez diferença pra você — sem acumular, sem esquecer.",
-    accent: ORANGE,
+    accent: "text-amber-500",
+    accentBg: "bg-amber-500/10",
   },
   {
     icon: Users,
     title: "Perfil Público",
     desc: "Seu histórico de contribuições fica público. Um currículo comunitário que cresce com cada ação.",
-    accent: BLUE,
+    accent: "text-primary",
+    accentBg: "bg-primary/10",
   },
   {
     icon: Zap,
     title: "Atividades Secretas",
     desc: "QR codes em eventos desbloqueiam XP especial. Compareça, escaneie, seja recompensado por estar presente.",
-    accent: ORANGE,
+    accent: "text-accent",
+    accentBg: "bg-accent/10",
   },
 ];
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { value: 120, suffix: "+", label: "Membros ativos" },
-  { value: 34, suffix: "", label: "Tipos de atividade" },
-  { value: 18, suffix: "", label: "Eventos realizados" },
-  { value: 100, suffix: "%", label: "Moderação humana" },
+  { value: 120, suffix: "+", label: "Membros ativos", color: "text-primary" },
+  { value: 34, suffix: "", label: "Tipos de atividade", color: "text-accent" },
+  { value: 18, suffix: "", label: "Eventos realizados", color: "text-primary" },
+  { value: 100, suffix: "%", label: "Moderação humana", color: "text-accent" },
 ];
 
 // ─── AnimatedCounter ──────────────────────────────────────────────────────────
@@ -162,13 +167,12 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
   );
 }
 
-// ─── Background: edge constellation ──────────────────────────────────────────
-// Masked so it only shows at the periphery — never behind the center text.
+// ─── Constellation (theme-aware) ──────────────────────────────────────────────
 
 function EdgeConstellation() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 overflow-hidden text-foreground/[0.07] dark:text-foreground/[0.12]"
       style={{
         maskImage:
           "radial-gradient(ellipse 60% 55% at 50% 50%, transparent 30%, black 72%)",
@@ -189,10 +193,10 @@ function EdgeConstellation() {
             y1={NODES[edge.from].cy}
             x2={NODES[edge.to].cx}
             y2={NODES[edge.to].cy}
-            stroke="white"
-            strokeWidth="0.1"
+            stroke="currentColor"
+            strokeWidth="0.3"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.14, 0.05, 0.14, 0] }}
+            animate={{ opacity: [0, 1, 0.4, 1, 0] }}
             transition={{
               duration: 9 + (i % 5) * 1.8,
               delay: i * 0.2,
@@ -207,9 +211,9 @@ function EdgeConstellation() {
             cx={node.cx}
             cy={node.cy}
             r={node.r}
-            fill="white"
+            fill="currentColor"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.5, 0.22, 0.5] }}
+            animate={{ opacity: [0, 1, 0.5, 1] }}
             transition={{
               duration: 7 + (node.id % 6),
               delay: node.id * 0.22,
@@ -223,63 +227,92 @@ function EdgeConstellation() {
   );
 }
 
-// ─── Background: corner glow orbs ────────────────────────────────────────────
+// ─── Live ranking card ────────────────────────────────────────────────────────
 
-function CornerOrbs() {
+function LiveRankingCard() {
+  const fetchProfiles = useGetGamificationProfilesService();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["landing-ranking"],
+    queryFn: async () => {
+      const { status, data } = await fetchProfiles({
+        page: 1,
+        limit: 5,
+        sort: [{ orderBy: "currentMonthlyXp", order: SortEnum.DESC }],
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* Top-left — blue */}
-      <motion.div
-        className="absolute rounded-full"
-        style={{
-          width: "45vw",
-          height: "45vw",
-          top: "-18%",
-          left: "-14%",
-          background: `radial-gradient(circle, ${BLUE}28 0%, transparent 70%)`,
-          filter: "blur(52px)",
-        }}
-        animate={{ x: [0, 18, -8, 14, 0], y: [0, 14, 30, 6, 0] }}
-        transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {/* Bottom-right — orange */}
-      <motion.div
-        className="absolute rounded-full"
-        style={{
-          width: "38vw",
-          height: "38vw",
-          bottom: "-14%",
-          right: "-8%",
-          background: `radial-gradient(circle, ${ORANGE}22 0%, transparent 70%)`,
-          filter: "blur(60px)",
-        }}
-        animate={{ x: [0, -16, 10, -22, 0], y: [0, -22, 10, -12, 0] }}
-        transition={{
-          duration: 32,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 6,
-        }}
-      />
-      {/* Top-right — blue, smaller */}
-      <motion.div
-        className="absolute rounded-full"
-        style={{
-          width: "24vw",
-          height: "24vw",
-          top: "-8%",
-          right: "8%",
-          background: `radial-gradient(circle, ${BLUE}18 0%, transparent 70%)`,
-          filter: "blur(44px)",
-        }}
-        animate={{ x: [0, -10, 8, -6, 0], y: [0, 16, -4, 10, 0] }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 12,
-        }}
-      />
+    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-amber-400" />
+          <span className="text-sm font-semibold">Top 5 — Este Mês</span>
+        </div>
+        <span className="text-xs text-muted-foreground capitalize">
+          {monthLabel}
+        </span>
+      </div>
+
+      <div className="divide-y divide-border">
+        {isLoading
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-5 py-3 animate-pulse"
+              >
+                <div className="h-3 w-4 bg-muted rounded" />
+                <div className="flex-1 h-3 bg-muted rounded" />
+                <div className="h-3 w-12 bg-muted rounded" />
+              </div>
+            ))
+          : (data ?? []).map((profile, i) => {
+              const level = getLevel(profile.totalXp);
+              const xp = profile.currentMonthlyXp ?? 0;
+              return (
+                <Link
+                  key={profile.id}
+                  href={`/u/${profile.username}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
+                >
+                  <span className="text-xs font-mono text-muted-foreground w-4 shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-medium truncate font-mono">
+                    @{profile.username}
+                  </span>
+                  <span
+                    className={cn("text-xs font-medium shrink-0", level.color)}
+                  >
+                    {level.name}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-amber-500 shrink-0">
+                    {formatXp(xp)} XP
+                  </span>
+                </Link>
+              );
+            })}
+      </div>
+
+      <div className="px-5 py-3 border-t border-border">
+        <Link
+          href="/leaderboard"
+          className="flex items-center gap-1 text-xs text-primary hover:underline underline-offset-4 font-medium"
+        >
+          Ver ranking completo
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
     </div>
   );
 }
@@ -300,107 +333,89 @@ export default function HomePageContent() {
       {/* ─── Hero ──────────────────────────────────────────────────────── */}
       <section
         ref={heroRef}
-        className="relative flex min-h-screen items-center justify-center overflow-hidden"
-        style={{
-          background: `linear-gradient(160deg, ${NAVY} 0%, #071020 55%, #040b18 100%)`,
-        }}
+        className="relative min-h-[90vh] flex items-center overflow-hidden bg-background"
       >
-        {/* Dot grid — very subtle */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
-          }}
-        />
-
-        <CornerOrbs />
         <EdgeConstellation />
 
-        {/* Hero content */}
         <motion.div
-          className="relative z-10 mx-auto max-w-4xl px-6 text-center"
+          className="relative z-10 mx-auto w-full max-w-6xl px-6 py-24"
           style={{ y: heroY, opacity: heroOpacity }}
         >
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.55, ease }}
-            className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 backdrop-blur-sm"
-          >
-            <motion.span
-              className="inline-block h-1.5 w-1.5 rounded-full"
-              style={{ background: ORANGE }}
-              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.4, 1] }}
-              transition={{ duration: 2.4, repeat: Infinity }}
-            />
-            Motor de Engajamento · Devs Tocantins
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            className="mb-6 font-bold leading-[1.08] tracking-tight text-white"
-            style={{ fontSize: "clamp(2.8rem, 7vw, 5.5rem)" }}
-            variants={staggerContainer(0.15, 0.2)}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.span variants={fadeUp} className="block">
-              Contribua.
-            </motion.span>
-            <motion.span variants={fadeUp} className="block">
-              Evolua.
-            </motion.span>
-            <motion.span variants={fadeUp} className="block">
-              <span
-                style={{
-                  backgroundImage: `linear-gradient(90deg, ${BLUE}, ${ORANGE})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left — text */}
+            <motion.div
+              variants={staggerContainer(0.14, 0.1)}
+              initial="hidden"
+              animate="visible"
+            >
+              {/* Eyebrow */}
+              <motion.p
+                variants={fadeUp}
+                className="mb-5 text-xs font-semibold uppercase tracking-widest text-accent"
               >
-                Seja reconhecido.
-              </span>
-            </motion.span>
-          </motion.h1>
+                Devs Tocantins
+              </motion.p>
 
-          {/* Subtitle */}
-          <motion.p
-            className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/50 sm:text-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease, delay: 0.65 }}
-          >
-            Ganhe XP por palestras, artigos, mentorias e open source. Suba no
-            ranking e deixe um histórico permanente do seu impacto na
-            comunidade.
-          </motion.p>
+              {/* Headline */}
+              <motion.h1
+                className="mb-6 font-bold leading-[1.1] tracking-tight text-foreground"
+                style={{ fontSize: "clamp(2.4rem, 5.5vw, 4rem)" }}
+                variants={staggerContainer(0.15, 0)}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.span variants={fadeUp} className="block">
+                  Contribua.
+                </motion.span>
+                <motion.span variants={fadeUp} className="block">
+                  Evolua.
+                </motion.span>
+                <motion.span variants={fadeUp} className="block text-primary">
+                  Seja reconhecido.
+                </motion.span>
+              </motion.h1>
 
-          {/* CTAs */}
-          <motion.div
-            className="flex flex-col items-center justify-center gap-3 sm:flex-row"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease, delay: 0.8 }}
-          >
-            <Link
-              href="/sign-up"
-              className="group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3 text-sm font-semibold text-[#070f1e] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/92"
+              {/* Subtitle */}
+              <motion.p
+                variants={fadeUp}
+                className="mb-10 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg"
+              >
+                Ganhe XP por palestras, artigos, mentorias e open source. Suba
+                no ranking e deixe um histórico permanente do seu impacto na
+                comunidade.
+              </motion.p>
+
+              {/* CTAs */}
+              <motion.div
+                variants={fadeUp}
+                className="flex flex-col gap-3 sm:flex-row"
+              >
+                <Link
+                  href="/sign-up"
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                >
+                  Começar agora
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href="/leaderboard"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-7 py-3 text-sm font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted"
+                >
+                  <Trophy className="h-4 w-4 text-amber-400" />
+                  Ver Ranking
+                </Link>
+              </motion.div>
+            </motion.div>
+
+            {/* Right — live ranking card */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.5 }}
             >
-              Começar agora
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/leaderboard"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/16 bg-white/[0.06] px-7 py-3 text-sm font-semibold text-white/75 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.10] hover:border-white/22"
-            >
-              <Trophy className="h-4 w-4" style={{ color: ORANGE }} />
-              Ver Ranking
-            </Link>
-          </motion.div>
+              <LiveRankingCard />
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Scroll indicator */}
@@ -411,12 +426,12 @@ export default function HomePageContent() {
           transition={{ delay: 1.3 }}
         >
           <motion.div
-            className="flex h-9 w-[22px] items-start justify-center rounded-full border border-white/15 pt-1.5"
+            className="flex h-9 w-[22px] items-start justify-center rounded-full border border-border pt-1.5"
             animate={{ opacity: [0.3, 0.65, 0.3] }}
             transition={{ duration: 2.6, repeat: Infinity }}
           >
             <motion.div
-              className="h-1.5 w-0.5 rounded-full bg-white/50"
+              className="h-1.5 w-0.5 rounded-full bg-muted-foreground/50"
               animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
               transition={{ duration: 2.6, repeat: Infinity }}
             />
@@ -425,7 +440,7 @@ export default function HomePageContent() {
       </section>
 
       {/* ─── Stats strip ───────────────────────────────────────────────── */}
-      <section className="border-y border-border/40 bg-muted/20 py-12 px-4">
+      <section className="border-y border-border bg-muted/20 py-12 px-4">
         <motion.div
           className="mx-auto grid max-w-3xl grid-cols-2 gap-8 sm:grid-cols-4"
           variants={staggerContainer(0.1)}
@@ -433,15 +448,17 @@ export default function HomePageContent() {
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
         >
-          {STATS.map((stat, i) => (
+          {STATS.map((stat) => (
             <motion.div
               key={stat.label}
               variants={fadeUp}
               className="text-center"
             >
               <div
-                className="text-3xl font-bold tracking-tight sm:text-4xl"
-                style={{ color: i % 2 === 0 ? BLUE : ORANGE }}
+                className={cn(
+                  "text-3xl font-bold tracking-tight font-mono sm:text-4xl",
+                  stat.color
+                )}
               >
                 <AnimatedCounter value={stat.value} suffix={stat.suffix} />
               </div>
@@ -463,12 +480,9 @@ export default function HomePageContent() {
             whileInView="visible"
             viewport={{ once: true, margin: "-40px" }}
           >
-            <div
-              className="mb-3 text-xs font-semibold uppercase tracking-widest"
-              style={{ color: BLUE }}
-            >
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
               Como funciona
-            </div>
+            </p>
             <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
               Cada contribuição tem seu valor
             </h2>
@@ -490,24 +504,15 @@ export default function HomePageContent() {
                 key={feature.title}
                 variants={fadeUp}
                 whileHover={{ y: -4, transition: { duration: 0.2, ease } }}
-                className="group relative rounded-2xl border border-border bg-card p-6 transition-colors duration-200 hover:border-border/80"
+                className="group relative rounded-2xl border border-border bg-card p-6 transition-colors duration-200 hover:border-primary/40"
               >
-                {/* Top-edge accent line on hover */}
                 <div
-                  className="absolute inset-x-0 top-0 h-px rounded-t-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${feature.accent}60, transparent)`,
-                  }}
-                />
-
-                <div
-                  className="mb-4 inline-flex rounded-xl p-2.5"
-                  style={{ background: `${feature.accent}14` }}
+                  className={cn(
+                    "mb-4 inline-flex rounded-xl p-2.5",
+                    feature.accentBg
+                  )}
                 >
-                  <feature.icon
-                    className="h-5 w-5"
-                    style={{ color: feature.accent }}
-                  />
+                  <feature.icon className={cn("h-5 w-5", feature.accent)} />
                 </div>
                 <h3 className="mb-2 font-semibold tracking-tight">
                   {feature.title}
@@ -522,28 +527,20 @@ export default function HomePageContent() {
       </section>
 
       {/* ─── CTA ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-t border-border/40 py-28 px-4">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse 60% 50% at 50% 110%, ${BLUE}09 0%, transparent 65%)`,
-          }}
-        />
-
+      <section className="border-t border-border py-28 px-4">
         <motion.div
-          className="relative mx-auto max-w-2xl text-center"
+          className="mx-auto max-w-2xl text-center"
           variants={staggerContainer(0.12)}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
         >
-          <motion.div
+          <motion.p
             variants={fadeUp}
-            className="mb-3 text-xs font-semibold uppercase tracking-widest"
-            style={{ color: ORANGE }}
+            className="mb-3 text-xs font-semibold uppercase tracking-widest text-accent"
           >
             Sua contribuição importa
-          </motion.div>
+          </motion.p>
 
           <motion.h2
             variants={fadeUp}
@@ -564,8 +561,7 @@ export default function HomePageContent() {
           >
             <Link
               href="/sign-in"
-              className="group inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: BLUE }}
+              className="group inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
             >
               Entrar na plataforma
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
