@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   useGetGamificationProfileByUsernameService,
   useGetProfileApprovedSubmissionsService,
@@ -17,22 +18,97 @@ import {
   getNextLevelXp,
   formatXp,
 } from "@/lib/gamification";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Zap,
   CalendarDays,
   TrendingUp,
-  Coins,
   Trophy,
-  CheckCircle2,
   UserCircle2,
+  Share2,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
 
+// ─── Dot-grid cover pattern ───────────────────────────────────────────────────
+function CoverPattern() {
+  return (
+    <div className="relative h-36 w-full overflow-hidden bg-muted">
+      <svg
+        className="absolute inset-0 h-full w-full text-primary/10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <defs>
+          <pattern
+            id="cover-dots"
+            x="0"
+            y="0"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <circle cx="2" cy="2" r="1.5" fill="currentColor" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#cover-dots)" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── Avatar with deterministic color from username ────────────────────────────
+const AVATAR_COLORS = [
+  "bg-blue-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-violet-500",
+  "bg-sky-500",
+  "bg-teal-500",
+];
+
+function avatarColor(username: string): string {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function ProfileAvatar({
+  username,
+  size = 64,
+}: {
+  username: string;
+  size?: number;
+}) {
+  const color = avatarColor(username);
+  const initials = username.substring(0, 2).toUpperCase();
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full border-4 border-background font-bold font-heading text-white",
+        color
+      )}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.3) }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+// ─── Level bar color (matches level.color text-* → bg-*) ─────────────────────
+function levelBarColor(levelColor: string): string {
+  return levelColor.replace("text-", "bg-");
+}
+
 function PublicProfilePageContent() {
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
+  const [copied, setCopied] = useState(false);
 
   const fetchByUsername = useGetGamificationProfileByUsernameService();
   const fetchApprovedSubmissions = useGetProfileApprovedSubmissionsService();
@@ -63,7 +139,7 @@ function PublicProfilePageContent() {
   });
 
   const { data: leaderboardData } = useQuery({
-    queryKey: ["leaderboard", "alltime"],
+    queryKey: ["leaderboard-alltime"],
     queryFn: async () => {
       const { status, data } = await fetchProfiles({
         page: 1,
@@ -73,6 +149,7 @@ function PublicProfilePageContent() {
       if (status === HTTP_CODES_ENUM.OK) return data.data;
       return [];
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: activitiesData } = useQuery({
@@ -87,9 +164,7 @@ function PublicProfilePageContent() {
 
   const activityMap = useMemo(() => {
     const map = new Map<string, string>();
-    for (const a of activitiesData ?? []) {
-      map.set(a.id, a.title);
-    }
+    for (const a of activitiesData ?? []) map.set(a.id, a.title);
     return map;
   }, [activitiesData]);
 
@@ -99,22 +174,40 @@ function PublicProfilePageContent() {
     return idx >= 0 ? idx + 1 : null;
   }, [leaderboardData, profile]);
 
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API indisponível
+    }
+  };
+
+  // ── Loading state ────────────────────────────────────────────────────────────
   if (loadingProfile) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12 space-y-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-48" />
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 bg-muted rounded-lg" />
+      <div className="mx-auto max-w-4xl animate-pulse">
+        <div className="h-36 bg-muted" />
+        <div className="px-4 space-y-4 pt-12 pb-6">
+          <div className="h-7 bg-muted rounded w-40" />
+          <div className="grid grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-20 bg-muted rounded-lg" />
             ))}
           </div>
-          <div className="h-40 bg-muted rounded-lg" />
+          <div className="h-6 bg-muted rounded w-full" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-10 bg-muted rounded" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
+  // ── Not found ────────────────────────────────────────────────────────────────
   if (!profile) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-20 text-center space-y-3">
@@ -138,174 +231,200 @@ function PublicProfilePageContent() {
   const progress = getLevelProgress(totalXp);
   const nextLevelXp = getNextLevelXp(totalXp);
   const submissions = submissionsData ?? [];
+  const lastContribution = submissions[0]?.createdAt
+    ? new Date(submissions[0].createdAt)
+    : null;
 
   const stats = [
-    {
-      label: "XP Total",
-      value: formatXp(totalXp),
-      icon: Zap,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-    },
+    { label: "XP Total", value: formatXp(totalXp), icon: Zap },
     {
       label: "XP Mensal",
       value: formatXp(profile.currentMonthlyXp ?? 0),
       icon: CalendarDays,
-      color: "text-sky-500",
-      bg: "bg-sky-500/10",
     },
     {
       label: "XP Anual",
       value: formatXp(profile.currentYearlyXp ?? 0),
       icon: TrendingUp,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
     },
     {
-      label: "Tokens",
-      value: profile.gratitudeTokens ?? 0,
-      icon: Coins,
-      color: "text-amber-500",
-      bg: "bg-amber-500/10",
+      label: "Ranking Geral",
+      value: rank ? `#${rank}` : "—",
+      icon: Trophy,
     },
   ];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            @{profile.username}
-          </h1>
-          <div className="flex items-center gap-3 mt-1">
-            <span className={cn("text-sm font-semibold", level.color)}>
-              {level.name}
-            </span>
-            {rank && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Trophy className="h-3 w-3 text-amber-400" />#{rank} no ranking
-                geral
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      {/* Cover */}
+      <CoverPattern />
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="py-3">
-            <CardContent className="px-4 flex items-center gap-3">
-              <div
+      {/* Avatar + header */}
+      <div className="px-4 md:px-6">
+        {/* Avatar overlapping cover */}
+        <div className="-mt-9 mb-3">
+          <ProfileAvatar username={profile.username} size={72} />
+        </div>
+
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="space-y-1">
+            <h1 className="text-xl font-bold font-mono leading-tight">
+              @{profile.username}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                  bg
+                  "text-sm font-semibold px-2 py-0.5 rounded-md bg-muted",
+                  level.color
                 )}
               >
-                <Icon className={cn("h-4 w-4", color)} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold leading-none">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                {level.name}
+              </span>
+              {rank && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Trophy className="h-3 w-3 text-amber-400" />#{rank} no
+                  ranking geral
+                </span>
+              )}
+            </div>
+            {lastContribution && (
+              <p className="text-xs text-muted-foreground">
+                Última contribuição:{" "}
+                {lastContribution.toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </p>
+            )}
+          </div>
 
-      {/* Level progress */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Progresso de Nível
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shrink-0"
+            onClick={handleShare}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 text-emerald-500" />
+                <span className="text-emerald-500">Copiado!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4" />
+                Compartilhar
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 mb-6">
+          {stats.map(({ label, value, icon: Icon }) => (
+            <Card key={label}>
+              <CardContent className="px-4 py-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-2xl font-bold font-mono leading-none">
+                      {value}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      {label}
+                    </p>
+                  </div>
+                  <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Level progress */}
+        <div className="mb-6 space-y-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground font-mono">
+            <span>{formatXp(level.minXp)} XP</span>
+            <span>{level.name}</span>
             <span>
-              {level.name} — {formatXp(level.minXp)} XP
-            </span>
-            <span>{progress}%</span>
-            <span>
-              {level.maxXp === Infinity
-                ? "Nível máximo"
-                : formatXp(level.maxXp) + " XP"}
+              {level.maxXp === Infinity ? "∞" : formatXp(level.maxXp) + " XP"}
             </span>
           </div>
-          <div className="h-2.5 rounded-full bg-muted">
-            <div
-              className={cn("h-full rounded-full transition-all duration-500", {
-                "bg-slate-400": level.name === "Novato",
-                "bg-emerald-500": level.name === "Contribuidor",
-                "bg-sky-500": level.name === "Colaborador Ativo",
-                "bg-blue-500": level.name === "Referência",
-                "bg-amber-500": level.name === "Mentor",
-                "bg-rose-500": level.name === "Lenda",
-              })}
-              style={{ width: `${progress}%` }}
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className={cn("h-full rounded-full", levelBarColor(level.color))}
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
             />
           </div>
           {level.maxXp !== Infinity && (
-            <p className="text-xs text-muted-foreground text-right">
+            <p className="text-xs text-muted-foreground text-right font-mono">
               {formatXp(nextLevelXp - totalXp)} XP para o próximo nível
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Approved submissions */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">
-          Atividades Concluídas
-        </h2>
-        <div className="rounded-lg border bg-card">
+        {/* Contributions timeline */}
+        <div className="mb-8">
+          <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+            Contribuições
+          </h2>
           {loadingSubmissions ? (
-            <div className="divide-y">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse py-3 px-4 flex justify-between"
-                >
-                  <div className="h-3.5 bg-muted rounded w-40" />
-                  <div className="h-3.5 bg-muted rounded w-16" />
+            <div className="space-y-3 pl-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                  <div className="h-3 w-3 rounded-full bg-muted mt-1 shrink-0" />
+                  <div className="flex-1 h-4 bg-muted rounded" />
                 </div>
               ))}
             </div>
           ) : submissions.length === 0 ? (
-            <div className="text-center py-10">
-              <CheckCircle2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Nenhuma atividade concluída ainda.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              Nenhuma contribuição aprovada ainda.
+            </p>
           ) : (
-            <div className="divide-y">
-              {submissions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <span className="text-sm font-medium truncate max-w-[60%]">
-                    {activityMap.get(sub.activityId) ?? (
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {sub.activityId.substring(0, 8)}…
-                      </span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-500">
-                      <Zap className="h-3 w-3" />+{sub.awardedXp} XP
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(sub.createdAt).toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "short",
-                      })}
-                    </span>
+            <div className="relative pl-4">
+              {/* Vertical line */}
+              <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
+
+              <div className="space-y-0">
+                {submissions.map((sub, i) => (
+                  <div key={sub.id} className="relative flex gap-4 pb-4">
+                    {/* Timeline dot */}
+                    <div
+                      className={cn(
+                        "absolute left-[-3px] top-[5px] h-3 w-3 rounded-full border-2 border-background",
+                        "bg-emerald-500"
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        "pl-6 flex items-baseline justify-between w-full gap-2",
+                        i === submissions.length - 1 && "pb-0"
+                      )}
+                    >
+                      <p className="text-sm font-medium leading-snug">
+                        {activityMap.get(sub.activityId) ?? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {sub.activityId.substring(0, 8)}…
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-semibold font-mono text-emerald-500">
+                          +{sub.awardedXp} XP
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(sub.createdAt).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                          })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

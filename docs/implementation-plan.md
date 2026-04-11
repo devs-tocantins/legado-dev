@@ -174,12 +174,26 @@ Adicionar `pb-16` (64px) ao container do layout em mobile para compensar a botto
 - Hover: `translateY(-2px)` + borda `--primary/30`
 - A ação "Submeter Atividade" tem destaque visual maior (card de cor primary/5 com borda primary/20)
 
+### 2.6 — Dialog de Envio de Token (melhoria pendente)
+
+**Problema:** O campo "ID do Perfil Destinatário" não é utilizável — nenhum usuário sabe o UUID de outro.
+
+**Solução:** Substituir por um Combobox de busca de perfil:
+- Campo de texto com debounce (300ms) que chama `GET /api/v1/gamification-profiles?search=<termo>`
+- Resultados mostram `@username` + nome completo (se disponível) em um dropdown
+- Ao selecionar, guarda internamente o `profileId` (invisível ao usuário)
+- Fallback: se a busca retornar vazio, exibe "Nenhum perfil encontrado"
+
+> **Dependência de backend:** A rota `GET /gamification-profiles` precisa aceitar o parâmetro `?search=` para filtrar por `username` ou nome. Ver nota em `api-engajamento/docs/user-stories.md` (Melhoria US-22-B).
+
+Esta melhoria deve ser implementada junto ou após a Etapa 7 (quando o Combobox de atividades for construído — reutilizar o mesmo padrão).
+
 ### Critério de Conclusão da Etapa 2
-- [ ] Nenhum ícone com fundo colorido nos cards de stat
-- [ ] XP em JetBrains Mono
-- [ ] Barra de progresso anima ao carregar
-- [ ] Status de submissões com ícones semânticos corretos
-- [ ] Ações rápidas em grid com card compacto
+- [x] Nenhum ícone com fundo colorido nos cards de stat
+- [x] XP em JetBrains Mono
+- [x] Barra de progresso anima ao carregar
+- [x] Status de submissões com ícones semânticos corretos
+- [ ] Dialog de envio de token com Combobox de busca (pendente backend)
 
 **Aguardar autorização para Etapa 3.**
 
