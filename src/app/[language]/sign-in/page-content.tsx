@@ -71,11 +71,21 @@ function SignInForm() {
 
   const { register, handleSubmit, setError, control } = methods;
   const { errors } = useFormState({ control });
+  const rootError = errors.root;
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchAuthLogin(formData);
 
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
+      if (data.errors?.user) {
+        setError("root", {
+          type: "manual",
+          message: t(
+            `sign-in:inputs.user.validation.server.${data.errors.user}`
+          ),
+        });
+        return;
+      }
       (Object.keys(data.errors) as Array<keyof SignInFormData>).forEach(
         (key) => {
           setError(key, {
@@ -106,6 +116,11 @@ function SignInForm() {
         subtitle="Acesse sua conta na plataforma"
       >
         <form onSubmit={onSubmit} className="space-y-4">
+          {rootError && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {rootError.message}
+            </div>
+          )}
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="email">

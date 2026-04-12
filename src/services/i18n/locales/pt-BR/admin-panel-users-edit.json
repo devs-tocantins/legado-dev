@@ -52,6 +52,10 @@
         "match": "A confirmação deve ser igual à senha"
       }
     },
+    "isBanned": {
+      "label": "Banir usuário",
+      "description": "Impede login e todas as ações na plataforma"
+    },
     "<system>": "Do not remove this property"
   },
   "alerts": {

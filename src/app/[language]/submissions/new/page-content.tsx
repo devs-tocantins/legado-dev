@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import { usePostSubmissionService } from "@/services/api/services/submissions";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
@@ -11,14 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "@/components/link";
-import { Zap, Clock, FileCheck, Search, Check } from "lucide-react";
+import {
+  Zap,
+  Clock,
+  FileCheck,
+  Search,
+  Check,
+  CheckCircle2,
+  RotateCcw,
+  ClipboardList,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import useLanguage from "@/services/i18n/use-language";
 
 function NewSubmissionPageContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const language = useLanguage();
   const { enqueueSnackbar } = useSnackbar();
   const fetchActivities = useGetActivitiesService();
@@ -35,6 +43,7 @@ function NewSubmissionPageContent() {
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [proofError, setProofError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,10 +93,7 @@ function NewSubmissionPageContent() {
         proofUrl: proofUrl.trim() || undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
-        enqueueSnackbar("Submissão enviada com sucesso!", {
-          variant: "success",
-        });
-        router.push(`/${language}/submissions`);
+        setSubmitted(true);
       } else if (status === HTTP_CODES_ENUM.BAD_REQUEST) {
         enqueueSnackbar("Você precisa aguardar o cooldown desta atividade.", {
           variant: "error",
@@ -99,6 +105,46 @@ function NewSubmissionPageContent() {
       setSubmitting(false);
     }
   };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setSelectedActivity(null);
+    setProofUrl("");
+    setSearch("");
+    setProofError("");
+  };
+
+  // Success state
+  if (submitted) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        <div className="flex flex-col items-center justify-center py-20 text-center space-y-5">
+          <CheckCircle2 className="h-16 w-16 text-emerald-500 animate-[scale-in_0.3s_ease-out]" />
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-bold font-heading">
+              Contribuição enviada!
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Sua submissão está aguardando revisão de um moderador.
+            </p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleReset} variant="outline" className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Submeter outra
+            </Button>
+            <Button
+              render={<Link href={`/${language}/submissions`} />}
+              className="gap-2"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Ver minhas submissões
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">

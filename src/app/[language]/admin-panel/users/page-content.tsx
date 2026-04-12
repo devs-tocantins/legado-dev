@@ -10,7 +10,10 @@ import TableComponents from "@/components/table/table-components-shadcn";
 import { User } from "@/services/api/types/user";
 import useAuth from "@/services/auth/use-auth";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
-import { useDeleteUsersService } from "@/services/api/services/users";
+import {
+  useDeleteUsersService,
+  usePatchUserService,
+} from "@/services/api/services/users";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import UserFilter from "./user-filter";
@@ -26,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Ban, MoreHorizontal, ShieldOff } from "lucide-react";
 
 type UsersKeys = keyof User;
 
@@ -58,9 +61,24 @@ function Actions({ user }: { user: User }) {
   const { user: authUser } = useAuth();
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteUsersService();
+  const fetchPatch = usePatchUserService();
   const queryClient = useQueryClient();
   const canDelete = user.id !== authUser?.id;
+  const canBan = user.id !== authUser?.id;
   const { t } = useTranslation("admin-panel-users");
+
+  const getQueryParams = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const searchParamsFilter = searchParams.get("filter");
+    const searchParamsSort = searchParams.get("sort");
+    const filter: UserFilterType | undefined = searchParamsFilter
+      ? JSON.parse(searchParamsFilter)
+      : undefined;
+    const sort: UserSortType = searchParamsSort
+      ? JSON.parse(searchParamsSort)
+      : { order: SortEnum.DESC, orderBy: "id" };
+    return { filter, sort };
+  };
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog({
@@ -69,18 +87,7 @@ function Actions({ user }: { user: User }) {
     });
 
     if (isConfirmed) {
-      const searchParams = new URLSearchParams(window.location.search);
-      const searchParamsFilter = searchParams.get("filter");
-      const searchParamsSort = searchParams.get("sort");
-
-      let filter: UserFilterType | undefined = undefined;
-      let sort: UserSortType | undefined = {
-        order: SortEnum.DESC,
-        orderBy: "id",
-      };
-
-      if (searchParamsFilter) filter = JSON.parse(searchParamsFilter);
-      if (searchParamsSort) sort = JSON.parse(searchParamsSort);
+      const { filter, sort } = getQueryParams();
 
       const previousData = queryClient.getQueryData<
         InfiniteData<{ nextPage: number; data: User[] }>
@@ -105,6 +112,43 @@ function Actions({ user }: { user: User }) {
     }
   };
 
+  const handleToggleBan = async () => {
+    const isBanning = !user.isBanned;
+    const isConfirmed = await confirmDialog({
+      title: isBanning ? "Banir usuário?" : "Remover banimento?",
+      message: isBanning
+        ? `Tem certeza que deseja banir @${user.firstName} ${user.lastName}? O usuário não poderá mais fazer login.`
+        : `Deseja remover o banimento de ${user.firstName} ${user.lastName}?`,
+    });
+
+    if (isConfirmed) {
+      const { filter, sort } = getQueryParams();
+
+      await queryClient.cancelQueries({ queryKey: usersQueryKeys.list().key });
+
+      const previousData = queryClient.getQueryData<
+        InfiniteData<{ nextPage: number; data: User[] }>
+      >(usersQueryKeys.list().sub.by({ sort, filter }).key);
+
+      const newData = {
+        ...previousData,
+        pages: previousData?.pages.map((page) => ({
+          ...page,
+          data: page?.data.map((item) =>
+            item.id === user.id ? { ...item, isBanned: isBanning } : item
+          ),
+        })),
+      };
+
+      queryClient.setQueryData(
+        usersQueryKeys.list().sub.by({ sort, filter }).key,
+        newData
+      );
+
+      await fetchPatch({ id: user.id, data: { isBanned: isBanning } });
+    }
+  };
+
   return (
     <div className="flex items-center gap-1">
       <Button
@@ -113,7 +157,7 @@ function Actions({ user }: { user: User }) {
       >
         {t("admin-panel-users:actions.edit")}
       </Button>
-      {canDelete && (
+      {(canDelete || canBan) && (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -123,12 +167,36 @@ function Actions({ user }: { user: User }) {
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={handleDelete}
-            >
-              {t("admin-panel-users:actions.delete")}
-            </DropdownMenuItem>
+            {canBan && (
+              <DropdownMenuItem
+                className={
+                  user.isBanned
+                    ? "text-emerald-600 focus:text-emerald-600"
+                    : "text-amber-600 focus:text-amber-600"
+                }
+                onClick={handleToggleBan}
+              >
+                {user.isBanned ? (
+                  <>
+                    <ShieldOff className="mr-2 h-4 w-4" />
+                    Remover banimento
+                  </>
+                ) : (
+                  <>
+                    <Ban className="mr-2 h-4 w-4" />
+                    Banir usuário
+                  </>
+                )}
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={handleDelete}
+              >
+                {t("admin-panel-users:actions.delete")}
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -269,7 +337,17 @@ function Users() {
               </td>
               <td className="p-3 w-[100px]">{user?.id}</td>
               <td className="p-3 w-[200px]">
-                {user?.firstName} {user?.lastName}
+                <div className="flex items-center gap-2">
+                  <span>
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                  {user?.isBanned && (
+                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-destructive/10 text-destructive">
+                      <Ban className="h-2.5 w-2.5" />
+                      BANIDO
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="p-3">{user?.email}</td>
               <td className="p-3 w-[80px]">

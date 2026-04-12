@@ -141,7 +141,8 @@ function MultipleImagePicker(props: MultipleImagePickerProps) {
                     />
                   </IconButton>
                 </StyledOverlay>
-                <img src={item.path} loading="lazy" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.path} loading="lazy" alt="" />
               </ImageListItem>
             ))}
           </ImageList>

@@ -26,6 +26,13 @@
           "incorrectPassword": "Senha inválida"
         }
       }
+    },
+    "user": {
+      "validation": {
+        "server": {
+          "banned": "Sua conta foi banida. Entre em contato com a administração."
+        }
+      }
     }
   },
   "or": "OU"

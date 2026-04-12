@@ -12,6 +12,8 @@ import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
 import { getLevel, formatXp } from "@/lib/gamification";
 import { Trophy, Medal, Coins, Crown } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonLeaderboard } from "@/components/ui/skeleton-patterns";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
@@ -240,25 +242,8 @@ function LeaderboardPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-3"
           >
-            <div className="flex items-end gap-3 h-60">
-              {[48, 60, 44].map((h, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse bg-muted rounded-lg flex-1"
-                  style={{ height: `${h * 4}px` }}
-                />
-              ))}
-            </div>
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse h-12 bg-muted rounded-lg"
-                />
-              ))}
-            </div>
+            <SkeletonLeaderboard />
           </motion.div>
         ) : profiles.length === 0 ? (
           <motion.div
@@ -266,12 +251,13 @@ function LeaderboardPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-center py-16"
           >
-            <Trophy className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">
-              Nenhum dado disponível ainda.
-            </p>
+            <EmptyState
+              icon={Trophy}
+              title="O ranking ainda não tem dados"
+              description="Seja o primeiro a contribuir!"
+              action={{ label: "Ver atividades", href: "/activities" }}
+            />
           </motion.div>
         ) : (
           <motion.div

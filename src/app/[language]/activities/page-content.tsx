@@ -11,6 +11,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "@/components/link";
 import { Zap, Clock, FileCheck, Search, Lock, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonActivityGrid } from "@/components/ui/skeleton-patterns";
 
 function ActivityCard({ activity }: { activity: Activity }) {
   return (
@@ -66,25 +68,6 @@ function ActivityCard({ activity }: { activity: Activity }) {
   );
 }
 
-function ActivitySkeleton() {
-  return (
-    <Card className="animate-pulse">
-      <CardContent className="pt-4 pb-2 px-4 space-y-2">
-        <div className="flex justify-between gap-2">
-          <div className="h-4 bg-muted rounded w-2/3" />
-          <div className="h-5 bg-muted rounded w-16" />
-        </div>
-        <div className="h-3 bg-muted rounded w-full" />
-        <div className="h-3 bg-muted rounded w-3/4" />
-        <div className="h-3 bg-muted rounded w-1/2 mt-1" />
-      </CardContent>
-      <CardFooter className="px-4 pb-4 pt-2">
-        <div className="h-8 bg-muted rounded w-full" />
-      </CardFooter>
-    </Card>
-  );
-}
-
 function ActivitiesPageContent() {
   const fetch = useGetActivitiesService();
   const [search, setSearch] = useState("");
@@ -110,8 +93,10 @@ function ActivitiesPageContent() {
       gcTime: 0,
     });
 
-  const allActivities: Activity[] =
-    data?.pages.flatMap((p) => p?.data ?? []) ?? [];
+  const allActivities = useMemo<Activity[]>(
+    () => data?.pages.flatMap((p) => p?.data ?? []) ?? [],
+    [data]
+  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return allActivities;
@@ -148,20 +133,21 @@ function ActivitiesPageContent() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <ActivitySkeleton key={i} />
-          ))}
-        </div>
+        <SkeletonActivityGrid count={6} />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <Zap className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            {search
-              ? "Nenhuma atividade encontrada para sua busca."
-              : "Nenhuma atividade disponível no momento."}
-          </p>
-        </div>
+        <EmptyState
+          icon={Zap}
+          title={
+            search
+              ? "Nenhuma atividade encontrada"
+              : "Nenhuma atividade disponível"
+          }
+          description={
+            search
+              ? `Sua busca por "${search}" não retornou resultados.`
+              : "Novas atividades serão adicionadas em breve."
+          }
+        />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -6,6 +6,7 @@ export type GamificationProfile = {
   currentMonthlyXp: number;
   currentYearlyXp: number;
   gratitudeTokens: number;
+  isBanned?: boolean;
   createdAt: string;
   updatedAt: string;
 };

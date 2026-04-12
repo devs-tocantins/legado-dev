@@ -140,7 +140,8 @@ function ImagePicker(props: ImagePickerProps) {
                   />
                 </IconButton>
               </StyledOverlay>
-              <img src={props.value.path} loading="lazy" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={props.value.path} loading="lazy" alt="" />
             </ImageListItem>
           </ImageList>
         </>

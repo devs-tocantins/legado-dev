@@ -52,6 +52,10 @@
         "match": "Password confirmation must match password"
       }
     },
+    "isBanned": {
+      "label": "Ban user",
+      "description": "Prevents login and all actions on the platform"
+    },
     "<system>": "Do not remove this property"
   },
   "alerts": {

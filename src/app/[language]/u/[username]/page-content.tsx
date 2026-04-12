@@ -28,6 +28,7 @@ import {
   UserCircle2,
   Share2,
   Check,
+  Ban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
@@ -222,6 +223,40 @@ function PublicProfilePageContent() {
         >
           Ver ranking
         </Link>
+      </div>
+    );
+  }
+
+  // ── Banned ───────────────────────────────────────────────────────────────────
+  if (profile.isBanned) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <CoverPattern />
+        <div className="px-4 md:px-6">
+          <div className="-mt-9 mb-3">
+            <div
+              className="flex shrink-0 items-center justify-center rounded-full border-4 border-background bg-muted"
+              style={{ width: 72, height: 72 }}
+            />
+          </div>
+          <div className="py-12 text-center space-y-4">
+            <Ban className="h-12 w-12 text-destructive mx-auto" />
+            <h1 className="text-xl font-bold font-mono">@{username}</h1>
+            <p className="text-sm font-medium text-destructive">
+              Este perfil foi banido
+            </p>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Este usuário foi removido da comunidade por violação das regras da
+              plataforma.
+            </p>
+            <Link
+              href="/leaderboard"
+              className="text-sm text-primary underline-offset-4 hover:underline block"
+            >
+              Ver ranking
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

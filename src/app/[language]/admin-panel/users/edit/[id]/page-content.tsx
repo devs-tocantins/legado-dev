@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, FormProvider, useFormState } from "react-hook-form";
+import { useForm, FormProvider, useFormState, useWatch } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
@@ -28,6 +28,7 @@ type EditUserFormData = {
   lastName: string;
   photo?: FileEntity;
   role: Role;
+  isBanned: boolean;
 };
 
 type ChangeUserPasswordFormData = {
@@ -62,6 +63,7 @@ const useValidationEditUserSchema = () => {
         name: yup.string(),
       })
       .required(t("admin-panel-users-edit:inputs.role.validation.required")),
+    isBanned: yup.boolean().required(),
   });
 };
 
@@ -130,10 +132,15 @@ function FormEditUser() {
       lastName: "",
       role: undefined,
       photo: undefined,
+      isBanned: false,
     },
   });
 
-  const { handleSubmit, setError, reset } = methods;
+  const { handleSubmit, setError, reset, register } = methods;
+  const isBannedValue = useWatch({
+    control: methods.control,
+    name: "isBanned",
+  });
 
   const onSubmit = handleSubmit(async (formData) => {
     const isEmailDirty = methods.getFieldState("email").isDirty;
@@ -176,6 +183,7 @@ function FormEditUser() {
           lastName: user?.lastName ?? "",
           role: { id: Number(user?.role?.id) },
           photo: user?.photo,
+          isBanned: user?.isBanned ?? false,
         });
       }
     };
@@ -216,6 +224,23 @@ function FormEditUser() {
                 t(`admin-panel-users-edit:inputs.role.options.${option.id}`)
               }
             />
+            <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div>
+                <p className="text-sm font-medium text-destructive">
+                  {t("admin-panel-users-edit:inputs.isBanned.label")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("admin-panel-users-edit:inputs.isBanned.description")}
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                data-testid="is-banned"
+                {...register("isBanned")}
+                checked={isBannedValue}
+                className="h-4 w-4 cursor-pointer accent-destructive"
+              />
+            </div>
             <div className="flex gap-2 pt-2">
               <EditUserFormActions />
               <Button

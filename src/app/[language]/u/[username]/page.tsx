@@ -9,6 +9,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   try {
     const res = await fetch(
@@ -19,12 +20,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const profile = await res.json();
       const level = getLevel(profile.totalXp ?? 0);
       const xpStr = formatXp(profile.totalXp ?? 0);
+      const title = `@${username} — Devs Tocantins`;
+      const description = `${level.name} com ${xpStr} XP na comunidade Devs Tocantins`;
+      const ogImageUrl = `${siteUrl}/api/og?username=${encodeURIComponent(username)}`;
       return {
-        title: `@${username} — Devs Tocantins`,
-        description: `${level.name} com ${xpStr} XP na comunidade Devs Tocantins`,
+        title,
+        description,
         openGraph: {
-          title: `@${username} — Devs Tocantins`,
+          title,
           description: `${level.name} • ${xpStr} XP`,
+          images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description: `${level.name} • ${xpStr} XP`,
+          images: [ogImageUrl],
         },
       };
     }

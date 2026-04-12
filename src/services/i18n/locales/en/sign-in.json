@@ -26,6 +26,13 @@
           "incorrectPassword": "Password is not valid"
         }
       }
+    },
+    "user": {
+      "validation": {
+        "server": {
+          "banned": "Your account has been banned. Please contact the administration."
+        }
+      }
     }
   },
   "or": "OR"

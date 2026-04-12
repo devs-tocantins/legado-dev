@@ -10,7 +10,6 @@ import {
   Submission,
   SubmissionStatusEnum,
 } from "@/services/api/types/submission";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "@/components/link";
 import {
@@ -18,27 +17,36 @@ import {
   ExternalLink,
   ChevronDown,
   ClipboardList,
-  Zap,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type StatusFilter = "ALL" | SubmissionStatusEnum;
 
-function StatusBadge({ status }: { status: SubmissionStatusEnum }) {
-  if (status === SubmissionStatusEnum.APPROVED)
-    return <Badge className="text-xs">Aprovado</Badge>;
-  if (status === SubmissionStatusEnum.REJECTED)
-    return (
-      <Badge variant="destructive" className="text-xs">
-        Rejeitado
-      </Badge>
-    );
-  return (
-    <Badge variant="secondary" className="text-xs">
-      Pendente
-    </Badge>
-  );
-}
+const STATUS_META: Record<
+  SubmissionStatusEnum,
+  { icon: React.ElementType; color: string; label: string }
+> = {
+  [SubmissionStatusEnum.APPROVED]: {
+    icon: CheckCircle2,
+    color: "text-emerald-500",
+    label: "Aprovado",
+  },
+  [SubmissionStatusEnum.PENDING]: {
+    icon: Clock,
+    color: "text-amber-500",
+    label: "Aguardando revisão",
+  },
+  [SubmissionStatusEnum.REJECTED]: {
+    icon: XCircle,
+    color: "text-destructive",
+    label: "Rejeitado",
+  },
+};
 
 function SubmissionRow({
   sub,
@@ -47,17 +55,40 @@ function SubmissionRow({
   sub: Submission;
   activityTitle?: string;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const meta = STATUS_META[sub.status];
+  const Icon = meta.icon;
+  const isRejected = sub.status === SubmissionStatusEnum.REJECTED;
+
   return (
-    <div className="flex flex-col gap-1 py-3 border-b last:border-0">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium truncate">
+    <div className="flex flex-col gap-0 py-3 border-b last:border-0">
+      <div className="flex items-center gap-3">
+        <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">
             {activityTitle ?? (
               <span className="font-mono text-xs text-muted-foreground">
                 {sub.activityId.substring(0, 8)}…
               </span>
             )}
-          </span>
+          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={cn("text-xs", meta.color)}>{meta.label}</span>
+            {sub.status === SubmissionStatusEnum.APPROVED && (
+              <span className="text-xs font-semibold font-mono text-emerald-500">
+                +{sub.awardedXp} XP
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {new Date(sub.createdAt).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
           {sub.proofUrl && (
             <a
               href={sub.proofUrl}
@@ -66,30 +97,30 @@ function SubmissionRow({
               className="text-muted-foreground hover:text-primary transition-colors"
               title="Ver comprovante"
             >
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {sub.status === SubmissionStatusEnum.APPROVED && (
-            <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-500">
-              <Zap className="h-3 w-3" />+{sub.awardedXp} XP
-            </span>
+          {isRejected && sub.feedback && (
+            <button
+              type="button"
+              onClick={() => setExpanded((o) => !o)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Ver feedback"
+            >
+              <ChevronRight
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform",
+                  expanded && "rotate-90"
+                )}
+              />
+            </button>
           )}
-          <StatusBadge status={sub.status} />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {new Date(sub.createdAt).toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })}
-      </p>
-      {sub.status === SubmissionStatusEnum.REJECTED && sub.feedback && (
-        <p className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1">
-          {sub.feedback}
-        </p>
+      {isRejected && sub.feedback && expanded && (
+        <div className="ml-7 mt-2 text-xs text-destructive bg-destructive/5 border border-destructive/10 rounded px-3 py-2">
+          <span className="font-medium">Feedback:</span> {sub.feedback}
+        </div>
       )}
     </div>
   );
@@ -146,8 +177,10 @@ function SubmissionsPageContent() {
       gcTime: 0,
     });
 
-  const allSubmissions: Submission[] =
-    data?.pages.flatMap((p) => p?.data ?? []) ?? [];
+  const allSubmissions = useMemo<Submission[]>(
+    () => data?.pages.flatMap((p) => p?.data ?? []) ?? [],
+    [data]
+  );
 
   const filtered = useMemo(() => {
     if (statusFilter === "ALL") return allSubmissions;
@@ -215,33 +248,34 @@ function SubmissionsPageContent() {
         {isLoading ? (
           <div className="divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="animate-pulse py-3 px-4 space-y-1.5">
-                <div className="flex justify-between">
+              <div key={i} className="animate-pulse py-3 px-4 flex gap-3">
+                <div className="h-4 w-4 bg-muted rounded-full mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-muted rounded w-40" />
                   <div className="h-3 bg-muted rounded w-24" />
-                  <div className="h-5 bg-muted rounded w-16" />
                 </div>
-                <div className="h-3 bg-muted rounded w-20" />
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 space-y-2">
-            <ClipboardList className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground text-sm">
-              {statusFilter === "ALL"
-                ? "Nenhuma submissão ainda. Comece submetendo uma atividade!"
-                : "Nenhuma submissão com esse filtro."}
-            </p>
-            {statusFilter === "ALL" && (
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href="/activities" />}
-              >
-                Ver atividades
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title={
+              statusFilter === "ALL"
+                ? "Nenhuma submissão ainda"
+                : "Nenhuma submissão com esse filtro"
+            }
+            description={
+              statusFilter === "ALL"
+                ? "Comece submetendo uma atividade e ganhe XP!"
+                : undefined
+            }
+            action={
+              statusFilter === "ALL"
+                ? { label: "Ver atividades", href: "/activities" }
+                : undefined
+            }
+          />
         ) : (
           <div className="px-4">
             {filtered.map((sub) => (

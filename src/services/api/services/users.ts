@@ -93,7 +93,10 @@ export function usePostUserService() {
 export type UserPatchRequest = {
   id: User["id"];
   data: Partial<
-    Pick<User, "email" | "firstName" | "lastName" | "photo" | "role"> & {
+    Pick<
+      User,
+      "email" | "firstName" | "lastName" | "photo" | "role" | "isBanned"
+    > & {
       password: string;
     }
   >;
