@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const LEVELS = [
   { name: "Novato", minXp: 0, color: "#94a3b8" },
   { name: "Contribuidor", minXp: 100, color: "#34d399" },
