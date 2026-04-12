@@ -103,7 +103,12 @@ function formatAmount(tx: Transaction): { text: string; cls: string } {
   const unit = meta.unit === "auto" ? (tx.amount < 0 ? "XP" : "XP") : meta.unit;
   const sign = isPositive ? "+" : "";
   const text = `${sign}${tx.amount} ${unit}`;
-  const cls = isPositive ? "text-emerald-500" : meta.unit === "Token" || tx.category === TransactionCategoryEnum.TOKEN_TRANSFER ? "text-muted-foreground" : "text-destructive";
+  const cls = isPositive
+    ? "text-emerald-500"
+    : meta.unit === "Token" ||
+        tx.category === TransactionCategoryEnum.TOKEN_TRANSFER
+      ? "text-muted-foreground"
+      : "text-destructive";
   return { text, cls };
 }
 
@@ -122,7 +127,9 @@ function formatDayLabel(dateStr: string) {
   });
 }
 
-function groupByDay(txs: Transaction[]): { day: string; items: Transaction[] }[] {
+function groupByDay(
+  txs: Transaction[]
+): { day: string; items: Transaction[] }[] {
   const map = new Map<string, Transaction[]>();
   for (const tx of txs) {
     const day = new Date(tx.createdAt).toISOString().slice(0, 10);
@@ -228,7 +235,10 @@ function TransactionsPageContent() {
             icon={Receipt}
             title="Seu extrato está vazio"
             description="Faça sua primeira contribuição para ganhar XP!"
-            action={{ label: "Ver atividades disponíveis", href: "/activities" }}
+            action={{
+              label: "Ver atividades disponíveis",
+              href: "/activities",
+            }}
           />
         </div>
       ) : (

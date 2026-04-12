@@ -35,7 +35,11 @@ export function EmptyState({
         )}
       </div>
       {action && (
-        <Button variant="outline" size="sm" render={<Link href={action.href} />}>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href={action.href} />}
+        >
           {action.label}
         </Button>
       )}

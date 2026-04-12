@@ -5,7 +5,10 @@ export function SkeletonStatCards({ count = 4 }: { count?: number }) {
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="animate-pulse rounded-lg border bg-card p-4 space-y-3">
+        <div
+          key={i}
+          className="animate-pulse rounded-lg border bg-card p-4 space-y-3"
+        >
           <div className="h-3 bg-muted rounded w-20" />
           <div className="h-7 bg-muted rounded w-24" />
           <div className="h-3 bg-muted rounded w-28" />
