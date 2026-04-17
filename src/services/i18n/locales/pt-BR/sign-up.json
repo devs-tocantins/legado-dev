@@ -1,5 +1,6 @@
 {
   "title": "Cadastrar",
+  "subtitle": "A sua história não será esquecida",
   "actions": {
     "submit": "Cadastrar",
     "accountAlreadyExists": "Já tem uma conta?"
@@ -7,18 +8,21 @@
   "inputs": {
     "firstName": {
       "label": "Nome",
+      "placeholder": "João",
       "validation": {
         "required": "Nome é obrigatório"
       }
     },
     "lastName": {
       "label": "Sobrenome",
+      "placeholder": "Silva",
       "validation": {
         "required": "Sobrenome é obrigatório"
       }
     },
     "email": {
       "label": "E-mail",
+      "placeholder": "seu@email.com",
       "validation": {
         "required": "E-mail é obrigatório",
         "invalid": "E-mail inválido",
@@ -29,6 +33,7 @@
     },
     "password": {
       "label": "Senha",
+      "placeholder": "••••••••",
       "validation": {
         "required": "Senha é obrigatória",
         "min": "A senha deve ter pelo menos 6 caracteres",

@@ -1,5 +1,6 @@
 {
   "title": "Sign Up",
+  "subtitle": "Your story will not be forgotten",
   "actions": {
     "submit": "Sign Up",
     "accountAlreadyExists": "Already have an account?"
@@ -7,18 +8,21 @@
   "inputs": {
     "firstName": {
       "label": "First Name",
+      "placeholder": "John",
       "validation": {
         "required": "First Name is required"
       }
     },
     "lastName": {
       "label": "Last Name",
+      "placeholder": "Doe",
       "validation": {
         "required": "Last Name is required"
       }
     },
     "email": {
       "label": "Email",
+      "placeholder": "your@email.com",
       "validation": {
         "required": "Email is required",
         "invalid": "Email is not valid",
@@ -29,6 +33,7 @@
     },
     "password": {
       "label": "Password",
+      "placeholder": "••••••••",
       "validation": {
         "required": "Password is required",
         "min": "Password must be at least 6 characters long",

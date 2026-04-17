@@ -1,5 +1,6 @@
 {
   "title": "Entrar",
+  "subtitle": "A sua história não será esquecida",
   "actions": {
     "submit": "Entrar",
     "createAccount": "Criar Conta",
@@ -8,6 +9,7 @@
   "inputs": {
     "email": {
       "label": "E-mail",
+      "placeholder": "seu@email.com",
       "validation": {
         "required": "E-mail é obrigatório",
         "invalid": "E-mail inválido",
@@ -19,6 +21,7 @@
     },
     "password": {
       "label": "Senha",
+      "placeholder": "••••••••",
       "validation": {
         "required": "Senha é obrigatória",
         "min": "A senha deve ter pelo menos 6 caracteres",

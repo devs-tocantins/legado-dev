@@ -10,6 +10,7 @@ import { RequestConfigType } from "./types/request-config";
 export type GamificationProfilesRequest = {
   page: number;
   limit: number;
+  search?: string;
   filters?: Record<string, unknown>;
   sort?: Array<{
     orderBy: keyof GamificationProfile;
@@ -28,6 +29,9 @@ export function useGetGamificationProfilesService() {
       const requestUrl = new URL(`${API_URL}/api/v1/gamification-profiles`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
+      if (data.search) {
+        requestUrl.searchParams.append("search", data.search);
+      }
       if (data.filters) {
         requestUrl.searchParams.append("filters", JSON.stringify(data.filters));
       }
@@ -192,6 +196,7 @@ export function useGetProfileApprovedSubmissionsService() {
 
 export type UpdateMyGamificationProfileRequest = {
   username: string;
+  githubUsername?: string | null;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;
@@ -225,6 +230,26 @@ export function useGetMyGamificationProfileService() {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<MyGamificationProfileResponse>);
+    },
+    [fetch]
+  );
+}
+
+// GET /gamification-profiles/check-username/:username - check availability
+export type CheckUsernameResponse = { available: boolean };
+
+export function useCheckUsernameService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (username: string, requestConfig?: RequestConfigType) => {
+      return fetch(
+        `${API_URL}/api/v1/gamification-profiles/check-username/${encodeURIComponent(username)}`,
+        {
+          method: "GET",
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<CheckUsernameResponse>);
     },
     [fetch]
   );

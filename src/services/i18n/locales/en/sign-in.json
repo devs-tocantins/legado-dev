@@ -1,5 +1,6 @@
 {
   "title": "Sign In",
+  "subtitle": "Your story will not be forgotten",
   "actions": {
     "submit": "Sign In",
     "createAccount": "Create Account",
@@ -8,6 +9,7 @@
   "inputs": {
     "email": {
       "label": "Email",
+      "placeholder": "your@email.com",
       "validation": {
         "required": "Email is required",
         "invalid": "Email is not valid",
@@ -19,6 +21,7 @@
     },
     "password": {
       "label": "Password",
+      "placeholder": "••••••••",
       "validation": {
         "required": "Password is required",
         "min": "Password must be at least 6 characters long",

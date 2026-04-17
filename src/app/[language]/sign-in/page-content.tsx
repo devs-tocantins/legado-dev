@@ -9,10 +9,10 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "@/components/link";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { useTranslation } from "@/services/i18n/client";
 import { isGoogleAuthEnabled } from "@/services/social-auth/google/google-config";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
 import SocialAuth from "@/services/social-auth/social-auth";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
@@ -30,12 +30,12 @@ function useValidationSchema() {
   return yup.object().shape({
     email: yup
       .string()
-      .email(t("sign-in:inputs.email.validation.invalid"))
-      .required(t("sign-in:inputs.email.validation.required")),
+      .email(t("inputs.email.validation.invalid"))
+      .required(t("inputs.email.validation.required")),
     password: yup
       .string()
-      .min(6, t("sign-in:inputs.password.validation.min"))
-      .required(t("sign-in:inputs.password.validation.required")),
+      .min(6, t("inputs.password.validation.min"))
+      .required(t("inputs.password.validation.required")),
   });
 }
 
@@ -51,7 +51,7 @@ function SubmitButton() {
       className="w-full"
       size="lg"
     >
-      {isSubmitting ? "Entrando..." : t("sign-in:actions.submit")}
+      {isSubmitting ? t("actions.submit") + "..." : t("actions.submit")}
     </Button>
   );
 }
@@ -80,20 +80,13 @@ function SignInForm() {
       if (data.errors?.user) {
         setError("root", {
           type: "manual",
-          message: t(
-            `sign-in:inputs.user.validation.server.${data.errors.user}`
-          ),
+          message: t("inputs.user.validation.server.banned"),
         });
         return;
       }
       (Object.keys(data.errors) as Array<keyof SignInFormData>).forEach(
         (key) => {
-          setError(key, {
-            type: "manual",
-            message: t(
-              `sign-in:inputs.${key}.validation.server.${data.errors[key]}`
-            ),
-          });
+          setError(key, { type: "manual", message: data.errors[key] });
         }
       );
       return;
@@ -111,27 +104,25 @@ function SignInForm() {
 
   return (
     <FormProvider {...methods}>
-      <AuthLayout
-        title={t("sign-in:title")}
-        subtitle="Acesse sua conta na plataforma"
-      >
+      <AuthLayout title={t("title")} subtitle={t("subtitle")}>
         <form onSubmit={onSubmit} className="space-y-4">
           {rootError && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {rootError.message}
             </div>
           )}
+
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="email">
-              {t("sign-in:inputs.email.label")}
+              {t("inputs.email.label")}
             </label>
             <input
               id="email"
               type="email"
               autoFocus
               data-testid="email"
-              placeholder="seu@email.com"
+              placeholder={t("inputs.email.placeholder")}
               {...register("email")}
               className={cn(
                 "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
@@ -147,14 +138,14 @@ function SignInForm() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium" htmlFor="password">
-                {t("sign-in:inputs.password.label")}
+                {t("inputs.password.label")}
               </label>
               <Link
                 href="/forgot-password"
                 className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 data-testid="forgot-password"
               >
-                {t("sign-in:actions.forgotPassword")}
+                {t("actions.forgotPassword")}
               </Link>
             </div>
             <div className="relative">
@@ -162,7 +153,7 @@ function SignInForm() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 data-testid="password"
-                placeholder="••••••••"
+                placeholder={t("inputs.password.placeholder")}
                 {...register("password")}
                 className={cn(
                   "w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
@@ -200,7 +191,7 @@ function SignInForm() {
                 className="font-medium text-primary hover:underline"
                 data-testid="create-account"
               >
-                {t("sign-in:actions.createAccount")}
+                {t("actions.createAccount")}
               </Link>
             </p>
           )}
@@ -210,9 +201,7 @@ function SignInForm() {
           <>
             <div className="my-4 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">
-                {t("sign-in:or")}
-              </span>
+              <span className="text-xs text-muted-foreground">{t("or")}</span>
               <div className="h-px flex-1 bg-border" />
             </div>
             <SocialAuth />
