@@ -28,20 +28,21 @@ function LeftPattern() {
 }
 
 function LogoMark({ variant = "dark" }: { variant?: "dark" | "light" }) {
-  if (variant === "light") {
-    return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-white/30 bg-white/10">
-        <span className="select-none text-xs font-bold font-heading text-white">
-          DT
-        </span>
-      </div>
-    );
-  }
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-primary bg-primary/10">
-      <span className="select-none text-sm font-bold font-heading text-primary">
-        DT
-      </span>
+    <div
+      className={
+        variant === "light"
+          ? "flex h-9 w-9 shrink-0 items-center justify-center"
+          : "flex h-10 w-10 shrink-0 items-center justify-center"
+      }
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/LOGO.svg"
+        alt="legado.dev"
+        className="h-full w-auto"
+        draggable={false}
+      />
     </div>
   );
 }
@@ -54,19 +55,31 @@ type AuthLayoutProps = {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* ── Left column — always dark, hidden on mobile ── */}
       <div
         className="relative hidden lg:flex lg:w-[44%] flex-col justify-between p-12 overflow-hidden"
         style={{ backgroundColor: "#111411" }}
       >
+        {/* Background photo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/auth-bg.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-60"
+          draggable={false}
+        />
+        {/* Dark overlay to keep text legible */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111411] via-[#111411]/40 to-transparent" />
+
         <LeftPattern />
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2.5">
           <LogoMark variant="light" />
           <span className="text-sm font-semibold text-white/60">
-            Devs Tocantins
+            legado.dev
           </span>
         </div>
 
@@ -77,7 +90,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             conversa virou pontos. Não sabia que contribuição tinha nome.&rdquo;
           </p>
           <footer className="text-xs text-white/35">
-            — Membro da Devs Tocantins
+            — Membro do legado.dev
           </footer>
         </blockquote>
       </div>

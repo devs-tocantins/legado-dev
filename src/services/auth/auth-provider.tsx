@@ -63,6 +63,8 @@ function AuthProvider(props: PropsWithChildren) {
         const data = await response.json();
         setUser(data);
       }
+    } catch {
+      // Erro de rede ou API indisponível — continua como não autenticado
     } finally {
       setIsLoaded(true);
     }

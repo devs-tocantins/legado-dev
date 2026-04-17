@@ -54,6 +54,9 @@ export function useAuthGoogleLoginService() {
 export type AuthSignUpRequest = {
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
 };
 
 export type AuthSignUpResponse = void;

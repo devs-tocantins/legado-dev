@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import SecretPageContent from "./page-content";
 
 export const metadata: Metadata = {
-  title: "Resgatar Código | Devs Tocantins",
+  title: "Resgatar Código",
 };
 
 export default function Page() {

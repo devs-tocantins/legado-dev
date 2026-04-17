@@ -97,30 +97,15 @@ export async function GET(req: NextRequest) {
             gap: "12px",
           }}
         >
-          <div
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "10px",
-              border: "2px solid #3b82f6",
-              backgroundColor: "rgba(59,130,246,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#3b82f6",
-              fontSize: "18px",
-              fontWeight: 700,
-            }}
-          >
-            DT
-          </div>
           <span
             style={{
               color: "rgba(255,255,255,0.4)",
-              fontSize: "16px",
+              fontSize: "20px",
+              fontWeight: 600,
+              letterSpacing: "-0.5px",
             }}
           >
-            Devs Tocantins
+            legado.dev
           </span>
         </div>
 
@@ -206,7 +191,7 @@ export async function GET(req: NextRequest) {
               fontSize: "14px",
             }}
           >
-            legado.devstocantins.com.br
+            legado.dev
           </span>
           <span
             style={{
@@ -214,7 +199,7 @@ export async function GET(req: NextRequest) {
               fontSize: "13px",
             }}
           >
-            Motor de Engajamento
+            A sua história não será esquecida
           </span>
         </div>
       </div>

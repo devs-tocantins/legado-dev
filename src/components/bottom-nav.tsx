@@ -23,8 +23,14 @@ function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  // Don't show bottom nav on admin pages
+  // Don't show bottom nav on admin or auth pages
   if (pathname?.includes("/admin-panel")) return null;
+  if (
+    pathname?.includes("/sign-in") ||
+    pathname?.includes("/sign-up") ||
+    pathname?.includes("/forgot-password")
+  )
+    return null;
 
   const isActive = (href: string) => {
     if (href === "/")
