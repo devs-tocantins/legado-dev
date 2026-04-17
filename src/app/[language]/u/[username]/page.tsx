@@ -20,20 +20,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const profile = await res.json();
       const level = getLevel(profile.totalXp ?? 0);
       const xpStr = formatXp(profile.totalXp ?? 0);
-      const title = `@${username} — Devs Tocantins`;
-      const description = `${level.name} com ${xpStr} XP na comunidade Devs Tocantins`;
+      const title = `@${username}`;
+      const ogTitle = `@${username} — legado.dev`;
+      const description = `${level.name} com ${xpStr} XP na comunidade legado.dev`;
       const ogImageUrl = `${siteUrl}/api/og?username=${encodeURIComponent(username)}`;
       return {
         title,
         description,
         openGraph: {
-          title,
+          title: ogTitle,
           description: `${level.name} • ${xpStr} XP`,
           images: [{ url: ogImageUrl, width: 1200, height: 630 }],
         },
         twitter: {
           card: "summary_large_image",
-          title,
+          title: ogTitle,
           description: `${level.name} • ${xpStr} XP`,
           images: [ogImageUrl],
         },
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `@${username} — Devs Tocantins`,
+    title: `@${username}`,
   };
 }
 

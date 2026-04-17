@@ -36,17 +36,21 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import { getLevel } from "@/lib/gamification";
+import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 
-// ─── Logo Placeholder ─────────────────────────────────────────────────────────
-// Will be replaced by the real SVG logo when brand assets are available.
+// ─── Logo Mark ────────────────────────────────────────────────────────────────
 
 function LogoMark() {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-primary bg-primary/10">
-      <span className="text-xs font-bold font-heading text-primary select-none">
-        DT
-      </span>
+    <div className="flex h-8 w-auto shrink-0 items-center justify-center">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/LOGO.svg"
+        alt="legado.dev"
+        className="h-8 w-auto"
+        draggable={false}
+      />
     </div>
   );
 }
@@ -69,6 +73,7 @@ function ResponsiveAppBar() {
   const { logOut } = useAuthActions();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const [isDark, setIsDark] = useState(false);
 
   const fetchMyProfile = useGetMyGamificationProfileService();
@@ -135,7 +140,7 @@ function ResponsiveAppBar() {
         >
           <LogoMark />
           <span className="hidden sm:block text-sm font-heading font-semibold">
-            Devs Tocantins
+            legado.dev
           </span>
         </Link>
 
@@ -146,10 +151,10 @@ function ResponsiveAppBar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors border-b-2",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 isActive(href)
-                  ? "text-primary border-primary"
-                  : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -160,10 +165,10 @@ function ResponsiveAppBar() {
             <Link
               href="/admin-panel"
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors border-b-2",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 isActive("/admin-panel")
-                  ? "text-primary border-primary"
-                  : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               <Settings className="h-3.5 w-3.5" />
@@ -199,7 +204,13 @@ function ResponsiveAppBar() {
                 }
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={user.photo?.path} />
+                  <AvatarImage
+                    src={
+                      profile?.githubUsername
+                        ? getGitHubAvatarUrl(profile.githubUsername)
+                        : user.photo?.path
+                    }
+                  />
                   <AvatarFallback className="bg-primary/15 text-primary text-xs font-bold font-heading">
                     {user.firstName?.[0]}
                     {user.lastName?.[0]}

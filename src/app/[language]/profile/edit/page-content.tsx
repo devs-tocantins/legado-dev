@@ -6,6 +6,7 @@ import {
   useGetMyGamificationProfileService,
   useUpdateMyGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
+import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import { useQuery } from "@tanstack/react-query";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import * as yup from "yup";
@@ -585,6 +586,97 @@ function FormUsername() {
   );
 }
 
+// --- Form: GitHub Username ---
+function FormGitHub() {
+  const fetchMyProfile = useGetMyGamificationProfileService();
+  const updateMyProfile = useUpdateMyGamificationProfileService();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["my-profile-github"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+  });
+
+  const [githubUsername, setGithubUsername] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setGithubUsername(profile?.githubUsername ?? "");
+  }, [profile?.githubUsername]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const { status } = await updateMyProfile({
+        username: profile.username,
+        githubUsername: githubUsername.trim() || null,
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Foto do GitHub atualizada!", { variant: "success" });
+      } else {
+        enqueueSnackbar("Erro ao salvar.", { variant: "error" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading || !profile) return null;
+
+  const previewUrl = githubUsername.trim()
+    ? getGitHubAvatarUrl(githubUsername.trim())
+    : null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Foto de Perfil via GitHub</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSave} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Coloque seu username do GitHub para usar a foto do seu perfil
+            automaticamente. Nada é armazenado, a imagem vem diretamente do
+            GitHub.
+          </p>
+          <div className="flex items-center gap-4">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="h-14 w-14 rounded-full border object-cover"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full border bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                Preview
+              </div>
+            )}
+            <Field label="Username do GitHub">
+              <div className="flex gap-2">
+                <TextInput
+                  value={githubUsername}
+                  onChange={(e) => setGithubUsername(e.target.value)}
+                  placeholder="ex: leo-nardo"
+                />
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </Field>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 // --- Wrappers for email-only providers ---
 function ChangeEmailWrapper() {
   const { user } = useAuth();
@@ -604,6 +696,7 @@ function EditProfile() {
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
       <FormUsername />
+      <FormGitHub />
       <ChangeEmailWrapper />
       <ChangePasswordWrapper />
     </div>

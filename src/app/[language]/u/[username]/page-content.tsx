@@ -18,6 +18,7 @@ import {
   getNextLevelXp,
   formatXp,
 } from "@/lib/gamification";
+import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,13 +82,28 @@ function avatarColor(username: string): string {
 
 function ProfileAvatar({
   username,
+  githubUsername,
   size = 64,
 }: {
   username: string;
+  githubUsername?: string | null;
   size?: number;
 }) {
   const color = avatarColor(username);
   const initials = username.substring(0, 2).toUpperCase();
+
+  if (githubUsername) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={getGitHubAvatarUrl(githubUsername)}
+        alt={`@${username}`}
+        className="shrink-0 rounded-full border-4 border-background object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -235,7 +251,7 @@ function PublicProfilePageContent() {
         <div className="px-4 md:px-6">
           <div className="-mt-9 mb-3">
             <div
-              className="flex shrink-0 items-center justify-center rounded-full border-4 border-background bg-muted"
+              className="shrink-0 rounded-full border-4 border-background bg-muted"
               style={{ width: 72, height: 72 }}
             />
           </div>
@@ -298,7 +314,11 @@ function PublicProfilePageContent() {
       <div className="px-4 md:px-6">
         {/* Avatar overlapping cover */}
         <div className="-mt-9 mb-3">
-          <ProfileAvatar username={profile.username} size={72} />
+          <ProfileAvatar
+            username={profile.username}
+            githubUsername={profile.githubUsername}
+            size={72}
+          />
         </div>
 
         <div className="flex items-start justify-between gap-4 mb-6">
