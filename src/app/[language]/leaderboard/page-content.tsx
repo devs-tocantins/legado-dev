@@ -191,10 +191,14 @@ function LeaderboardPageContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const profiles: GamificationProfile[] = data ?? [];
+  const xpField = TAB_FIELD[tab];
+  const profiles: GamificationProfile[] = (data ?? [])
+    .slice()
+    .sort(
+      (a, b) => ((b[xpField] as number) ?? 0) - ((a[xpField] as number) ?? 0)
+    );
   const top3 = profiles.slice(0, 3);
   const rest = profiles.slice(3);
-  const xpField = TAB_FIELD[tab];
   const myUsername = myProfile?.username;
 
   return (

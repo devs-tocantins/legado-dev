@@ -15,7 +15,6 @@ import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useEffect, useState } from "react";
 import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import FormAvatarInput from "@/components/form/avatar-input/form-avatar-input";
 import { FileEntity } from "@/services/api/types/file-entity";
 import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
@@ -162,7 +161,6 @@ function FormBasicInfo() {
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
-            <FormAvatarInput<BasicInfoFormData> name="photo" testId="photo" />
             <div className="grid grid-cols-2 gap-3">
               <Field
                 label={t("profile:inputs.firstName.label")}
@@ -618,7 +616,7 @@ function FormGitHub() {
         githubUsername: githubUsername.trim() || null,
       });
       if (status === HTTP_CODES_ENUM.OK) {
-        enqueueSnackbar("Foto do GitHub atualizada!", { variant: "success" });
+        enqueueSnackbar("Foto de perfil atualizada!", { variant: "success" });
       } else {
         enqueueSnackbar("Erro ao salvar.", { variant: "error" });
       }
@@ -634,42 +632,57 @@ function FormGitHub() {
     : null;
 
   return (
-    <Card>
+    <Card className="border-primary/40 bg-primary/5">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Foto de Perfil via GitHub</CardTitle>
+        <CardTitle className="text-base">Foto de Perfil</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSave} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Coloque seu username do GitHub para usar a foto do seu perfil
-            automaticamente. Nada é armazenado, a imagem vem diretamente do
-            GitHub.
+            A foto de perfil na plataforma vem do seu GitHub.{" "}
+            <strong className="text-foreground">
+              Coloque seu username do GitHub abaixo
+            </strong>{" "}
+            e ela aparecerá automaticamente no ranking e no seu perfil público.
           </p>
           <div className="flex items-center gap-4">
-            {previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="h-14 w-14 rounded-full border object-cover"
-              />
-            ) : (
-              <div className="h-14 w-14 rounded-full border bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                Preview
-              </div>
-            )}
-            <Field label="Username do GitHub">
-              <div className="flex gap-2">
-                <TextInput
-                  value={githubUsername}
-                  onChange={(e) => setGithubUsername(e.target.value)}
-                  placeholder="ex: leo-nardo"
+            <div className="shrink-0">
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
                 />
+              ) : (
+                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-xs text-center leading-tight px-1">
+                  sem foto
+                </div>
+              )}
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <label className="text-sm font-medium">Username do GitHub</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm select-none">
+                    github.com/
+                  </span>
+                  <TextInput
+                    value={githubUsername}
+                    onChange={(e) => setGithubUsername(e.target.value.trim())}
+                    placeholder="seu-usuario"
+                    className="pl-[6.5rem]"
+                  />
+                </div>
                 <Button type="submit" disabled={saving}>
                   {saving ? "Salvando..." : "Salvar"}
                 </Button>
               </div>
-            </Field>
+              <p className="text-xs text-muted-foreground">
+                Ex: se seu perfil é github.com/leo-nardo, coloque{" "}
+                <code className="bg-muted px-1 rounded">leo-nardo</code>
+              </p>
+            </div>
           </div>
         </form>
       </CardContent>
@@ -695,8 +708,8 @@ function EditProfile() {
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
-      <FormUsername />
       <FormGitHub />
+      <FormUsername />
       <ChangeEmailWrapper />
       <ChangePasswordWrapper />
     </div>
