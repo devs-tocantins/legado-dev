@@ -26,6 +26,9 @@
     },
     "requiresProof": {
       "label": "Requer Comprovante"
+    },
+    "requiresDescription": {
+      "label": "Requer Descricao"
     }
   },
   "actions": {

@@ -21,6 +21,7 @@ type CreateFormData = {
   description: string;
   fixedReward: number;
   requiresProof: boolean;
+  requiresDescription: boolean;
   cooldownHours: number;
 };
 
@@ -52,6 +53,7 @@ const useValidationSchema = () => {
         )
       ),
     requiresProof: yup.boolean().default(false),
+    requiresDescription: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -90,6 +92,7 @@ function FormCreateActivity() {
       description: "",
       fixedReward: 0,
       requiresProof: false,
+      requiresDescription: false,
       cooldownHours: 0,
     },
   });
@@ -102,6 +105,7 @@ function FormCreateActivity() {
       description: formData.description,
       fixedReward: formData.fixedReward,
       requiresProof: formData.requiresProof,
+      requiresDescription: formData.requiresDescription,
       cooldownHours: formData.cooldownHours,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
@@ -170,6 +174,13 @@ function FormCreateActivity() {
                 testId="requiresProof"
                 label={t(
                   "admin-panel-activities-create:inputs.requiresProof.label"
+                )}
+              />
+              <FormCheckboxInput<CreateFormData>
+                name="requiresDescription"
+                testId="requiresDescription"
+                label={t(
+                  "admin-panel-activities-create:inputs.requiresDescription.label"
                 )}
               />
               <div className="flex gap-2 pt-2">

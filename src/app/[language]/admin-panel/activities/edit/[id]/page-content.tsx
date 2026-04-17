@@ -25,6 +25,7 @@ type EditFormData = {
   description: string;
   fixedReward: number;
   requiresProof: boolean;
+  requiresDescription: boolean;
   cooldownHours: number;
 };
 
@@ -54,6 +55,7 @@ const useValidationSchema = () => {
         t("admin-panel-activities-edit:inputs.fixedReward.validation.required")
       ),
     requiresProof: yup.boolean().default(false),
+    requiresDescription: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -92,6 +94,7 @@ function FormEditActivity() {
       description: "",
       fixedReward: 0,
       requiresProof: false,
+      requiresDescription: false,
       cooldownHours: 0,
     },
   });
@@ -106,6 +109,7 @@ function FormEditActivity() {
         description: formData.description,
         fixedReward: formData.fixedReward,
         requiresProof: formData.requiresProof,
+        requiresDescription: formData.requiresDescription,
         cooldownHours: formData.cooldownHours,
       },
     });
@@ -138,6 +142,7 @@ function FormEditActivity() {
           description: activity?.description ?? "",
           fixedReward: activity?.fixedReward ?? 0,
           requiresProof: activity?.requiresProof ?? false,
+          requiresDescription: activity?.requiresDescription ?? false,
           cooldownHours: activity?.cooldownHours ?? 0,
         });
       }
@@ -189,6 +194,13 @@ function FormEditActivity() {
                 testId="requiresProof"
                 label={t(
                   "admin-panel-activities-edit:inputs.requiresProof.label"
+                )}
+              />
+              <FormCheckboxInput<EditFormData>
+                name="requiresDescription"
+                testId="requiresDescription"
+                label={t(
+                  "admin-panel-activities-edit:inputs.requiresDescription.label"
                 )}
               />
               <div className="flex gap-2 pt-2">
