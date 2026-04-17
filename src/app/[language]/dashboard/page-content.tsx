@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import useAuth from "@/services/auth/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   useGetMyGamificationProfileService,
+  useGetGamificationProfilesService,
   useTransferTokensService,
 } from "@/services/api/services/gamification-profiles";
 import { useGetMySubmissionsService } from "@/services/api/services/submissions";
@@ -45,10 +46,12 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Search,
+  X,
+  Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { useMemo } from "react";
 
 function StatusIcon({ status }: { status: SubmissionStatusEnum }) {
   if (status === SubmissionStatusEnum.APPROVED)
@@ -78,12 +81,51 @@ function DashboardPageContent() {
   const fetchMySubmissions = useGetMySubmissionsService();
   const fetchActivities = useGetActivitiesService();
   const transferTokens = useTransferTokensService();
+  const fetchProfiles = useGetGamificationProfilesService();
 
   const [tokenDialog, setTokenDialog] = useState(false);
   const [recipientId, setRecipientId] = useState("");
+  const [recipientLabel, setRecipientLabel] = useState("");
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [tokenAmount, setTokenAmount] = useState(1);
   const [tokenMessage, setTokenMessage] = useState("");
   const [transferring, setTransferring] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(recipientSearch), 300);
+    return () => clearTimeout(t);
+  }, [recipientSearch]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const { data: searchResults, isFetching: searching } = useQuery({
+    queryKey: ["profile-search", debouncedSearch],
+    queryFn: async () => {
+      if (!debouncedSearch.trim()) return [];
+      const { status, data } = await fetchProfiles({
+        page: 1,
+        limit: 8,
+        search: debouncedSearch,
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      return [];
+    },
+    enabled: debouncedSearch.trim().length > 0,
+  });
 
   const { data: profileData } = useQuery({
     queryKey: ["my-profile"],
@@ -132,7 +174,7 @@ function DashboardPageContent() {
     if (!recipientId.trim() || tokenAmount < 1) return;
     setTransferring(true);
     try {
-      const { status } = await transferTokens({
+      const { status, data } = await transferTokens({
         recipientProfileId: recipientId.trim(),
         amount: tokenAmount,
         message: tokenMessage.trim() || undefined,
@@ -141,10 +183,14 @@ function DashboardPageContent() {
         enqueueSnackbar("Token enviado com sucesso!", { variant: "success" });
         setTokenDialog(false);
         setRecipientId("");
+        setRecipientLabel("");
+        setRecipientSearch("");
         setTokenAmount(1);
         setTokenMessage("");
       } else {
-        enqueueSnackbar("Erro ao enviar token.", { variant: "error" });
+        enqueueSnackbar(getApiError(data, "Erro ao enviar token."), {
+          variant: "error",
+        });
       }
     } finally {
       setTransferring(false);
@@ -168,7 +214,7 @@ function DashboardPageContent() {
       icon: TrendingUp,
     },
     {
-      label: "Tokens",
+      label: "Pts. Reconhecimento",
       value: profile?.gratitudeTokens ?? 0,
       icon: Coins,
     },
@@ -182,7 +228,7 @@ function DashboardPageContent() {
           Olá, {user?.firstName}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Acompanhe seu progresso na comunidade Devs Tocantins
+          A sua história não será esquecida
         </p>
       </div>
 
@@ -370,7 +416,7 @@ function DashboardPageContent() {
             onClick={() => setTokenDialog(true)}
           >
             <Send className="h-4 w-4" />
-            Enviar Token
+            Reconhecer alguém
           </Button>
         </div>
       </div>
@@ -379,23 +425,95 @@ function DashboardPageContent() {
       <Dialog open={tokenDialog} onOpenChange={setTokenDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Enviar Token de Gratidão</DialogTitle>
+            <DialogTitle>Enviar Pontos de Reconhecimento</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Reconheça a contribuição de alguém. Cada ponto enviado conta como
+              XP para o destinatário.
+            </p>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* Recipient combobox */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">
-                ID do Perfil Destinatário
-              </label>
-              <input
-                value={recipientId}
-                onChange={(e) => setRecipientId(e.target.value)}
-                placeholder="ID do perfil..."
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <label className="text-sm font-medium">Destinatário</label>
+              {recipientId ? (
+                <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm">
+                  <span className="flex-1 truncate">{recipientLabel}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecipientId("");
+                      setRecipientLabel("");
+                      setRecipientSearch("");
+                    }}
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <input
+                      value={recipientSearch}
+                      onChange={(e) => {
+                        setRecipientSearch(e.target.value);
+                        setShowDropdown(true);
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Buscar por nome ou @username..."
+                      className="w-full rounded-lg border border-input bg-background pl-9 pr-9 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    {searching && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {showDropdown && debouncedSearch.trim() && (
+                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
+                      {searchResults && searchResults.length > 0
+                        ? searchResults.map((profile) => (
+                            <button
+                              key={profile.id}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setRecipientId(profile.id);
+                                setRecipientLabel(
+                                  `@${profile.username}${profile.firstName ? ` — ${profile.firstName}${profile.lastName ? " " + profile.lastName : ""}` : ""}`
+                                );
+                                setRecipientSearch("");
+                                setShowDropdown(false);
+                              }}
+                              className="flex w-full items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                            >
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold font-heading">
+                                {profile.firstName?.[0] ??
+                                  profile.username[0].toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">
+                                  {profile.firstName} {profile.lastName}
+                                </p>
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  @{profile.username}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        : !searching && (
+                            <p className="px-3 py-3 text-sm text-muted-foreground text-center">
+                              Nenhum usuário encontrado
+                            </p>
+                          )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">
-                Quantidade (1–5, disponíveis: {profile?.gratitudeTokens ?? 0})
+                Quantidade de pontos (1–5, disponíveis:{" "}
+                {profile?.gratitudeTokens ?? 0})
               </label>
               <input
                 type="number"
@@ -425,7 +543,7 @@ function DashboardPageContent() {
               onClick={handleTransfer}
               disabled={transferring || !recipientId.trim()}
             >
-              {transferring ? "Enviando..." : "Enviar Token"}
+              {transferring ? "Enviando..." : "Enviar Reconhecimento"}
             </Button>
           </DialogFooter>
         </DialogContent>

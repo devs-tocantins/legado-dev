@@ -206,7 +206,7 @@ function LeaderboardPageContent() {
           Ranking da Comunidade
         </h1>
         <p className="text-sm text-muted-foreground">
-          Os membros mais ativos da Devs Tocantins
+          Os membros mais ativos do legado.dev
         </p>
       </div>
 
@@ -306,7 +306,7 @@ function LeaderboardPageContent() {
                         XP
                       </th>
                       <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">
-                        Tokens
+                        Reconhecimento
                       </th>
                     </tr>
                   </thead>

@@ -30,7 +30,7 @@ const CATEGORY_META: Record<
     icon: React.ElementType;
     color: string;
     bg: string;
-    unit: "XP" | "Token" | "auto";
+    unit: "XP" | "Pts" | "auto";
   }
 > = {
   [TransactionCategoryEnum.XP_REWARD]: {
@@ -48,25 +48,25 @@ const CATEGORY_META: Record<
     unit: "XP",
   },
   [TransactionCategoryEnum.TOKEN_REWARD]: {
-    label: "Gratidão recebida",
+    label: "Reconhecimento recebido",
     icon: ArrowDownLeft,
     color: "text-amber-500",
     bg: "bg-amber-500/10",
-    unit: "Token",
+    unit: "Pts",
   },
   [TransactionCategoryEnum.TOKEN_TRANSFER]: {
-    label: "Gratidão enviada",
+    label: "Reconhecimento enviado",
     icon: ArrowUpRight,
     color: "text-muted-foreground",
     bg: "bg-muted",
-    unit: "Token",
+    unit: "Pts",
   },
   [TransactionCategoryEnum.STORE_PURCHASE]: {
     label: "Compra na loja",
     icon: Coins,
     color: "text-amber-500",
     bg: "bg-amber-500/10",
-    unit: "Token",
+    unit: "Pts",
   },
   [TransactionCategoryEnum.MANUAL_ADJUSTMENT]: {
     label: "Ajuste administrativo",
@@ -84,11 +84,11 @@ function getMetaForTx(tx: Transaction) {
   const desc = tx.description?.toLowerCase() ?? "";
   if (MONTHLY_RESET_KEYWORDS.some((k) => desc.includes(k))) {
     return {
-      label: "Renovação mensal — tokens restaurados",
+      label: "Renovação mensal — pontos de reconhecimento restaurados",
       icon: RefreshCw,
       color: "text-muted-foreground",
       bg: "bg-muted",
-      unit: "Token" as const,
+      unit: "Pts" as const,
     };
   }
   return (
@@ -105,7 +105,7 @@ function formatAmount(tx: Transaction): { text: string; cls: string } {
   const text = `${sign}${tx.amount} ${unit}`;
   const cls = isPositive
     ? "text-emerald-500"
-    : meta.unit === "Token" ||
+    : meta.unit === "Pts" ||
         tx.category === TransactionCategoryEnum.TOKEN_TRANSFER
       ? "text-muted-foreground"
       : "text-destructive";
@@ -206,7 +206,7 @@ function TransactionsPageContent() {
     <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Histórico de Tokens e XP
+          Histórico de XP e Reconhecimento
         </h1>
         <p className="text-sm text-muted-foreground">
           Todas as movimentações do seu perfil

@@ -9,7 +9,9 @@ type Props = {
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
   await getServerTranslation(params.language, "common");
-  return { title: `Devs Tocantins · Motor de Engajamento` };
+  return {
+    title: { absolute: "legado.dev — A sua história não será esquecida" },
+  };
 }
 
 export default function Home() {

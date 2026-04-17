@@ -111,8 +111,8 @@ const FEATURES = [
   },
   {
     icon: Star,
-    title: "Tokens de Gratidão",
-    desc: "Todo mês você recebe tokens para reconhecer quem fez diferença pra você — sem acumular, sem esquecer.",
+    title: "Reconhecimento em XP",
+    desc: "Todo mês você recebe pontos para reconhecer quem fez diferença — cada ponto enviado vira XP real para quem recebe.",
     accent: "text-amber-500",
     accentBg: "bg-amber-500/10",
   },
@@ -353,7 +353,7 @@ export default function HomePageContent() {
                 variants={fadeUp}
                 className="mb-5 text-xs font-semibold uppercase tracking-widest text-accent"
               >
-                Devs Tocantins
+                legado.dev
               </motion.p>
 
               {/* Headline */}

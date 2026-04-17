@@ -126,7 +126,7 @@ function Profile() {
                       {profile.gratitudeTokens}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Tokens
+                      Pts. Reconhecimento
                     </p>
                   </div>
                 </div>
