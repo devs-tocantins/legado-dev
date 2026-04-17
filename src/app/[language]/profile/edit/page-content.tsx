@@ -506,8 +506,10 @@ function FormUsername() {
     setError("");
     const trimmed = username.trim().toLowerCase();
     if (!trimmed) return;
-    if (!/^[a-z0-9_]{3,30}$/.test(trimmed)) {
-      setError("3–30 caracteres: letras minúsculas, números e underscore.");
+    if (!/^[a-z0-9_-]{3,30}$/.test(trimmed)) {
+      setError(
+        "3–30 caracteres: letras minúsculas, números, underscore e hífen."
+      );
       return;
     }
     setSaving(true);

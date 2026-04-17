@@ -54,7 +54,10 @@ function useValidationSchema() {
       .string()
       .min(3, "Mínimo 3 caracteres")
       .max(30, "Máximo 30 caracteres")
-      .matches(/^[a-z0-9_]+$/, "Apenas letras minúsculas, números e underscore")
+      .matches(
+        /^[a-z0-9_-]+$/,
+        "Apenas letras minúsculas, números, underscore e hífen"
+      )
       .required("O @username é obrigatório"),
     policy: yup
       .array()
@@ -116,7 +119,7 @@ function SignUpForm() {
 
   useEffect(() => {
     const raw = watchedUsername ?? "";
-    const normalized = raw.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const normalized = raw.toLowerCase().replace(/[^a-z0-9_-]/g, "");
     if (normalized.length < 3) {
       setUsernameAvailable(null);
       return;
@@ -263,7 +266,7 @@ function SignUpForm() {
                 onChange={(e) => {
                   const val = e.target.value
                     .toLowerCase()
-                    .replace(/[^a-z0-9_]/g, "");
+                    .replace(/[^a-z0-9_-]/g, "");
                   setValue("username", val, { shouldValidate: true });
                 }}
                 className={cn(
