@@ -1,5 +1,6 @@
 {
-  "app-name": "APP",
+  "title": "legado.dev",
+  "app-name": "legado.dev",
   "loading": "Loading ...",
   "navigation": {
     "home": "Home",
@@ -7,6 +8,10 @@
     "signUp": "Sign Up",
     "profile": "Profile",
     "users": "Users",
+    "activities": "Activities",
+    "submissions": "Submissions",
+    "transactions": "Transactions",
+    "gamificationProfiles": "Gamification Profiles",
     "logout": "Logout"
   },
   "formInputs": {

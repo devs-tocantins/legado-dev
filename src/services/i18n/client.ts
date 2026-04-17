@@ -1,5 +1,5 @@
 "use client";
-
+// i18n client singleton
 import i18next from "i18next";
 import { useEffect, useState } from "react";
 import {

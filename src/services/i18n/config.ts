@@ -10,9 +10,9 @@ export function getOptions(
   return {
     debug: process.env.NODE_ENV === "development",
     supportedLngs: languages,
-    nonExplicitSupportedLngs: true,
     fallbackLng: fallbackLanguage,
     lng: language,
+    load: "currentOnly" as const,
     fallbackNS: defaultNamespace,
     defaultNS: defaultNamespace,
     ns: namespace,
