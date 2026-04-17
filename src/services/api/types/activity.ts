@@ -6,6 +6,7 @@ export type Activity = {
   isHidden: boolean;
   secretCode?: string | null;
   requiresProof: boolean;
+  requiresDescription: boolean;
   cooldownHours: number;
   createdAt: string;
   updatedAt: string;

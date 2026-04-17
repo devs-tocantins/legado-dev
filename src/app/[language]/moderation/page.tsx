@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ModerationPageContent from "./page-content";
 
 export const metadata: Metadata = {
-  title: "Moderação | Devs Tocantins",
+  title: "Moderação",
 };
 
 export default function Page() {

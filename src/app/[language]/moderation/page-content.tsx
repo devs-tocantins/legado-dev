@@ -19,9 +19,10 @@ import {
   ChevronUp,
   X,
   User,
+  AlignLeft,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { cn } from "@/lib/utils";
+import { cn, getApiError } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 
 function SubmissionItem({
@@ -41,7 +42,7 @@ function SubmissionItem({
   const handleApprove = async () => {
     setProcessing(true);
     try {
-      const { status } = await reviewSubmission({
+      const { status, data } = await reviewSubmission({
         id: submission.id,
         data: { status: "APPROVED" },
       });
@@ -49,7 +50,9 @@ function SubmissionItem({
         enqueueSnackbar("Submissão aprovada!", { variant: "success" });
         onReviewed();
       } else {
-        enqueueSnackbar("Erro ao aprovar.", { variant: "error" });
+        enqueueSnackbar(getApiError(data, "Erro ao aprovar."), {
+          variant: "error",
+        });
       }
     } finally {
       setProcessing(false);
@@ -60,7 +63,7 @@ function SubmissionItem({
     if (!feedback.trim()) return;
     setProcessing(true);
     try {
-      const { status } = await reviewSubmission({
+      const { status, data } = await reviewSubmission({
         id: submission.id,
         data: { status: "REJECTED", feedback: feedback.trim() },
       });
@@ -68,7 +71,9 @@ function SubmissionItem({
         enqueueSnackbar("Submissão rejeitada.", { variant: "success" });
         onReviewed();
       } else {
-        enqueueSnackbar("Erro ao rejeitar.", { variant: "error" });
+        enqueueSnackbar(getApiError(data, "Erro ao rejeitar."), {
+          variant: "error",
+        });
       }
     } finally {
       setProcessing(false);
@@ -106,6 +111,12 @@ function SubmissionItem({
               <ExternalLink className="h-3 w-3" />
               Ver comprovante
             </a>
+          )}
+          {submission.description && (
+            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <AlignLeft className="h-3 w-3 mt-0.5 shrink-0" />
+              <p className="line-clamp-3">{submission.description}</p>
+            </div>
           )}
         </div>
         <Badge variant="secondary" className="shrink-0 text-xs">

@@ -8,7 +8,8 @@ export type Submission = {
   id: string;
   profileId: string;
   activityId: string;
-  proofUrl?: string;
+  proofUrl?: string | null;
+  description?: string | null;
   status: SubmissionStatusEnum;
   feedback?: string | null;
   awardedXp: number;

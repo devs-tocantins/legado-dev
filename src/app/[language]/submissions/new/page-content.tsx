@@ -15,13 +15,14 @@ import {
   Zap,
   Clock,
   FileCheck,
+  AlignLeft,
   Search,
   Check,
   CheckCircle2,
   RotateCcw,
   ClipboardList,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import useLanguage from "@/services/i18n/use-language";
 
@@ -40,9 +41,12 @@ function NewSubmissionPageContent() {
     null
   );
   const [proofUrl, setProofUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [descriptionCount, setDescriptionCount] = useState(0);
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [proofError, setProofError] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -86,20 +90,24 @@ function NewSubmissionPageContent() {
       return;
     }
     setProofError("");
+    if (selectedActivity.requiresDescription && !description.trim()) {
+      setDescriptionError("A descrição é obrigatória para esta atividade.");
+      return;
+    }
+    setDescriptionError("");
     setSubmitting(true);
     try {
-      const { status } = await postSubmission({
+      const { status, data } = await postSubmission({
         activityId: selectedActivity.id,
         proofUrl: proofUrl.trim() || undefined,
+        description: description.trim() || undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
         setSubmitted(true);
-      } else if (status === HTTP_CODES_ENUM.BAD_REQUEST) {
-        enqueueSnackbar("Você precisa aguardar o cooldown desta atividade.", {
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao enviar submissão."), {
           variant: "error",
         });
-      } else {
-        enqueueSnackbar("Erro ao enviar submissão.", { variant: "error" });
       }
     } finally {
       setSubmitting(false);
@@ -110,8 +118,11 @@ function NewSubmissionPageContent() {
     setSubmitted(false);
     setSelectedActivity(null);
     setProofUrl("");
+    setDescription("");
+    setDescriptionCount(0);
     setSearch("");
     setProofError("");
+    setDescriptionError("");
   };
 
   // Success state
@@ -197,6 +208,12 @@ function NewSubmissionPageContent() {
                       Requer comprovante
                     </span>
                   )}
+                  {selectedActivity.requiresDescription && (
+                    <span className="flex items-center gap-1 text-blue-500">
+                      <AlignLeft className="h-3 w-3" />
+                      Requer descrição
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -243,6 +260,11 @@ function NewSubmissionPageContent() {
                             {activity.requiresProof && (
                               <span className="text-amber-500">
                                 Requer comprovante
+                              </span>
+                            )}
+                            {activity.requiresDescription && (
+                              <span className="text-blue-500">
+                                Requer descrição
                               </span>
                             )}
                             {activity.cooldownHours > 0 && (
@@ -293,6 +315,66 @@ function NewSubmissionPageContent() {
               Cole o link que comprova sua participação (PR, post, repositório,
               etc.)
             </p>
+          </div>
+        )}
+
+        {/* Required description */}
+        {selectedActivity?.requiresDescription && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <AlignLeft className="h-4 w-4 text-primary" />
+                Descrição <span className="text-destructive">*</span>
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {descriptionCount}/1000
+              </span>
+            </div>
+            <textarea
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setDescriptionCount(e.target.value.length);
+                setDescriptionError("");
+              }}
+              placeholder="Descreva como realizou esta atividade..."
+              rows={4}
+              maxLength={1000}
+              className={cn(
+                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-all",
+                descriptionError &&
+                  "border-destructive focus:ring-destructive/30"
+              )}
+            />
+            {descriptionError && (
+              <p className="text-xs text-destructive">{descriptionError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Optional description for activities that don't require it */}
+        {selectedActivity && !selectedActivity.requiresDescription && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                <AlignLeft className="h-4 w-4" />
+                Descrição (opcional)
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {descriptionCount}/1000
+              </span>
+            </div>
+            <textarea
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setDescriptionCount(e.target.value.length);
+              }}
+              placeholder="Adicione contexto ou detalhes sobre sua participação..."
+              rows={3}
+              maxLength={1000}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            />
           </div>
         )}
 

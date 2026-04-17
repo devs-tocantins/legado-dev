@@ -67,7 +67,8 @@ export function useGetSubmissionService() {
 
 export type SubmissionPostRequest = {
   activityId: string;
-  proofUrl?: string;
+  proofUrl?: string | null;
+  description?: string | null;
 };
 
 export type SubmissionPostResponse = Submission;
