@@ -52,6 +52,28 @@ export function useAuthGoogleLoginService() {
   );
 }
 
+export type AuthGitHubLoginRequest = {
+  code: string;
+};
+
+export type AuthGitHubLoginResponse = Tokens & {
+  user: User;
+};
+
+export function useAuthGitHubLoginService() {
+  const fetchBase = useFetch();
+
+  return useCallback(
+    (data: AuthGitHubLoginRequest) => {
+      return fetchBase(`${API_URL}/api/v1/auth/github/login`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }).then(wrapperFetchJsonResponse<AuthGitHubLoginResponse>);
+    },
+    [fetchBase]
+  );
+}
+
 export type AuthSignUpRequest = {
   email: string;
   password: string;
