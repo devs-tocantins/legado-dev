@@ -322,19 +322,53 @@ function FormChangeEmail() {
   );
 }
 
+const PWD_RESET_KEY = "pwd-reset-last-sent";
+const COOLDOWN_SECONDS = 60;
+
+function useCooldown() {
+  const getRemaining = () => {
+    const last = Number(localStorage.getItem(PWD_RESET_KEY) ?? 0);
+    return Math.max(
+      0,
+      COOLDOWN_SECONDS - Math.floor((Date.now() - last) / 1000)
+    );
+  };
+
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    setRemaining(getRemaining());
+    const id = setInterval(() => {
+      const r = getRemaining();
+      setRemaining(r);
+      if (r === 0) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const start = () => {
+    localStorage.setItem(PWD_RESET_KEY, String(Date.now()));
+    setRemaining(COOLDOWN_SECONDS);
+  };
+
+  return { remaining, start };
+}
+
 // --- Form: Change Password via Email ---
 function FormChangePasswordViaEmail() {
   const { user } = useAuth();
   const forgotPassword = useAuthForgotPasswordService();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { remaining, start } = useCooldown();
 
   const handleSend = async () => {
-    if (!user?.email) return;
+    if (!user?.email || remaining > 0) return;
     setLoading(true);
     try {
       await forgotPassword({ email: user.email });
       setSent(true);
+      start();
     } finally {
       setLoading(false);
     }
@@ -355,6 +389,11 @@ function FormChangePasswordViaEmail() {
                 Verifique o e-mail{" "}
                 <span className="font-mono font-medium">{user?.email}</span>{" "}
                 para criar uma nova senha.
+                {remaining > 0 && (
+                  <span className="ml-1 text-muted-foreground">
+                    (novo link disponível em {remaining}s)
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -371,7 +410,7 @@ function FormChangePasswordViaEmail() {
               type="button"
               variant="outline"
               onClick={handleSend}
-              disabled={loading}
+              disabled={loading || remaining > 0}
               className="gap-2"
             >
               {loading ? (
@@ -379,7 +418,9 @@ function FormChangePasswordViaEmail() {
               ) : (
                 <Mail className="h-4 w-4" />
               )}
-              Enviar link para alterar senha
+              {remaining > 0
+                ? `Aguarde ${remaining}s para reenviar`
+                : "Enviar link para alterar senha"}
             </Button>
           </div>
         )}
