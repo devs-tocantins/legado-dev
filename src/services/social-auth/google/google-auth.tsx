@@ -54,7 +54,7 @@ export default function GoogleAuth() {
             tokenExpires: data.tokenExpires,
           });
           setUser(data.user);
-          router.push(data.isNewUser ? "/onboarding" : "/dashboard");
+          router.push("/onboarding");
         }
       } finally {
         setIsLoading(false);
