@@ -6,9 +6,9 @@ import { FetchInputType, FetchInitType } from "./types/fetch-params";
 import useLanguage from "../i18n/use-language";
 import { getTokensInfo, setTokensInfo } from "../auth/auth-tokens-info";
 
-let refreshPromise: Promise<void> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
-async function refreshTokens(): Promise<void> {
+async function refreshTokens(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
@@ -22,6 +22,11 @@ async function refreshTokens(): Promise<void> {
         },
       });
 
+      if (!response.ok) {
+        setTokensInfo(null);
+        return false;
+      }
+
       const newTokens = await response.json();
 
       if (newTokens.token) {
@@ -30,9 +35,14 @@ async function refreshTokens(): Promise<void> {
           refreshToken: newTokens.refreshToken,
           tokenExpires: newTokens.tokenExpires,
         });
+        return true;
       }
+
+      setTokensInfo(null);
+      return false;
     } catch {
-      // Refresh failed — callers will proceed with current token
+      setTokensInfo(null);
+      return false;
     } finally {
       refreshPromise = null;
     }
@@ -67,13 +77,22 @@ function useFetch() {
       }
 
       if (tokens?.tokenExpires && tokens.tokenExpires - 60000 <= Date.now()) {
-        await refreshTokens();
-        const refreshedTokens = getTokensInfo();
-        if (refreshedTokens?.token) {
-          headers = {
-            ...headers,
-            Authorization: `Bearer ${refreshedTokens.token}`,
-          };
+        const refreshed = await refreshTokens();
+        if (refreshed) {
+          const refreshedTokens = getTokensInfo();
+          if (refreshedTokens?.token) {
+            headers = {
+              ...headers,
+              Authorization: `Bearer ${refreshedTokens.token}`,
+            };
+          }
+        } else {
+          // Refresh falhou — remove header de auth para não enviar token inválido
+          const { Authorization: _, ...headersWithoutAuth } = headers as Record<
+            string,
+            string
+          >;
+          headers = headersWithoutAuth;
         }
       }
 

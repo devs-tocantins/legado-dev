@@ -193,15 +193,20 @@ function LiveRankingCard() {
   const { data, isLoading } = useQuery({
     queryKey: ["landing-ranking"],
     queryFn: async () => {
-      const { status, data } = await fetchProfiles({
-        page: 1,
-        limit: 5,
-        sort: [{ orderBy: "currentMonthlyXp", order: SortEnum.DESC }],
-      });
-      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      try {
+        const { status, data } = await fetchProfiles({
+          page: 1,
+          limit: 5,
+          sort: [{ orderBy: "currentMonthlyXp", order: SortEnum.DESC }],
+        });
+        if (status === HTTP_CODES_ENUM.OK) return data.data;
+      } catch {
+        // endpoint indisponível — exibe lista vazia sem erro
+      }
       return [];
     },
     staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
   const now = new Date();
