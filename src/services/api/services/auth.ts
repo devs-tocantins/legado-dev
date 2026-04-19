@@ -30,7 +30,8 @@ export function useAuthLoginService() {
 }
 
 export type AuthGoogleLoginRequest = {
-  idToken: string;
+  idToken?: string;
+  accessToken?: string;
 };
 
 export type AuthGoogleLoginResponse = Tokens & {
