@@ -233,10 +233,10 @@ function ChangeEmailActions() {
 
 function FormChangeEmail() {
   const fetchAuthPatchMe = useAuthPatchMeService();
-  const { enqueueSnackbar } = useSnackbar();
   const { t } = useTranslation("profile");
   const { user } = useAuth();
   const validationSchema = useChangeEmailSchema();
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const methods = useForm<ChangeEmailFormData>({
     resolver: yupResolver(validationSchema),
@@ -262,11 +262,8 @@ function FormChangeEmail() {
       return;
     }
     if (status === HTTP_CODES_ENUM.OK) {
+      setPendingEmail(formData.email);
       reset();
-      enqueueSnackbar(t("profile:alerts.email.success"), {
-        variant: "success",
-        autoHideDuration: 15000,
-      });
     }
   });
 
@@ -277,45 +274,81 @@ function FormChangeEmail() {
           <CardTitle className="text-base">{t("profile:title2")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Email atual:{" "}
-              <span className="font-medium text-foreground">{user?.email}</span>
-            </p>
-            <Field
-              label={t("profile:inputs.email.label")}
-              error={errors.email?.message}
-            >
-              <TextInput
-                type="email"
-                data-testid="email"
-                error={!!errors.email}
-                {...register("email")}
-              />
-            </Field>
-            <Field
-              label={t("profile:inputs.emailConfirmation.label")}
-              error={errors.emailConfirmation?.message}
-            >
-              <TextInput
-                type="email"
-                data-testid="email-confirmation"
-                error={!!errors.emailConfirmation}
-                {...register("emailConfirmation")}
-              />
-            </Field>
-            <div className="flex gap-2 pt-1">
-              <ChangeEmailActions />
+          {pendingEmail ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 text-sm text-emerald-600">
+                <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Confirmação enviada!</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">
+                    Enviamos um link de confirmação para{" "}
+                    <span className="font-mono font-medium text-foreground">
+                      {pendingEmail}
+                    </span>
+                    . O e-mail só será alterado após você clicar no link.
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Seu e-mail atual{" "}
+                <span className="font-mono font-medium text-foreground">
+                  {user?.email}
+                </span>{" "}
+                continua ativo até a confirmação.
+              </p>
               <Button
                 type="button"
-                variant="outline"
-                render={<Link href="/profile" />}
-                data-testid="cancel-edit-email"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs px-2"
+                onClick={() => setPendingEmail(null)}
               >
-                {t("profile:actions.cancel")}
+                Alterar para outro e-mail
               </Button>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Email atual:{" "}
+                <span className="font-medium text-foreground">
+                  {user?.email}
+                </span>
+              </p>
+              <Field
+                label={t("profile:inputs.email.label")}
+                error={errors.email?.message}
+              >
+                <TextInput
+                  type="email"
+                  data-testid="email"
+                  error={!!errors.email}
+                  {...register("email")}
+                />
+              </Field>
+              <Field
+                label={t("profile:inputs.emailConfirmation.label")}
+                error={errors.emailConfirmation?.message}
+              >
+                <TextInput
+                  type="email"
+                  data-testid="email-confirmation"
+                  error={!!errors.emailConfirmation}
+                  {...register("emailConfirmation")}
+                />
+              </Field>
+              <div className="flex gap-2 pt-1">
+                <ChangeEmailActions />
+                <Button
+                  type="button"
+                  variant="outline"
+                  render={<Link href="/profile" />}
+                  data-testid="cancel-edit-email"
+                >
+                  {t("profile:actions.cancel")}
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </FormProvider>
