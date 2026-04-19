@@ -307,7 +307,7 @@ export default function HomePageContent() {
               animate="visible"
             >
               {/* Logo */}
-              <motion.div variants={fadeUp} className="mb-8">
+              <motion.div variants={fadeUp} className="mb-6">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/LOGO.svg"
@@ -319,22 +319,19 @@ export default function HomePageContent() {
 
               {/* Headline */}
               <motion.h1
-                className="mb-6 font-bold leading-[1.1] tracking-tight text-foreground"
-                style={{ fontSize: "clamp(2.4rem, 5.5vw, 4rem)" }}
-                variants={staggerContainer(0.15, 0)}
-                initial="hidden"
-                animate="visible"
+                className="mb-4 font-bold leading-[1.05] tracking-tight text-foreground"
+                style={{ fontSize: "clamp(3.5rem, 8vw, 6rem)" }}
+                variants={fadeUp}
               >
-                <motion.span variants={fadeUp} className="block">
-                  Contribua.
-                </motion.span>
-                <motion.span variants={fadeUp} className="block">
-                  Evolua.
-                </motion.span>
-                <motion.span variants={fadeUp} className="block text-primary">
-                  Seja reconhecido.
-                </motion.span>
+                legado.dev
               </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                className="mb-6 text-base font-medium text-muted-foreground sm:text-lg"
+              >
+                A sua história não será esquecida.
+              </motion.p>
 
               {/* Subtitle */}
               <motion.p

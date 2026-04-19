@@ -262,9 +262,6 @@ function DashboardPageContent() {
         <h1 className="text-2xl font-bold tracking-tight">
           Olá, {user?.firstName}!
         </h1>
-        <p className="text-sm text-muted-foreground">
-          A sua história não será esquecida
-        </p>
       </div>
 
       {/* Stat cards */}
