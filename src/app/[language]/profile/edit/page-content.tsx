@@ -220,13 +220,17 @@ const useChangeEmailSchema = () => {
   });
 };
 
-function ChangeEmailActions() {
+function ChangeEmailActions({ cooldown }: { cooldown: number }) {
   const { t } = useTranslation("profile");
   const { isSubmitting, isDirty } = useFormState();
   useLeavePage(isDirty);
   return (
-    <Button type="submit" disabled={isSubmitting} data-testid="save-email">
-      {t("profile:actions.submit")}
+    <Button
+      type="submit"
+      disabled={isSubmitting || cooldown > 0}
+      data-testid="save-email"
+    >
+      {cooldown > 0 ? `Aguarde ${cooldown}s` : t("profile:actions.submit")}
     </Button>
   );
 }
@@ -237,6 +241,7 @@ function FormChangeEmail() {
   const { user } = useAuth();
   const validationSchema = useChangeEmailSchema();
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const { remaining, start } = useCooldown("email-change-last-sent");
 
   const methods = useForm<ChangeEmailFormData>({
     resolver: yupResolver(validationSchema),
@@ -263,6 +268,7 @@ function FormChangeEmail() {
     }
     if (status === HTTP_CODES_ENUM.OK) {
       setPendingEmail(formData.email);
+      start();
       reset();
     }
   });
@@ -286,6 +292,11 @@ function FormChangeEmail() {
                       {pendingEmail}
                     </span>
                     . O e-mail só será alterado após você clicar no link.
+                    {remaining > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        (reenvio disponível em {remaining}s)
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -301,9 +312,12 @@ function FormChangeEmail() {
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs px-2"
+                disabled={remaining > 0}
                 onClick={() => setPendingEmail(null)}
               >
-                Alterar para outro e-mail
+                {remaining > 0
+                  ? `Aguarde ${remaining}s para alterar novamente`
+                  : "Alterar para outro e-mail"}
               </Button>
             </div>
           ) : (
@@ -337,7 +351,7 @@ function FormChangeEmail() {
                 />
               </Field>
               <div className="flex gap-2 pt-1">
-                <ChangeEmailActions />
+                <ChangeEmailActions cooldown={remaining} />
                 <Button
                   type="button"
                   variant="outline"
@@ -355,12 +369,11 @@ function FormChangeEmail() {
   );
 }
 
-const PWD_RESET_KEY = "pwd-reset-last-sent";
 const COOLDOWN_SECONDS = 60;
 
-function useCooldown() {
+function useCooldown(key: string) {
   const getRemaining = () => {
-    const last = Number(localStorage.getItem(PWD_RESET_KEY) ?? 0);
+    const last = Number(localStorage.getItem(key) ?? 0);
     return Math.max(
       0,
       COOLDOWN_SECONDS - Math.floor((Date.now() - last) / 1000)
@@ -380,7 +393,7 @@ function useCooldown() {
   }, []);
 
   const start = () => {
-    localStorage.setItem(PWD_RESET_KEY, String(Date.now()));
+    localStorage.setItem(key, String(Date.now()));
     setRemaining(COOLDOWN_SECONDS);
   };
 
@@ -393,7 +406,7 @@ function FormChangePasswordViaEmail() {
   const forgotPassword = useAuthForgotPasswordService();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { remaining, start } = useCooldown();
+  const { remaining, start } = useCooldown("pwd-reset-last-sent");
 
   const handleSend = async () => {
     if (!user?.email || remaining > 0) return;
