@@ -1,0 +1,204 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, useFormState, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
+import useAuth from "@/services/auth/use-auth";
+import {
+  useCheckUsernameService,
+  useUpdateMyGamificationProfileService,
+} from "@/services/api/services/gamification-profiles";
+import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
+import { Button } from "@/components/ui/button";
+import { Loader2, CheckCircle2, XCircle, AtSign } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const schema = yup.object().shape({
+  username: yup
+    .string()
+    .min(3, "Mínimo 3 caracteres")
+    .max(30, "Máximo 30 caracteres")
+    .matches(/^[a-z0-9_-]+$/, "Apenas letras minúsculas, números, _ e -")
+    .required("Obrigatório"),
+});
+
+type FormData = { username: string };
+
+function OnboardingPageContent() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const checkUsername = useCheckUsernameService();
+  const updateMyProfile = useUpdateMyGamificationProfileService();
+
+  const [availability, setAvailability] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { register, handleSubmit, setError, control } = useForm<FormData>({
+    resolver: yupResolver(schema),
+    mode: "onChange",
+    defaultValues: { username: "" },
+  });
+
+  const { errors, isValid } = useFormState({ control });
+  const watchedUsername = useWatch({ control, name: "username" });
+
+  const checkAvailability = useCallback(
+    (value: string) => {
+      const normalized = value.trim().toLowerCase();
+      if (
+        !normalized ||
+        normalized.length < 3 ||
+        !/^[a-z0-9_-]+$/.test(normalized)
+      ) {
+        setAvailability(null);
+        return;
+      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setChecking(true);
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const { status, data } = await checkUsername(normalized);
+          if (status === HTTP_CODES_ENUM.OK) {
+            setAvailability(data.available);
+          }
+        } finally {
+          setChecking(false);
+        }
+      }, 400);
+    },
+    [checkUsername]
+  );
+
+  useEffect(() => {
+    checkAvailability(watchedUsername ?? "");
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [watchedUsername, checkAvailability]);
+
+  const onSubmit = handleSubmit(async (data) => {
+    if (!availability) {
+      setError("username", { message: "Este @username já está em uso" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { status } = await updateMyProfile({
+        username: data.username.toLowerCase(),
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        router.push("/dashboard?tour=1");
+      } else {
+        setError("username", { message: "Erro ao salvar. Tente novamente." });
+      }
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Olá, {user?.firstName ?? "dev"}!
+          </h1>
+          <p className="text-muted-foreground">
+            Antes de explorar a plataforma, escolha seu{" "}
+            <span className="font-mono font-medium text-foreground">
+              @username
+            </span>{" "}
+            público. É como a comunidade vai te conhecer.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="username">
+              @username
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                <AtSign className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <input
+                id="username"
+                type="text"
+                autoFocus
+                autoComplete="off"
+                placeholder="seu-username"
+                {...register("username")}
+                className={cn(
+                  "w-full rounded-lg border bg-background pl-9 pr-10 py-2.5 text-sm shadow-sm",
+                  "focus:outline-none focus:ring-2 focus:ring-ring transition-all",
+                  errors.username
+                    ? "border-destructive focus:ring-destructive/30"
+                    : "border-input"
+                )}
+              />
+              <div className="absolute inset-y-0 right-3 flex items-center">
+                {checking && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                {!checking && availability === true && (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                )}
+                {!checking && availability === false && (
+                  <XCircle className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+            </div>
+            {errors.username && (
+              <p className="text-xs text-destructive">
+                {errors.username.message}
+              </p>
+            )}
+            {!errors.username && availability === false && (
+              <p className="text-xs text-destructive">
+                Este @username já está em uso
+              </p>
+            )}
+            {!errors.username && availability === true && (
+              <p className="text-xs text-emerald-600">Disponível!</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              3–30 caracteres. Apenas letras minúsculas, números,{" "}
+              <code className="bg-muted px-1 rounded">_</code> e{" "}
+              <code className="bg-muted px-1 rounded">-</code>.
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={saving || !isValid || availability !== true}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Entrar na plataforma"
+            )}
+          </Button>
+        </form>
+
+        {/* Skip note */}
+        <p className="text-center text-xs text-muted-foreground">
+          Você pode alterar seu @username depois em{" "}
+          <span className="font-mono">Editar Perfil</span>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default withPageRequiredAuth(OnboardingPageContent);

@@ -36,6 +36,7 @@ export type AuthGoogleLoginRequest = {
 
 export type AuthGoogleLoginResponse = Tokens & {
   user: User;
+  isNewUser?: boolean;
 };
 
 export function useAuthGoogleLoginService() {
@@ -58,6 +59,7 @@ export type AuthGitHubLoginRequest = {
 
 export type AuthGitHubLoginResponse = Tokens & {
   user: User;
+  isNewUser?: boolean;
 };
 
 export function useAuthGitHubLoginService() {

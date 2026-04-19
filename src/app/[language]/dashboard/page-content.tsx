@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
+import SpotlightTour from "@/components/tour/spotlight-tour";
 import useAuth from "@/services/auth/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -85,6 +87,26 @@ function DashboardPageContent() {
   const transferTokens = useTransferTokensService();
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchProfileBadges = useGetProfileBadgesService();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const statsRef = useRef<HTMLDivElement>(null);
+  const levelRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("tour") === "1") {
+      const timer = setTimeout(() => setShowTour(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
+  const handleTourFinish = () => {
+    setShowTour(false);
+    router.replace("/dashboard");
+  };
 
   const [tokenDialog, setTokenDialog] = useState(false);
   const [recipientId, setRecipientId] = useState("");
@@ -246,7 +268,7 @@ function DashboardPageContent() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div ref={statsRef} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
           <Card key={label}>
             <CardContent className="px-4 py-4">
@@ -268,58 +290,60 @@ function DashboardPageContent() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Level card */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Seu Nível
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className={cn("text-2xl font-bold", level.color)}>
-                {level.name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {level.maxXp === Infinity
-                  ? "Nível máximo atingido!"
-                  : `${formatXp(nextLevelXp - totalXp)} XP para o próximo nível`}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                <span>{formatXp(level.minXp)}</span>
-                <span>{progress}%</span>
-                <span>
-                  {level.maxXp === Infinity ? "∞" : formatXp(level.maxXp)}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full bg-primary"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                />
-              </div>
-            </div>
-            {profile && (
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground font-mono">
-                  @{profile.username}
+        <div ref={levelRef} className="lg:col-span-1">
+          <Card className="h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Seu Nível
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className={cn("text-2xl font-bold", level.color)}>
+                  {level.name}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs px-2 gap-1"
-                  render={<Link href={`/u/${profile.username}`} />}
-                >
-                  Ver público
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  {level.maxXp === Infinity
+                    ? "Nível máximo atingido!"
+                    : `${formatXp(nextLevelXp - totalXp)} XP para o próximo nível`}
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                  <span>{formatXp(level.minXp)}</span>
+                  <span>{progress}%</span>
+                  <span>
+                    {level.maxXp === Infinity ? "∞" : formatXp(level.maxXp)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full bg-primary"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                  />
+                </div>
+              </div>
+              {profile && (
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-mono">
+                    @{profile.username}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs px-2 gap-1"
+                    render={<Link href={`/u/${profile.username}`} />}
+                  >
+                    Ver público
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent submissions */}
         <Card className="lg:col-span-2">
@@ -429,7 +453,7 @@ function DashboardPageContent() {
       )}
 
       {/* Quick actions */}
-      <div>
+      <div ref={actionsRef}>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3">
           Ações Rápidas
         </h2>
@@ -482,6 +506,32 @@ function DashboardPageContent() {
       </div>
 
       {/* Token transfer dialog */}
+      {showTour && (
+        <SpotlightTour
+          steps={[
+            {
+              ref: statsRef,
+              title: "Seu XP e Reconhecimento",
+              description:
+                "Aqui você acompanha seu XP total, mensal e anual — e seus Pontos de Reconhecimento para enviar a outros devs.",
+            },
+            {
+              ref: levelRef,
+              title: "Nível e Perfil Público",
+              description:
+                "Seu nível sobe conforme você acumula XP. O link do perfil público fica disponível para toda a comunidade.",
+            },
+            {
+              ref: actionsRef,
+              title: "Ações Rápidas",
+              description:
+                "Submeta atividades, veja o ranking, resgate códigos secretos e envie reconhecimento para quem te ajudou.",
+            },
+          ]}
+          onFinish={handleTourFinish}
+        />
+      )}
+
       <Dialog open={tokenDialog} onOpenChange={setTokenDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

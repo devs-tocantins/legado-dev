@@ -29,7 +29,7 @@ export default function GitHubCallbackPageContent() {
           tokenExpires: data.tokenExpires,
         });
         setUser(data.user);
-        router.replace("/dashboard");
+        router.replace(data.isNewUser ? "/onboarding" : "/dashboard");
       } else {
         router.replace("/sign-in");
       }

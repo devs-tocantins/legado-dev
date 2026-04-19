@@ -24,7 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react";
+import { Mail, CheckCircle2, Loader2 } from "lucide-react";
+import { useAuthForgotPasswordService } from "@/services/api/services/auth";
 import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
 
 // --- Types ---
@@ -37,12 +38,6 @@ type BasicInfoFormData = {
 type ChangeEmailFormData = {
   email: string;
   emailConfirmation: string;
-};
-
-type ChangePasswordFormData = {
-  oldPassword: string;
-  password: string;
-  passwordConfirmation: string;
 };
 
 // --- Field component ---
@@ -327,155 +322,69 @@ function FormChangeEmail() {
   );
 }
 
-// --- Form: Change Password ---
-const useChangePasswordSchema = () => {
-  const { t } = useTranslation("profile");
-  return yup.object().shape({
-    oldPassword: yup
-      .string()
-      .min(6, t("profile:inputs.password.validation.min"))
-      .required(t("profile:inputs.password.validation.required")),
-    password: yup
-      .string()
-      .min(6, t("profile:inputs.password.validation.min"))
-      .required(t("profile:inputs.password.validation.required")),
-    passwordConfirmation: yup
-      .string()
-      .oneOf(
-        [yup.ref("password")],
-        t("profile:inputs.passwordConfirmation.validation.match")
-      )
-      .required(t("profile:inputs.passwordConfirmation.validation.required")),
-  });
-};
+// --- Form: Change Password via Email ---
+function FormChangePasswordViaEmail() {
+  const { user } = useAuth();
+  const forgotPassword = useAuthForgotPasswordService();
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-function ChangePasswordActions() {
-  const { t } = useTranslation("profile");
-  const { isSubmitting, isDirty } = useFormState();
-  useLeavePage(isDirty);
-  return (
-    <Button type="submit" disabled={isSubmitting} data-testid="save-password">
-      {t("profile:actions.submit")}
-    </Button>
-  );
-}
-
-function PasswordField({
-  label,
-  error,
-  testId,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
-  error?: string;
-  testId?: string;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <Field label={label} error={error}>
-      <div className="relative">
-        <input
-          type={show ? "text" : "password"}
-          data-testid={testId}
-          {...props}
-          className={cn(
-            "w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all",
-            error && "border-destructive focus:ring-destructive/30"
-          )}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-        >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </Field>
-  );
-}
-
-function FormChangePassword() {
-  const fetchAuthPatchMe = useAuthPatchMeService();
-  const { t } = useTranslation("profile");
-  const validationSchema = useChangePasswordSchema();
-  const { enqueueSnackbar } = useSnackbar();
-
-  const methods = useForm<ChangePasswordFormData>({
-    resolver: yupResolver(validationSchema),
-    defaultValues: { oldPassword: "", password: "", passwordConfirmation: "" },
-  });
-
-  const { handleSubmit, setError, reset, register, control } = methods;
-  const { errors } = useFormState({ control });
-
-  const onSubmit = handleSubmit(async (formData) => {
-    const { data, status } = await fetchAuthPatchMe({
-      password: formData.password,
-      oldPassword: formData.oldPassword,
-    });
-    if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof ChangePasswordFormData>).forEach(
-        (key) => {
-          setError(key, {
-            type: "manual",
-            message: t(
-              `profile:inputs.${key}.validation.server.${data.errors[key]}`
-            ),
-          });
-        }
-      );
-      return;
+  const handleSend = async () => {
+    if (!user?.email) return;
+    setLoading(true);
+    try {
+      await forgotPassword({ email: user.email });
+      setSent(true);
+    } finally {
+      setLoading(false);
     }
-    if (status === HTTP_CODES_ENUM.OK) {
-      reset();
-      enqueueSnackbar(t("profile:alerts.password.success"), {
-        variant: "success",
-      });
-    }
-  });
+  };
 
   return (
-    <FormProvider {...methods}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t("profile:title3")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <PasswordField
-              label={t("profile:inputs.oldPassword.label")}
-              error={errors.oldPassword?.message}
-              testId="old-password"
-              {...register("oldPassword")}
-            />
-            <PasswordField
-              label={t("profile:inputs.password.label")}
-              error={errors.password?.message}
-              testId="new-password"
-              {...register("password")}
-            />
-            <PasswordField
-              label={t("profile:inputs.passwordConfirmation.label")}
-              error={errors.passwordConfirmation?.message}
-              testId="password-confirmation"
-              {...register("passwordConfirmation")}
-            />
-            <div className="flex gap-2 pt-1">
-              <ChangePasswordActions />
-              <Button
-                type="button"
-                variant="outline"
-                render={<Link href="/profile" />}
-                data-testid="cancel-edit-password"
-              >
-                {t("profile:actions.cancel")}
-              </Button>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Alterar Senha</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {sent ? (
+          <div className="flex items-start gap-3 text-sm text-emerald-600">
+            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">Link enviado!</p>
+              <p className="text-muted-foreground text-xs mt-0.5">
+                Verifique o e-mail{" "}
+                <span className="font-mono font-medium">{user?.email}</span>{" "}
+                para criar uma nova senha.
+              </p>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </FormProvider>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Vamos enviar um link para{" "}
+              <span className="font-mono font-medium text-foreground">
+                {user?.email}
+              </span>
+              . Você poderá criar uma nova senha sem precisar lembrar da atual.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSend}
+              disabled={loading}
+              className="gap-2"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Enviar link para alterar senha
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -806,7 +715,7 @@ function ChangeEmailWrapper() {
 function ChangePasswordWrapper() {
   const { user } = useAuth();
   return user?.provider === UserProviderEnum.EMAIL ? (
-    <FormChangePassword />
+    <FormChangePasswordViaEmail />
   ) : null;
 }
 

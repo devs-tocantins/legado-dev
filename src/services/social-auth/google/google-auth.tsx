@@ -8,6 +8,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 function GoogleIcon() {
   return (
@@ -37,6 +38,7 @@ export default function GoogleAuth() {
   const { setTokensInfo } = useAuthTokens();
   const authGoogleLoginService = useAuthGoogleLoginService();
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -52,6 +54,7 @@ export default function GoogleAuth() {
             tokenExpires: data.tokenExpires,
           });
           setUser(data.user);
+          router.push(data.isNewUser ? "/onboarding" : "/dashboard");
         }
       } finally {
         setIsLoading(false);
