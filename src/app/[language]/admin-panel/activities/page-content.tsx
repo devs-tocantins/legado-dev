@@ -276,4 +276,6 @@ function Activities() {
   );
 }
 
-export default withPageRequiredAuth(Activities, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(Activities, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

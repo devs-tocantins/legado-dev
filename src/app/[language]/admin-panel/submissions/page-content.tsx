@@ -199,4 +199,6 @@ function Submissions() {
   );
 }
 
-export default withPageRequiredAuth(Submissions, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(Submissions, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

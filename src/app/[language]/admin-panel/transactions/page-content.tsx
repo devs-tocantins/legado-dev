@@ -280,4 +280,6 @@ function Transactions() {
   );
 }
 
-export default withPageRequiredAuth(Transactions, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(Transactions, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

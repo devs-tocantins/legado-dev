@@ -219,7 +219,11 @@ function FormEditUser() {
               name="role"
               testId="role"
               label={t("admin-panel-users-edit:inputs.role.label")}
-              options={[{ id: RoleEnum.ADMIN }, { id: RoleEnum.USER }]}
+              options={[
+                { id: RoleEnum.ADMIN },
+                { id: RoleEnum.MODERATOR },
+                { id: RoleEnum.USER },
+              ]}
               keyValue="id"
               renderOption={(option) =>
                 t(`admin-panel-users-edit:inputs.role.options.${option.id}`)

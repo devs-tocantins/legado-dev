@@ -597,4 +597,6 @@ function EditBadge() {
   return <FormEditBadge />;
 }
 
-export default withPageRequiredAuth(EditBadge, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(EditBadge, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

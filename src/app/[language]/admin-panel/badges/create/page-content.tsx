@@ -452,4 +452,6 @@ function CreateBadge() {
   return <FormCreateBadge />;
 }
 
-export default withPageRequiredAuth(CreateBadge, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(CreateBadge, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

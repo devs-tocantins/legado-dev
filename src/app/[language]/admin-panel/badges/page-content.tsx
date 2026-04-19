@@ -196,4 +196,6 @@ function BadgesAdmin() {
   );
 }
 
-export default withPageRequiredAuth(BadgesAdmin, { roles: [RoleEnum.ADMIN] });
+export default withPageRequiredAuth(BadgesAdmin, {
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+});

@@ -60,7 +60,11 @@ function UserFilter() {
               name="roles"
               testId="roles"
               label={t("admin-panel-users:filter.inputs.role.label")}
-              options={[{ id: RoleEnum.ADMIN }, { id: RoleEnum.USER }]}
+              options={[
+                { id: RoleEnum.ADMIN },
+                { id: RoleEnum.MODERATOR },
+                { id: RoleEnum.USER },
+              ]}
               keyValue="id"
               renderOption={(option) =>
                 t(`admin-panel-users:filter.inputs.role.options.${option.id}`)
