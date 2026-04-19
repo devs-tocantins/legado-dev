@@ -949,4 +949,3 @@ function EditProfile() {
 }
 
 export default withPageRequiredAuth(EditProfile);
-th(EditProfile);
