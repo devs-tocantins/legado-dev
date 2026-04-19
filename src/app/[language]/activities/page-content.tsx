@@ -30,7 +30,7 @@ function ActivityCard({ activity }: { activity: Activity }) {
 
         {activity.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">
-            {activity.description}
+            {activity.description.replace(/[#*`_>~\[\]]/g, "").trim()}
           </p>
         )}
 

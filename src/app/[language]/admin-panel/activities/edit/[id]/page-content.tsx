@@ -19,6 +19,9 @@ import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
+import { ChevronLeft } from "lucide-react";
+import { Controller } from "react-hook-form";
+import { MarkdownEditor } from "@/components/markdown-editor";
 
 type EditFormData = {
   title: string;
@@ -99,7 +102,7 @@ function FormEditActivity() {
     },
   });
 
-  const { handleSubmit, setError, reset } = methods;
+  const { handleSubmit, setError, reset, control } = methods;
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchPatch({
@@ -153,6 +156,17 @@ function FormEditActivity() {
   return (
     <FormProvider {...methods}>
       <div className="mx-auto max-w-md p-6">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground -ml-2"
+            render={<Link href="/admin-panel/activities" />}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>{t("admin-panel-activities-edit:title")}</CardTitle>
@@ -164,14 +178,20 @@ function FormEditActivity() {
                 testId="title"
                 label={t("admin-panel-activities-edit:inputs.title.label")}
               />
-              <FormTextInput<EditFormData>
+              <Controller
                 name="description"
-                testId="description"
-                label={t(
-                  "admin-panel-activities-edit:inputs.description.label"
+                control={control}
+                render={({ field }) => (
+                  <MarkdownEditor
+                    label={t(
+                      "admin-panel-activities-edit:inputs.description.label"
+                    )}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    rows={6}
+                    error={methods.formState.errors.description?.message}
+                  />
                 )}
-                multiline
-                minRows={3}
               />
               <FormTextInput<EditFormData>
                 name="fixedReward"

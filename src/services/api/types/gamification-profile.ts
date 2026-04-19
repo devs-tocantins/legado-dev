@@ -7,6 +7,7 @@ export type GamificationProfile = {
   currentYearlyXp: number;
   gratitudeTokens: number;
   githubUsername?: string | null;
+  bannerPreset?: string;
   isBanned?: boolean;
   firstName?: string;
   lastName?: string;

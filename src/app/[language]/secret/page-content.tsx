@@ -16,7 +16,7 @@ type State = "idle" | "redeeming" | "success" | "error" | "already_redeemed";
 
 function SecretPageContent() {
   const searchParams = useSearchParams();
-  const language = useLanguage();
+  const _language = useLanguage();
   const { user, isLoaded } = useAuth();
   const redeemSecretCode = useRedeemSecretCodeService();
 
@@ -107,7 +107,7 @@ function SecretPageContent() {
               className="w-full"
               render={
                 <Link
-                  href={`/${language}/sign-in?returnTo=/${language}/secret${codeFromUrl ? `?code=${encodeURIComponent(codeFromUrl)}` : ""}`}
+                  href={`/sign-in?returnTo=/secret${codeFromUrl ? `?code=${encodeURIComponent(codeFromUrl)}` : ""}`}
                 />
               }
             >

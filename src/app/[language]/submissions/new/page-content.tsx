@@ -21,17 +21,24 @@ import {
   CheckCircle2,
   RotateCcw,
   ClipboardList,
+  Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import useLanguage from "@/services/i18n/use-language";
+import { useFileUploadService } from "@/services/api/services/files";
+import { MarkdownContent, MarkdownEditor } from "@/components/markdown-editor";
+import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
 
 function NewSubmissionPageContent() {
   const searchParams = useSearchParams();
-  const language = useLanguage();
+  const _language = useLanguage();
   const { enqueueSnackbar } = useSnackbar();
   const fetchActivities = useGetActivitiesService();
   const postSubmission = usePostSubmissionService();
+  const uploadFile = useFileUploadService();
 
   const preselectedId = searchParams.get("activityId");
 
@@ -40,9 +47,10 @@ function NewSubmissionPageContent() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null
   );
-  const [proofUrl, setProofUrl] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUploadedUrl, setProofUploadedUrl] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [description, setDescription] = useState("");
-  const [descriptionCount, setDescriptionCount] = useState(0);
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [proofError, setProofError] = useState("");
@@ -82,10 +90,48 @@ function NewSubmissionPageContent() {
     );
   }, [activities, search]);
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+  const handleProofFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setProofError("O arquivo deve ter no máximo 5 MB.");
+      return;
+    }
+
+    setProofError("");
+    setProofFile(file);
+    setUploadingProof(true);
+    try {
+      const { status, data } = await uploadFile(file);
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        setProofUploadedUrl(data.file.path);
+      } else {
+        setProofFile(null);
+        setProofError("Erro ao enviar o arquivo. Tente novamente.");
+      }
+    } catch {
+      setProofFile(null);
+      setProofError("Erro ao enviar o arquivo. Tente novamente.");
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleRemoveProof = () => {
+    setProofFile(null);
+    setProofUploadedUrl(null);
+    setProofError("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedActivity) return;
-    if (selectedActivity.requiresProof && !proofUrl.trim()) {
+    if (selectedActivity.requiresProof && !proofUploadedUrl) {
       setProofError("O comprovante é obrigatório para esta atividade.");
       return;
     }
@@ -99,7 +145,7 @@ function NewSubmissionPageContent() {
     try {
       const { status, data } = await postSubmission({
         activityId: selectedActivity.id,
-        proofUrl: proofUrl.trim() || undefined,
+        proofUrl: proofUploadedUrl ?? undefined,
         description: description.trim() || undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
@@ -117,9 +163,9 @@ function NewSubmissionPageContent() {
   const handleReset = () => {
     setSubmitted(false);
     setSelectedActivity(null);
-    setProofUrl("");
+    setProofFile(null);
+    setProofUploadedUrl(null);
     setDescription("");
-    setDescriptionCount(0);
     setSearch("");
     setProofError("");
     setDescriptionError("");
@@ -144,10 +190,7 @@ function NewSubmissionPageContent() {
               <RotateCcw className="h-4 w-4" />
               Submeter outra
             </Button>
-            <Button
-              render={<Link href={`/${language}/submissions`} />}
-              className="gap-2"
-            >
+            <Button render={<Link href="/submissions" />} className="gap-2">
               <ClipboardList className="h-4 w-4" />
               Ver minhas submissões
             </Button>
@@ -185,9 +228,12 @@ function NewSubmissionPageContent() {
                       {selectedActivity.title}
                     </p>
                     {selectedActivity.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {selectedActivity.description}
-                      </p>
+                      <div className="max-h-48 overflow-y-auto">
+                        <MarkdownContent
+                          content={selectedActivity.description}
+                          className="text-xs text-muted-foreground"
+                        />
+                      </div>
                     )}
                   </div>
                   <Badge className="shrink-0">
@@ -289,107 +335,149 @@ function NewSubmissionPageContent() {
           </CardContent>
         </Card>
 
-        {/* Proof URL (conditional) */}
+        {/* Proof file upload (required) */}
         {selectedActivity?.requiresProof && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium flex items-center gap-1.5">
               <FileCheck className="h-4 w-4 text-amber-500" />
-              URL do Comprovante <span className="text-destructive">*</span>
+              Comprovante <span className="text-destructive">*</span>
             </label>
-            <input
-              value={proofUrl}
-              onChange={(e) => {
-                setProofUrl(e.target.value);
-                setProofError("");
-              }}
-              placeholder="https://github.com/... ou link do comprovante"
-              className={cn(
-                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all",
-                proofError && "border-destructive focus:ring-destructive/30"
-              )}
-            />
+            {proofFile ? (
+              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
+                {uploadingProof ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
+                )}
+                <span className="text-sm truncate flex-1">
+                  {proofFile.name}
+                </span>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                {!uploadingProof && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveProof}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <label
+                className={cn(
+                  "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
+                  proofError && "border-destructive"
+                )}
+              >
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  Clique para selecionar um arquivo
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  JPG, PNG ou GIF · Máx. 5 MB
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  className="sr-only"
+                  onChange={handleProofFileChange}
+                />
+              </label>
+            )}
             {proofError && (
               <p className="text-xs text-destructive">{proofError}</p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Cole o link que comprova sua participação (PR, post, repositório,
-              etc.)
-            </p>
           </div>
         )}
 
         {/* Required description */}
         {selectedActivity?.requiresDescription && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium flex items-center gap-1.5">
+          <MarkdownEditor
+            label={
+              <span className="flex items-center gap-1.5">
                 <AlignLeft className="h-4 w-4 text-primary" />
                 Descrição <span className="text-destructive">*</span>
-              </label>
-              <span className="text-xs text-muted-foreground">
-                {descriptionCount}/1000
               </span>
-            </div>
-            <textarea
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                setDescriptionCount(e.target.value.length);
-                setDescriptionError("");
-              }}
-              placeholder="Descreva como realizou esta atividade..."
-              rows={4}
-              maxLength={1000}
-              className={cn(
-                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-all",
-                descriptionError &&
-                  "border-destructive focus:ring-destructive/30"
-              )}
-            />
-            {descriptionError && (
-              <p className="text-xs text-destructive">{descriptionError}</p>
-            )}
-          </div>
+            }
+            value={description}
+            onChange={(v) => {
+              setDescription(sanitizeMarkdownInput(v, 2000));
+              setDescriptionError("");
+            }}
+            placeholder="Descreva como realizou esta atividade..."
+            rows={5}
+            maxLength={2000}
+            error={descriptionError}
+          />
         )}
 
         {/* Optional description for activities that don't require it */}
         {selectedActivity && !selectedActivity.requiresDescription && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+          <MarkdownEditor
+            label={
+              <span className="flex items-center gap-1.5 text-muted-foreground">
                 <AlignLeft className="h-4 w-4" />
                 Descrição (opcional)
-              </label>
-              <span className="text-xs text-muted-foreground">
-                {descriptionCount}/1000
               </span>
-            </div>
-            <textarea
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                setDescriptionCount(e.target.value.length);
-              }}
-              placeholder="Adicione contexto ou detalhes sobre sua participação..."
-              rows={3}
-              maxLength={1000}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            />
-          </div>
+            }
+            value={description}
+            onChange={(v) => setDescription(sanitizeMarkdownInput(v, 2000))}
+            placeholder="Adicione contexto ou detalhes sobre sua participação..."
+            rows={4}
+            maxLength={2000}
+          />
         )}
 
-        {/* Optional proof for activities that don't require it */}
+        {/* Proof file upload (optional) */}
         {selectedActivity && !selectedActivity.requiresProof && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">
-              URL do Comprovante (opcional)
+            <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <FileCheck className="h-4 w-4" />
+              Comprovante (opcional)
             </label>
-            <input
-              value={proofUrl}
-              onChange={(e) => setProofUrl(e.target.value)}
-              placeholder="https://... (opcional)"
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            {proofFile ? (
+              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
+                {uploadingProof ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
+                )}
+                <span className="text-sm truncate flex-1">
+                  {proofFile.name}
+                </span>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                {!uploadingProof && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveProof}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  JPG, PNG ou GIF · Máx. 5 MB (opcional)
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  className="sr-only"
+                  onChange={handleProofFileChange}
+                />
+              </label>
+            )}
+            {proofError && (
+              <p className="text-xs text-destructive">{proofError}</p>
+            )}
           </div>
         )}
 
@@ -397,11 +485,13 @@ function NewSubmissionPageContent() {
         <div className="flex gap-2 pt-2">
           <Button
             type="submit"
-            disabled={submitting || !selectedActivity}
+            disabled={submitting || uploadingProof || !selectedActivity}
             className="gap-2"
           >
             {submitting ? (
               "Enviando..."
+            ) : uploadingProof ? (
+              "Enviando arquivo..."
             ) : (
               <>
                 <Check className="h-4 w-4" />
@@ -409,13 +499,12 @@ function NewSubmissionPageContent() {
               </>
             )}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            render={<Link href="/submissions" />}
+          <Link
+            href="/submissions"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             Cancelar
-          </Button>
+          </Link>
         </div>
       </form>
     </div>

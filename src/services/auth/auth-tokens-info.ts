@@ -8,7 +8,10 @@ export function getTokensInfo() {
 
 export function setTokensInfo(tokens: TokensInfo) {
   if (tokens) {
-    Cookies.set(AUTH_TOKEN_KEY, JSON.stringify(tokens));
+    Cookies.set(AUTH_TOKEN_KEY, JSON.stringify(tokens), {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
   } else {
     Cookies.remove(AUTH_TOKEN_KEY);
   }

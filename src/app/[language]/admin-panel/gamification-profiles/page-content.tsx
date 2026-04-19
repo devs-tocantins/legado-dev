@@ -12,7 +12,10 @@ import { TableVirtuoso } from "react-virtuoso";
 import TableComponents from "@/components/table/table-components-shadcn";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
-import { useDeleteGamificationProfileService } from "@/services/api/services/gamification-profiles";
+import {
+  useDeleteGamificationProfileService,
+  useApplyPenaltyService,
+} from "@/services/api/services/gamification-profiles";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -29,7 +32,185 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowUpDown, MoreHorizontal, ShieldAlert } from "lucide-react";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import { cn } from "@/lib/utils";
+
+// ─── Penalty Modal ────────────────────────────────────────────────────────────
+
+function PenaltyModal({
+  profile,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  profile: GamificationProfile;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const applyPenalty = useApplyPenaltyService();
+  const { enqueueSnackbar } = useSnackbar();
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ amount?: string; reason?: string }>(
+    {}
+  );
+
+  const validate = () => {
+    const e: typeof errors = {};
+    const n = Number(amount);
+    if (!amount || isNaN(n) || n < 1 || !Number.isInteger(n))
+      e.amount = "Informe um número inteiro positivo.";
+    if (!reason.trim()) e.reason = "O motivo é obrigatório.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const { status } = await applyPenalty({
+        profileId: profile.id,
+        amount: Number(amount),
+        reason: reason.trim(),
+      });
+      if (status === 200) {
+        enqueueSnackbar(
+          `Penalidade de ${amount} XP aplicada a @${profile.username}.`,
+          {
+            variant: "success",
+          }
+        );
+        onSuccess();
+        onClose();
+      } else {
+        enqueueSnackbar("Erro ao aplicar penalidade.", { variant: "error" });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setAmount("");
+    setReason("");
+    setErrors({});
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <ShieldAlert className="h-4 w-4 text-destructive" />
+            Aplicar Penalidade — @{profile.username}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="rounded-lg bg-muted/50 border px-4 py-3 text-sm space-y-1">
+            <p className="text-muted-foreground">XP atual do membro</p>
+            <p className="font-bold text-lg tabular-nums">
+              {profile.totalXp} XP
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              XP a deduzir <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setErrors((v) => ({ ...v, amount: undefined }));
+              }}
+              placeholder="Ex: 50"
+              className={cn(
+                "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+                errors.amount && "border-destructive"
+              )}
+            />
+            {errors.amount && (
+              <p className="text-xs text-destructive">{errors.amount}</p>
+            )}
+            {amount && Number(amount) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                XP resultante:{" "}
+                <span className="font-semibold">
+                  {Math.max(0, profile.totalXp - Number(amount))} XP
+                </span>
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              Motivo <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                setErrors((v) => ({ ...v, reason: undefined }));
+              }}
+              placeholder="Ex: Fraude em submissão de evidências"
+              rows={3}
+              maxLength={300}
+              className={cn(
+                "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none",
+                errors.reason && "border-destructive"
+              )}
+            />
+            <div className="flex items-center justify-between">
+              {errors.reason ? (
+                <p className="text-xs text-destructive">{errors.reason}</p>
+              ) : (
+                <span />
+              )}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {reason.length}/300
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <Button
+              type="submit"
+              variant="destructive"
+              className="flex-1"
+              disabled={loading}
+            >
+              {loading ? "Aplicando..." : "Confirmar Penalidade"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 type GamificationProfileKeys = keyof GamificationProfile;
 
@@ -60,7 +241,13 @@ function SortableHeader(
   );
 }
 
-function Actions({ profile }: { profile: GamificationProfile }) {
+function Actions({
+  profile,
+  onPenalty,
+}: {
+  profile: GamificationProfile;
+  onPenalty: () => void;
+}) {
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteGamificationProfileService();
   const queryClient = useQueryClient();
@@ -117,6 +304,15 @@ function Actions({ profile }: { profile: GamificationProfile }) {
       >
         {t("admin-panel-gamification-profiles:actions.edit")}
       </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
+        onClick={onPenalty}
+      >
+        <ShieldAlert className="h-3.5 w-3.5 mr-1" />
+        Penalizar
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={<Button variant="outline" size="icon" className="h-8 w-8" />}
@@ -140,6 +336,9 @@ function GamificationProfiles() {
   const { t } = useTranslation("admin-panel-gamification-profiles");
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [penaltyTarget, setPenaltyTarget] =
+    useState<GamificationProfile | null>(null);
   const [{ order, orderBy }, setSort] = useState<{
     order: SortEnum;
     orderBy: GamificationProfileKeys;
@@ -258,12 +457,29 @@ function GamificationProfiles() {
               <td className="p-3 w-[120px]">{profile?.currentMonthlyXp} XP</td>
               <td className="p-3 w-[100px]">{profile?.gratitudeTokens}</td>
               <td className="p-3 w-[130px]">
-                {!!profile && <Actions profile={profile} />}
+                {!!profile && (
+                  <Actions
+                    profile={profile}
+                    onPenalty={() => setPenaltyTarget(profile)}
+                  />
+                )}
               </td>
             </>
           )}
         />
       </div>
+      {penaltyTarget && (
+        <PenaltyModal
+          profile={penaltyTarget}
+          open={!!penaltyTarget}
+          onClose={() => setPenaltyTarget(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({
+              queryKey: gamificationProfilesQueryKeys.list().key,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

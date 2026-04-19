@@ -12,6 +12,7 @@ import {
 } from "@/services/api/services/gamification-profiles";
 import { useGetMySubmissionsService } from "@/services/api/services/submissions";
 import { useGetActivitiesService } from "@/services/api/services/activities";
+import { useGetProfileBadgesService } from "@/services/api/services/badges";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import {
@@ -49,6 +50,7 @@ import {
   Search,
   X,
   Loader2,
+  Medal,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -82,6 +84,7 @@ function DashboardPageContent() {
   const fetchActivities = useGetActivitiesService();
   const transferTokens = useTransferTokensService();
   const fetchProfiles = useGetGamificationProfilesService();
+  const fetchProfileBadges = useGetProfileBadgesService();
 
   const [tokenDialog, setTokenDialog] = useState(false);
   const [recipientId, setRecipientId] = useState("");
@@ -153,6 +156,16 @@ function DashboardPageContent() {
       return [];
     },
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: myBadges } = useQuery({
+    queryKey: ["my-badges", profileData?.id],
+    queryFn: async () => {
+      const { status, data } = await fetchProfileBadges(profileData!.id);
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return [];
+    },
+    enabled: !!profileData?.id,
   });
 
   const activityMap = useMemo(() => {
@@ -367,6 +380,53 @@ function DashboardPageContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Conquistas */}
+      {myBadges && myBadges.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              Conquistas
+            </h2>
+            {profile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2 gap-1"
+                render={<Link href={`/u/${profile.username}`} />}
+              >
+                Ver perfil
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {myBadges.map((pb) => (
+              <div
+                key={pb.id}
+                className="flex flex-col items-center gap-1 text-center w-14"
+                title={pb.badge?.name}
+              >
+                {pb.badge?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={pb.badge.imageUrl}
+                    alt={pb.badge.name}
+                    className="h-10 w-10 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border">
+                    <Medal className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
+                <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+                  {pb.badge?.name}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div>

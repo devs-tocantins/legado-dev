@@ -2,13 +2,18 @@
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   useGetGamificationProfileByUsernameService,
   useGetProfileApprovedSubmissionsService,
   useGetGamificationProfilesService,
 } from "@/services/api/services/gamification-profiles";
+import {
+  useGetProfileBadgesService,
+  BadgeCategoryEnum,
+  GamificationProfileBadge,
+} from "@/services/api/services/badges";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SortEnum } from "@/services/api/types/sort-type";
@@ -30,33 +35,82 @@ import {
   Share2,
   Check,
   Ban,
+  Flag,
+  Medal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
+import useAuth from "@/services/auth/use-auth";
+import { useSnackbar } from "@/hooks/use-snackbar";
+import { getApiError } from "@/lib/utils";
+import { useCreateContributionReportService } from "@/services/api/services/notifications";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+// ─── Banner presets ───────────────────────────────────────────────────────────
+export const BANNER_PRESETS: Record<
+  string,
+  { className: string; label: string }
+> = {
+  default: { className: "bg-muted", label: "Padrão" },
+  emerald: {
+    className: "bg-gradient-to-r from-emerald-500 to-teal-600",
+    label: "Esmeralda",
+  },
+  amber: {
+    className: "bg-gradient-to-r from-amber-400 to-orange-500",
+    label: "Âmbar",
+  },
+  purple: {
+    className: "bg-gradient-to-r from-violet-600 to-purple-700",
+    label: "Roxo",
+  },
+  blue: {
+    className: "bg-gradient-to-r from-blue-500 to-sky-600",
+    label: "Azul",
+  },
+  dark: {
+    className: "bg-gradient-to-r from-slate-700 to-slate-900",
+    label: "Escuro",
+  },
+  rose: {
+    className: "bg-gradient-to-r from-rose-500 to-pink-600",
+    label: "Rosa",
+  },
+};
 
 // ─── Dot-grid cover pattern ───────────────────────────────────────────────────
-function CoverPattern() {
+function CoverPattern({ preset = "default" }: { preset?: string }) {
+  const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS.default;
+  const isDotGrid = preset === "default";
+
   return (
-    <div className="relative h-36 w-full overflow-hidden bg-muted">
-      <svg
-        className="absolute inset-0 h-full w-full text-primary/10"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <defs>
-          <pattern
-            id="cover-dots"
-            x="0"
-            y="0"
-            width="20"
-            height="20"
-            patternUnits="userSpaceOnUse"
-          >
-            <circle cx="2" cy="2" r="1.5" fill="currentColor" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#cover-dots)" />
-      </svg>
+    <div className={cn("relative h-36 w-full overflow-hidden", cfg.className)}>
+      {isDotGrid && (
+        <svg
+          className="absolute inset-0 h-full w-full text-primary/10"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <defs>
+            <pattern
+              id="cover-dots"
+              x="0"
+              y="0"
+              width="20"
+              height="20"
+              patternUnits="userSpaceOnUse"
+            >
+              <circle cx="2" cy="2" r="1.5" fill="currentColor" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#cover-dots)" />
+        </svg>
+      )}
     </div>
   );
 }
@@ -122,15 +176,188 @@ function levelBarColor(levelColor: string): string {
   return levelColor.replace("text-", "bg-");
 }
 
+function ReportModal({
+  submissionId,
+  open,
+  onClose,
+}: {
+  submissionId: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const { enqueueSnackbar } = useSnackbar();
+  const createReport = useCreateContributionReportService();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      const res = await createReport({ submissionId, reason: reason.trim() });
+      if (res.status !== HTTP_CODES_ENUM.CREATED) {
+        throw new Error(getApiError(res.data, "Erro ao enviar report."));
+      }
+    },
+    onSuccess: () => {
+      enqueueSnackbar("Report enviado. Nossa equipe vai analisar.", {
+        variant: "success",
+      });
+      setReason("");
+      onClose();
+    },
+    onError: (e: any) => enqueueSnackbar(e.message, { variant: "error" }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Flag className="h-4 w-4 text-destructive" />
+            Reportar contribuição
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Descreva por que esta contribuição é inválida. Nossa equipe vai
+          analisar e tomar as medidas necessárias.
+        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Motivo *</label>
+            <span className="text-xs text-muted-foreground">
+              {reason.length}/2000
+            </span>
+          </div>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={4}
+            maxLength={2000}
+            placeholder="Ex: Esta contribuição não foi feita por esta pessoa. Tenho evidências de que foi realizada por outra conta..."
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onClose}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex-1 gap-1.5"
+            disabled={isPending || reason.trim().length < 10}
+            onClick={() => mutate()}
+          >
+            <Flag className="h-3.5 w-3.5" />
+            {isPending ? "Enviando..." : "Enviar report"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const CATEGORY_ORDER: BadgeCategoryEnum[] = [
+  "MILESTONE",
+  "RANKING",
+  "PARTICIPATION",
+  "SPECIAL",
+];
+const CATEGORY_LABEL: Record<BadgeCategoryEnum, string> = {
+  MILESTONE: "Marcos",
+  RANKING: "Ranking",
+  PARTICIPATION: "Participação",
+  SPECIAL: "Especiais",
+};
+
+function BadgeItem({ pb }: { pb: GamificationProfileBadge }) {
+  const badge = pb.badge;
+  return (
+    <div className="group relative flex flex-col items-center gap-1.5 text-center w-16">
+      {/* Tooltip */}
+      <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 hidden group-hover:block w-48">
+        <div className="rounded-md bg-popover border border-border shadow-md px-3 py-2 text-left">
+          <p className="text-xs font-semibold leading-tight mb-0.5">
+            {badge.name}
+          </p>
+          {badge.description && (
+            <p className="text-xs text-muted-foreground leading-snug">
+              {badge.description}
+            </p>
+          )}
+        </div>
+        <div className="mx-auto w-2 h-2 bg-popover border-r border-b border-border rotate-45 -mt-1" />
+      </div>
+
+      {badge.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={badge.imageUrl}
+          alt={badge.name}
+          className="h-12 w-12 rounded-full object-cover border border-border"
+        />
+      ) : (
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border">
+          <Medal className="h-5 w-5 text-muted-foreground" />
+        </div>
+      )}
+      <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+        {badge.name}
+      </p>
+    </div>
+  );
+}
+
+function BadgesSection({ badges }: { badges: GamificationProfileBadge[] }) {
+  const grouped = CATEGORY_ORDER.reduce<
+    Record<string, GamificationProfileBadge[]>
+  >((acc, cat) => {
+    const items = badges.filter((pb) => pb.badge?.category === cat);
+    if (items.length) acc[cat] = items;
+    return acc;
+  }, {});
+
+  if (!Object.keys(grouped).length) return null;
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+        Conquistas
+      </h2>
+      <div className="space-y-4">
+        {(Object.keys(grouped) as BadgeCategoryEnum[]).map((cat) => (
+          <div key={cat}>
+            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+              {CATEGORY_LABEL[cat]}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {grouped[cat].map((pb) => (
+                <BadgeItem key={pb.id} pb={pb} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PublicProfilePageContent() {
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
   const [copied, setCopied] = useState(false);
+  const [reportingSubmissionId, setReportingSubmissionId] = useState<
+    string | null
+  >(null);
+  const { user } = useAuth();
 
   const fetchByUsername = useGetGamificationProfileByUsernameService();
   const fetchApprovedSubmissions = useGetProfileApprovedSubmissionsService();
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchActivities = useGetActivitiesService();
+  const fetchProfileBadges = useGetProfileBadgesService();
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["public-profile", username],
@@ -177,6 +404,16 @@ function PublicProfilePageContent() {
       return [];
     },
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: badgesData } = useQuery({
+    queryKey: ["public-profile-badges", profile?.id],
+    queryFn: async () => {
+      const { status, data } = await fetchProfileBadges(profile!.id);
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return [];
+    },
+    enabled: !!profile?.id,
   });
 
   const activityMap = useMemo(() => {
@@ -247,9 +484,9 @@ function PublicProfilePageContent() {
   if (profile.isBanned) {
     return (
       <div className="mx-auto max-w-4xl">
-        <CoverPattern />
+        <CoverPattern preset={profile.bannerPreset} />
         <div className="px-4 md:px-6">
-          <div className="-mt-9 mb-3">
+          <div className="-mt-4 mb-3">
             <div
               className="shrink-0 rounded-full border-4 border-background bg-muted"
               style={{ width: 72, height: 72 }}
@@ -308,12 +545,12 @@ function PublicProfilePageContent() {
   return (
     <div className="mx-auto max-w-4xl">
       {/* Cover */}
-      <CoverPattern />
+      <CoverPattern preset={profile.bannerPreset} />
 
       {/* Avatar + header */}
       <div className="px-4 md:px-6">
         {/* Avatar overlapping cover */}
-        <div className="-mt-9 mb-3">
+        <div className="-mt-4 mb-3">
           <ProfileAvatar
             username={profile.username}
             githubUsername={profile.githubUsername}
@@ -419,6 +656,11 @@ function PublicProfilePageContent() {
           )}
         </div>
 
+        {/* Badges / Conquistas */}
+        {badgesData && badgesData.length > 0 && (
+          <BadgesSection badges={badgesData} />
+        )}
+
         {/* Contributions timeline */}
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-muted-foreground mb-4">
@@ -475,6 +717,15 @@ function PublicProfilePageContent() {
                             month: "short",
                           })}
                         </span>
+                        {user && (
+                          <button
+                            onClick={() => setReportingSubmissionId(sub.id)}
+                            title="Reportar contribuição inválida"
+                            className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                          >
+                            <Flag className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -484,6 +735,14 @@ function PublicProfilePageContent() {
           )}
         </div>
       </div>
+
+      {reportingSubmissionId && (
+        <ReportModal
+          submissionId={reportingSubmissionId}
+          open={!!reportingSubmissionId}
+          onClose={() => setReportingSubmissionId(null)}
+        />
+      )}
     </div>
   );
 }

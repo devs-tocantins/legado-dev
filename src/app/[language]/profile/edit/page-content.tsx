@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
+import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
 
 // --- Types ---
 type BasicInfoFormData = {
@@ -478,6 +479,110 @@ function FormChangePassword() {
   );
 }
 
+// --- Form: Banner ---
+function FormBanner() {
+  const fetchMyProfile = useGetMyGamificationProfileService();
+  const updateMyProfile = useUpdateMyGamificationProfileService();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["my-profile-banner"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+  });
+
+  const [selected, setSelected] = useState("default");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (profile?.bannerPreset) setSelected(profile.bannerPreset);
+  }, [profile?.bannerPreset]);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const { status } = await updateMyProfile({
+        username: profile.username,
+        bannerPreset: selected,
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Banner atualizado!", { variant: "success" });
+      } else {
+        enqueueSnackbar("Erro ao salvar.", { variant: "error" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading || !profile) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Banner do Perfil Público</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Escolha o banner que aparece no topo do seu perfil público.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Object.entries(BANNER_PRESETS).map(([key, { className, label }]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSelected(key)}
+              className={cn(
+                "relative h-14 rounded-lg overflow-hidden border-2 transition-all",
+                className,
+                selected === key
+                  ? "border-primary ring-2 ring-primary ring-offset-2"
+                  : "border-border hover:border-muted-foreground"
+              )}
+              title={label}
+            >
+              {key === "default" && (
+                <svg
+                  className="absolute inset-0 h-full w-full text-foreground/10"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <defs>
+                    <pattern
+                      id={`dots-${key}`}
+                      x="0"
+                      y="0"
+                      width="10"
+                      height="10"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <circle cx="1" cy="1" r="0.8" fill="currentColor" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill={`url(#dots-${key})`} />
+                </svg>
+              )}
+              <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-medium text-white drop-shadow">
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+        <Button
+          onClick={handleSave}
+          disabled={saving || selected === (profile.bannerPreset ?? "default")}
+        >
+          {saving ? "Salvando..." : "Salvar banner"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 // --- Form: Username ---
 function FormUsername() {
   const fetchMyProfile = useGetMyGamificationProfileService();
@@ -711,6 +816,7 @@ function EditProfile() {
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
       <FormGitHub />
+      <FormBanner />
       <FormUsername />
       <ChangeEmailWrapper />
       <ChangePasswordWrapper />

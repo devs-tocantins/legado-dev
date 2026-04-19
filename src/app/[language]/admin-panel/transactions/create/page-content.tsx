@@ -16,6 +16,7 @@ import FormSelectInput from "@/components/form/select/form-select-shadcn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
+import { ChevronLeft } from "lucide-react";
 
 type CreateFormData = {
   profileId: string;
@@ -118,6 +119,17 @@ function FormCreateTransaction() {
   return (
     <FormProvider {...methods}>
       <div className="mx-auto max-w-md p-6">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground -ml-2"
+            render={<Link href="/admin-panel/transactions" />}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>{t("admin-panel-transactions-create:title")}</CardTitle>

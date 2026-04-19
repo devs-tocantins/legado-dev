@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useInView,
-  useMotionValue,
-  animate,
-} from "framer-motion";
-import { useRef, useEffect } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "@/components/link";
 import {
@@ -131,41 +124,6 @@ const FEATURES = [
     accentBg: "bg-accent/10",
   },
 ];
-
-// ─── Stats ────────────────────────────────────────────────────────────────────
-
-const STATS = [
-  { value: 120, suffix: "+", label: "Membros ativos", color: "text-primary" },
-  { value: 34, suffix: "", label: "Tipos de atividade", color: "text-accent" },
-  { value: 18, suffix: "", label: "Eventos realizados", color: "text-primary" },
-  { value: 100, suffix: "%", label: "Moderação humana", color: "text-accent" },
-];
-
-// ─── AnimatedCounter ──────────────────────────────────────────────────────────
-
-function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const mv = useMotionValue(0);
-  const isInView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!isInView) return;
-    const controls = animate(mv, value, { duration: 1.8, ease: "easeOut" });
-    const unsub = mv.on("change", (v) => {
-      if (ref.current) ref.current.textContent = Math.round(v) + suffix;
-    });
-    return () => {
-      controls.stop();
-      unsub();
-    };
-  }, [isInView, value, suffix, mv]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      0{suffix}
-    </span>
-  );
-}
 
 // ─── Constellation (theme-aware) ──────────────────────────────────────────────
 
@@ -348,13 +306,16 @@ export default function HomePageContent() {
               initial="hidden"
               animate="visible"
             >
-              {/* Eyebrow */}
-              <motion.p
-                variants={fadeUp}
-                className="mb-5 text-xs font-semibold uppercase tracking-widest text-accent"
-              >
-                legado.dev
-              </motion.p>
+              {/* Logo */}
+              <motion.div variants={fadeUp} className="mb-8">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/LOGO.svg"
+                  alt="legado.dev"
+                  className="h-14 w-auto sm:h-16"
+                  draggable={false}
+                />
+              </motion.div>
 
               {/* Headline */}
               <motion.h1
@@ -436,37 +397,6 @@ export default function HomePageContent() {
               transition={{ duration: 2.6, repeat: Infinity }}
             />
           </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ─── Stats strip ───────────────────────────────────────────────── */}
-      <section className="border-y border-border bg-muted/20 py-12 px-4">
-        <motion.div
-          className="mx-auto grid max-w-3xl grid-cols-2 gap-8 sm:grid-cols-4"
-          variants={staggerContainer(0.1)}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-        >
-          {STATS.map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeUp}
-              className="text-center"
-            >
-              <div
-                className={cn(
-                  "text-3xl font-bold tracking-tight font-mono sm:text-4xl",
-                  stat.color
-                )}
-              >
-                <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-              </div>
-              <div className="mt-1.5 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
         </motion.div>
       </section>
 

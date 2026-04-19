@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     // Additional build/test ignores
     "node_modules/**",
     "dist/**",
+    "tmp/**",
     "playwright-report/**",
     "test-results/**",
     "*.config.js",

@@ -29,15 +29,26 @@ import {
   LogOut,
   User,
   Settings,
-  Receipt,
+  Target,
   ExternalLink,
+  Bell,
+  CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
+import {
+  useGetNotificationsService,
+  useGetUnreadCountService,
+  useMarkAllReadService,
+  useMarkReadService,
+} from "@/services/api/services/notifications";
+import { Notification } from "@/services/api/types/notification";
 import { getLevel } from "@/lib/gamification";
 import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // ─── Logo Mark ────────────────────────────────────────────────────────────────
 
@@ -63,6 +74,149 @@ function LevelBadge({ totalXp }: { totalXp: number }) {
     <span className={cn("text-[10px] font-semibold", level.color)}>
       {level.name}
     </span>
+  );
+}
+
+// ─── Notification Bell ────────────────────────────────────────────────────────
+
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const getNotifications = useGetNotificationsService();
+  const getUnreadCount = useGetUnreadCountService();
+  const markAllRead = useMarkAllReadService();
+  const markRead = useMarkReadService();
+
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications-unread"],
+    queryFn: async () => {
+      const res = await getUnreadCount();
+      if (res.status === HTTP_CODES_ENUM.OK)
+        return res.data as { count: number };
+      return { count: 0 };
+    },
+    refetchInterval: 30_000,
+  });
+
+  const { data: notifications } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await getNotifications();
+      if (res.status === HTTP_CODES_ENUM.OK) return res.data as Notification[];
+      return [] as Notification[];
+    },
+    enabled: open,
+  });
+
+  const { mutate: doMarkAll } = useMutation({
+    mutationFn: async () => {
+      await markAllRead();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const { mutate: doMarkOne } = useMutation({
+    mutationFn: async (id: string) => {
+      await markRead(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const unread = unreadData?.count ?? 0;
+
+  function notifIcon(type: Notification["type"]) {
+    if (type === "SUBMISSION_APPROVED" || type === "MISSION_WON") return "🏆";
+    if (type === "CONTRIBUTION_REPORT_UPHELD") return "⚠️";
+    return "🔔";
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        aria-label="Notificações"
+      >
+        <Bell className="h-4 w-4" />
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-border bg-popover shadow-lg">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="text-sm font-semibold">Notificações</span>
+              {unread > 0 && (
+                <button
+                  onClick={() => doMarkAll()}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Marcar todas como lidas
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              {!notifications || notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <Bell className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                  Nenhuma notificação ainda.
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={cn(
+                      "flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0",
+                      !n.isRead && "bg-primary/5"
+                    )}
+                    onClick={() => !n.isRead && doMarkOne(n.id)}
+                  >
+                    <span className="text-base shrink-0 mt-0.5">
+                      {notifIcon(n.type)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          "text-sm leading-snug",
+                          !n.isRead && "font-semibold"
+                        )}
+                      >
+                        {n.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {n.body}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(n.createdAt), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </p>
+                    </div>
+                    {!n.isRead && (
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -118,8 +272,8 @@ function ResponsiveAppBar() {
     ? [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/activities", label: "Atividades", icon: BookOpen },
+        { href: "/missions", label: "Missões", icon: Target },
         { href: "/submissions", label: "Histórico", icon: ClipboardList },
-        { href: "/transactions", label: "Tokens", icon: Receipt },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
         ...(isModerator
           ? [{ href: "/moderation", label: "Moderação", icon: ShieldCheck }]
@@ -135,7 +289,7 @@ function ResponsiveAppBar() {
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         {/* Logo */}
         <Link
-          href={user ? "/dashboard" : "/"}
+          href="/"
           className="mr-6 flex items-center gap-2.5 font-bold tracking-tight"
         >
           <LogoMark />
@@ -192,6 +346,9 @@ function ResponsiveAppBar() {
               <Moon className="h-4 w-4" />
             )}
           </Button>
+
+          {/* Notification bell */}
+          {user && <NotificationBell />}
 
           {/* User area */}
           {!isLoaded ? (
@@ -265,9 +422,11 @@ function ResponsiveAppBar() {
                   Minha conta
                 </DropdownMenuItem>
 
-                <DropdownMenuItem render={<Link href="/dashboard" />}>
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Dashboard
+                <DropdownMenuItem
+                  render={<Link href="/settings/notifications" />}
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  Preferências de notificação
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

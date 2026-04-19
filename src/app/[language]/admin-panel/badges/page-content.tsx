@@ -4,21 +4,42 @@ import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useCallback } from "react";
 import { useGetBadgesQuery, badgesQueryKeys } from "./queries/queries";
-import { Badge } from "@/services/api/services/badges";
+import { Badge, BadgeCategoryEnum } from "@/services/api/services/badges";
 import { useDeleteBadgeService } from "@/services/api/services/badges";
 import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Medal, MoreHorizontal, Plus } from "lucide-react";
+import { Medal, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+
+const CATEGORY_STYLE: Record<
+  BadgeCategoryEnum,
+  { label: string; className: string }
+> = {
+  MILESTONE: { label: "Marco", className: "bg-primary/10 text-primary" },
+  RANKING: { label: "Ranking", className: "bg-amber-500/10 text-amber-600" },
+  PARTICIPATION: {
+    label: "Participação",
+    className: "bg-emerald-500/10 text-emerald-600",
+  },
+  SPECIAL: { label: "Especial", className: "bg-violet-500/10 text-violet-600" },
+};
+
+function CategoryBadge({ category }: { category: BadgeCategoryEnum }) {
+  const style = CATEGORY_STYLE[category] ?? CATEGORY_STYLE.SPECIAL;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+        style.className
+      )}
+    >
+      {style.label}
+    </span>
+  );
+}
 
 function BadgeRow({ badge }: { badge: Badge }) {
   const { confirmDialog } = useConfirmDialog();
@@ -64,16 +85,7 @@ function BadgeRow({ badge }: { badge: Badge }) {
         </div>
       </td>
       <td className="p-3 w-[150px]">
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            badge.criteriaType === "AUTOMATIC"
-              ? "bg-primary/10 text-primary"
-              : "bg-amber-500/10 text-amber-600"
-          )}
-        >
-          {badge.criteriaType === "AUTOMATIC" ? "Automatico" : "Manual"}
-        </span>
+        <CategoryBadge category={badge.category} />
       </td>
       <td className="p-3 w-[100px]">
         <span
@@ -87,7 +99,7 @@ function BadgeRow({ badge }: { badge: Badge }) {
           {badge.isActive ? "Ativo" : "Inativo"}
         </span>
       </td>
-      <td className="p-3 w-[160px]">
+      <td className="p-3 w-[140px]">
         <div className="flex items-center gap-1">
           <Button
             size="sm"
@@ -95,23 +107,14 @@ function BadgeRow({ badge }: { badge: Badge }) {
           >
             Editar
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline" size="icon" className="h-8 w-8" />
-              }
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={handleDelete}
-              >
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={handleDelete}
+          >
+            Excluir
+          </Button>
         </div>
       </td>
     </tr>
@@ -173,7 +176,7 @@ function BadgesAdmin() {
                   Badge
                 </th>
                 <th className="h-10 w-[150px] px-3 text-left align-middle text-sm font-medium text-muted-foreground">
-                  Tipo
+                  Categoria
                 </th>
                 <th className="h-10 w-[100px] px-3 text-left align-middle text-sm font-medium text-muted-foreground">
                   Status

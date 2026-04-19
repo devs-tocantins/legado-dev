@@ -19,7 +19,11 @@ export default function PageWrapper({ children }: { children: ReactNode }) {
   }, [isAuthPage]);
 
   return (
-    <div className={isAuthPage ? "overflow-hidden" : "pb-16 md:pb-0"}>
+    <div
+      className={
+        isAuthPage ? "overflow-hidden" : "pb-16 md:pb-0 overflow-x-hidden"
+      }
+    >
       {children}
     </div>
   );

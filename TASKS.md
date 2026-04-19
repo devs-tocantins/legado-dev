@@ -40,37 +40,17 @@
 
 ## 🔐 Segurança — Corrigir antes de ir ao ar
 
-### Backend (`api-engajamento`)
+### Backend (`api-legado-dev`)
 
-- [ ] **[IDOR] `PATCH /v1/submissions/:id` sem verificação de propriedade**
-  - Qualquer usuário autenticado pode alterar o `proofUrl` de submissões de outros usuários
-  - Arquivo: `src/submissions/submissions.controller.ts:167` e `submissions.service.ts:145`
-  - Fix: passar `req.user.id` ao service e verificar se a submission pertence ao usuário antes de atualizar
+- [x] **[IDOR] `PATCH /v1/submissions/:id`** — já restrito a `RoleEnum.admin` via `RolesGuard` (verificado em `submissions.controller.ts`)
+- [x] **[IDOR] `PATCH /v1/gamification-profiles/:id`** — já restrito a `RoleEnum.admin` via `RolesGuard` (verificado em `gamification-profiles.controller.ts`)
+- [x] **[AUTH] `GET /v1/files/:path`** — não se aplica: arquivos em produção estão no R2 com URL pública por design; uploader local só é usado em dev
 
-- [ ] **[IDOR] `PATCH /v1/gamification-profiles/:id` sem verificação de propriedade**
-  - Qualquer usuário autenticado pode alterar o `username` do perfil de outro usuário
-  - Arquivo: `src/gamification-profiles/gamification-profiles.controller.ts:151`
-  - Fix: restringir endpoint a `admin` via `RolesGuard` (uso normal já coberto pelo `PATCH /me`) ou adicionar checagem de ownership no service
+### Frontend (`legado-dev`)
 
-- [ ] **[AUTH] `GET /v1/files/:path` sem autenticação**
-  - Endpoint de download de arquivos não tem guard JWT — qualquer pessoa não autenticada consegue baixar arquivos enviados (comprovantes, fotos)
-  - Arquivo: `src/files/infrastructure/uploader/local/files.controller.ts:57`
-  - Fix: adicionar `@UseGuards(AuthGuard('jwt'))` se os arquivos não são públicos por design
-
-### Frontend (`front-engajamento`)
-
-- [ ] **[Open Redirect] `returnTo` sem validação em `with-page-required-guest.tsx:24`**
-  - Parâmetro `?returnTo=https://site-externo.com` redireciona o usuário para fora do domínio após login
-  - Fix: validar que o valor começa com `/` e não com `//`
-    ```ts
-    const raw = params.get("returnTo") ?? `/${language}/dashboard`;
-    const returnTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : `/${language}/dashboard`;
-    ```
-
-- [ ] **[Insecure Storage] Tokens JWT armazenados em cookie acessível via JS (`auth-tokens-info.ts:11`)**
-  - `js-cookie` no browser nunca cria cookies `HttpOnly` — qualquer XSS (CDN comprometido, dependência maliciosa) pode roubar token e refreshToken
-  - Fix ideal: mover gestão de sessão para cookie `HttpOnly` setado pelo backend
-  - Fix temporário: adicionar `{ secure: true, sameSite: 'strict' }` ao `Cookies.set()`
+- [x] **[Open Redirect] `returnTo` sem validação** — corrigido em `with-page-required-guest.tsx`: valida que o valor começa com `/` e não com `//`
+- [x] **[Insecure Storage] Cookie JWT sem flags de segurança** — corrigido em `auth-tokens-info.ts`: adicionado `secure: true` (prod) + `sameSite: 'strict'`
+- [x] **[Bug] URL dupla `/pt-BR/pt-BR/submissions`** — corrigido em `submissions/new/page-content.tsx` e `secret/page-content.tsx`: removido prefixo de idioma manual nos `href` (o componente `Link` já adiciona automaticamente)
 
 ---
 
@@ -109,11 +89,68 @@ Os seguintes namespaces existem **apenas em pt-BR** — quando o usuário está 
 
 ## 🟡 Importante — Próximo ciclo
 
+### Infra / Deploy
+- [ ] **Deploy backend na VM** — mudanças de hoje (R2 público, upload de comprovante) ainda não foram para produção
+- [ ] **E-mail SMTP em produção** — sem isso o fluxo de cadastro (confirmação de e-mail) não funciona em prod. Configurar provedor: Mailgun, Resend ou SendGrid. Vars: `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_DEFAULT_EMAIL`
+- [ ] **Apagar arquivo do R2 quando submissão for reprovada** — ao aprovar/rejeitar, se `proofUrl` aponta para o R2 e o status for REJECTED, deletar o objeto do bucket para não acumular storage desnecessário
+
+### Health Monitoring — Alertas de limites dos serviços gratuitos
+Os serviços abaixo têm cotas no plano free. O admin dashboard precisa exibir avisos visuais quando estiver próximo ou esgotado.
+
+- [ ] **Brevo (e-mail)** — limite de 300 emails/dia no free. Backend deve consultar `GET https://api.brevo.com/v3/account` (campo `plan[].credits`) e expor em `GET /admin/health`. Frontend exibe alerta se uso > 80% da cota diária
+- [ ] **Cloudflare R2 (storage)** — 10 GB free. Expor tamanho total do bucket via `GET /admin/health` (usando o SDK do R2/S3 com `listObjectsV2` + soma de `Size`). Alerta se > 8 GB
+- [ ] **Neon (banco)** — 0,5 GB free no plano Neon Free. Expor tamanho do banco via query `SELECT pg_database_size(current_database())`. Alerta se > 400 MB
+- [ ] **Endpoint `GET /admin/health`** — agregar os três checks acima num único endpoint protegido por role admin. Retornar `{ email: { used, limit, pct }, storage: { usedBytes, limitBytes, pct }, database: { usedBytes, limitBytes, pct } }`
+- [ ] **Card "Saúde dos Serviços" no admin dashboard** — exibir os três indicadores com barra de progresso colorida (verde < 60%, amarelo 60–85%, vermelho > 85%) e mensagem de alerta se algum estiver crítico
+
+### Sistema de Badges — Arquitetura completa
+Badges têm 4 categorias. `imageUrl` é sempre opcional — o badge pode ser concedido sem arte e exibido com um placeholder. A arte é adicionada depois via edição.
+
+**Categorias e funcionamento:**
+
+- **`MILESTONE`** — Admin cria uma vez com threshold. Sistema concede automaticamente após submissão aprovada.
+  - Exemplos de seeds a criar: "Primeira Contribuição" (1 aprovada), "Contribuidor Frequente" (10), "Veterano" (50), "Lenda" (100), "100 XP", "500 XP", "1000 XP", "5000 XP", "Generoso" (50 tokens enviados)
+
+- **`RANKING`** — Admin pré-cria os badges de cada posição e configura qual badge representa qual posição (`position: 1`, `position: 2`, `position: 3`). Cron job roda no último dia do mês/ano, olha o `currentMonthlyXp`/`currentYearlyXp`, e concede o badge correto para cada posição.
+  - Exemplos de seeds: "🥇 Campeão Mensal", "🥈 Vice Mensal", "🥉 3º Mensal", "🏆 Campeão Anual", "🥈 Vice Anual", "🥉 3º Anual"
+  - Backend: adicionar `criteriaConfig: { type: 'monthly_ranking' | 'annual_ranking', position: 1 | 2 | 3 }` + cron job no NestJS com `@nestjs/schedule`
+
+- **`PARTICIPATION`** — Admin cria com threshold em meses. Sistema avalia ao atingir tempo de cadastro.
+  - Exemplos de seeds: "1 Mês na Comunidade", "6 Meses", "1 Ano", "2 Anos"
+  - Novo critério `membership_months` no `BadgeEvaluatorService`
+
+- **`SPECIAL`** — Sem critério. Admin concede manualmente para usuários específicos.
+  - Exemplos de seeds sem arte: "Fundador", "Palestrante", "Organizador", "Mentor"
+
+**O que implementar no backend:**
+- [ ] Adicionar campo `category` (`MILESTONE` | `RANKING` | `PARTICIPATION` | `SPECIAL`) na entidade `Badge`
+- [ ] Novo critério `membership_months` no `BadgeEvaluatorService`
+- [ ] Cron job mensal/anual para badges de ranking (usar `@nestjs/schedule` + `@Cron`)
+- [ ] Migração de banco para o campo `category`
+
+**O que implementar no frontend (admin):**
+- [ ] CRUD de badges no admin panel com seletor de categoria e critério
+- [ ] Para RANKING: configurar qual badge = qual posição (1º, 2º, 3º) do mensal/anual
+
+**O que implementar no frontend (usuário):**
+- [ ] Seção de badges no perfil público, agrupados por categoria, com placeholder quando sem arte
+- [ ] Seção "Conquistas" no dashboard mostrando badges do próprio usuário
+- [ ] Notificação "Você ganhou o badge X!" (já existe o sistema de notificações)
+
+### Seeds de badges para o lançamento
+- [ ] **Criar seeds no banco** com todos os badges acima (sem `imageUrl`) antes de ir ao ar
+- [ ] **Criar missões na plataforma** para a comunidade produzir as artes dos badges — uma missão por tipo de badge, com especificações técnicas claras (tamanho, formato, estilo). O vencedor de cada missão tem sua arte aprovada e usada oficialmente. As missões serão criadas pelo admin logo após o lançamento.
+
+### Features pendentes (backend pronto, UI faltando)
+- [x] **US-20B — Combobox de username na transferência de tokens** — implementado
+- [ ] **US-19 — Modal de penalidade admin** — botão "Aplicar Penalidade" no perfil do usuário no admin panel → modal com `amount` + `reason` → `POST /gamification-profiles/:id/penalty`
+- [ ] **US-28/29/30 — Sistema de Badges** — ver seção "Sistema de Badges" acima
+- [ ] **US-32 — Dashboard de métricas admin** — 8 cards com dados de `GET /admin/metrics` (usuários, submissões, XP, tokens) + card de saúde dos serviços
+
 ### Marca e Apresentação
-- [ ] Revisar landing page (`page-content.tsx`) — textos e stats ainda genéricos (120+ membros, 34 tipos etc.) — atualizar com dados reais ou remover counters
-- [ ] Atualizar a citação no `auth-layout.tsx` (coluna esquerda do login) para algo representativo do legado.dev
+- [x] Revisar landing page — stats agora dinâmicos (membros e atividades reais da API)
+- [ ] Atualizar a citação no `auth-layout.tsx` (coluna esquerda do login) com depoimento real de membro
 - [ ] Verificar se o logo mark fica bem no modo escuro da navbar (svg transparente sobre bg escuro)
-- [ ] Criar versão light do logo mark para uso no painel esquerdo do auth (atualmente usa o mesmo svg)
 
 ### Privacy Policy
 - [ ] Revisar todo o conteúdo de `privacy-policy.json` (pt-BR e en) — textos ainda são genéricos de template, datas e URLs precisam ser atualizadas

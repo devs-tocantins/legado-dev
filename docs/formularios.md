@@ -15,31 +15,27 @@ import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import FormTextInput from "@/components/form/text-input/form-text-input";
-import Button from "@mui/material/Button";
+import { Button } from "@/components/ui/button";
 
-// 1. Tipo dos dados do formulário
 type MeuFormData = {
   titulo: string;
   descricao: string;
 };
 
-// 2. Schema de validação
 const schema = yup.object().shape({
   titulo: yup.string().required("Título é obrigatório"),
   descricao: yup.string().required("Descrição é obrigatória"),
 });
 
-// 3. Botão de submit separado (lê isSubmitting do contexto)
 function BotaoSubmit() {
   const { isSubmitting } = useFormState();
   return (
-    <Button type="submit" variant="contained" disabled={isSubmitting}>
+    <Button type="submit" disabled={isSubmitting}>
       Enviar
     </Button>
   );
 }
 
-// 4. Componente principal do formulário
 function MeuFormulario() {
   const methods = useForm<MeuFormData>({
     resolver: yupResolver(schema),
@@ -68,7 +64,7 @@ function MeuFormulario() {
 
 ## Componentes de Input Disponíveis
 
-Todos ficam em `src/components/form/`:
+Todos ficam em `src/components/form/` ou `src/components/`:
 
 | Componente | Uso |
 |-----------|-----|
@@ -78,6 +74,114 @@ Todos ficam em `src/components/form/`:
 | `FormDatePickerInput` | Seletor de data |
 | `FormFileInput` | Upload de arquivo único |
 | `FormMultipleFileInput` | Upload de múltiplos arquivos |
+| `MarkdownEditor` | Textarea com toggle Editar/Preview para campos em markdown |
+
+---
+
+## MarkdownEditor — Campos de Texto Rico
+
+Para campos que aceitam markdown (descrição de atividades, submissões, missões), use `MarkdownEditor` em vez de `FormTextInput`. O componente oferece tabs Editar/Preview e mostra contador de caracteres.
+
+### Com React Hook Form (`Controller`)
+
+Para integrar o `MarkdownEditor` ao RHF, use `Controller` (o componente não é nativo do RHF):
+
+```tsx
+import { Controller } from "react-hook-form";
+import MarkdownEditor from "@/components/markdown-editor";
+import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
+
+// Dentro do formulário, com methods = useForm(...)
+const { control, formState: { errors } } = methods;
+
+<Controller
+  name="description"
+  control={control}
+  render={({ field }) => (
+    <MarkdownEditor
+      label="Descrição"
+      value={field.value ?? ""}
+      onChange={(v) => field.onChange(sanitizeMarkdownInput(v, 2000))}
+      rows={6}
+      maxLength={2000}
+      error={errors.description?.message}
+    />
+  )}
+/>
+```
+
+### Controlado por estado local (fora do RHF)
+
+Para formulários que gerenciam estado manualmente (ex: `submissions/new`):
+
+```tsx
+import MarkdownEditor from "@/components/markdown-editor";
+import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
+
+const [description, setDescription] = useState("");
+
+<MarkdownEditor
+  label={<span className="flex items-center gap-1.5">Descrição <span className="text-destructive">*</span></span>}
+  value={description}
+  onChange={(v) => setDescription(sanitizeMarkdownInput(v, 2000))}
+  rows={5}
+  maxLength={2000}
+  error={descriptionError}
+/>
+```
+
+### Props do `MarkdownEditor`
+
+| Prop | Tipo | Obrigatório | Descrição |
+|------|------|-------------|-----------|
+| `value` | `string` | Sim | Valor atual |
+| `onChange` | `(value: string) => void` | Sim | Callback de mudança |
+| `label` | `ReactNode` | Não | Label acima do editor (aceita JSX) |
+| `placeholder` | `string` | Não | Placeholder do textarea |
+| `rows` | `number` | Não | Altura inicial em linhas |
+| `error` | `string` | Não | Mensagem de erro |
+| `maxLength` | `number` | Não | Limite de caracteres (mostra contador) |
+
+---
+
+## Sanitização de Entrada Markdown
+
+Use `sanitizeMarkdownInput` para campos onde usuários digitam conteúdo que será salvo como markdown. A função remove caracteres fora do conjunto seguro (emojis, CJK, Unicode especial, zero-width chars) e aplica o limite de caracteres.
+
+```ts
+// src/lib/sanitize-markdown.ts
+export function sanitizeMarkdownInput(text: string, maxLength = 2000): string {
+  return text
+    .replace(/[^\t\n\r\x20-\x7E\u00A0-\u024F]/g, "") // mantém ASCII + Latin Extended
+    .slice(0, maxLength);
+}
+```
+
+Caracteres permitidos: tab, quebra de linha, ASCII imprimível (`\x20-\x7E`), Latin Extended (`\u00A0-\u024F`) — cobre acentuação do português e outros idiomas europeus.
+
+**Sempre aplique antes de salvar no estado**, não só no submit:
+
+```tsx
+onChange={(v) => setDescription(sanitizeMarkdownInput(v, 2000))}
+```
+
+---
+
+## Renderizando Markdown (Leitura)
+
+Para exibir conteúdo markdown salvo, use `MarkdownContent`:
+
+```tsx
+import MarkdownContent from "@/components/markdown-content";
+
+<MarkdownContent content={activity.description} className="text-sm" />
+```
+
+Para previews compactos (ex: listagem de cards), remova os tokens markdown antes de exibir:
+
+```tsx
+{activity.description.replace(/[#*`_>~\[\]]/g, "").trim()}
+```
 
 ---
 
@@ -86,19 +190,16 @@ Todos ficam em `src/components/form/`:
 A API pode retornar dados em formato diferente do que o formulário usa. **Sempre use funções de transformação** para converter entre os dois mundos:
 
 ```tsx
-// Dados que vêm da API
-const dadosApi = { first_name: "João", role_id: 2 };
-
-// Transforma para o formato do formulário
 const transformIn = (data) => ({
-  firstName: data.first_name,
-  role: { id: data.role_id },
+  title: data.title,
+  description: data.description ?? "",
+  fixedReward: data.fixedReward,
 });
 
-// Transforma de volta para enviar à API
 const transformOut = (data) => ({
-  first_name: data.firstName,
-  role_id: data.role.id,
+  title: data.title,
+  description: data.description || null,
+  fixedReward: Number(data.fixedReward),
 });
 
 // Para pré-preencher o formulário ao editar:

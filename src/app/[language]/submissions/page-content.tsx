@@ -2,8 +2,16 @@
 
 import { useState, useMemo } from "react";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useGetMySubmissionsService } from "@/services/api/services/submissions";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  useGetMySubmissionsService,
+  useCancelSubmissionService,
+} from "@/services/api/services/submissions";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import {
@@ -21,9 +29,11 @@ import {
   Clock,
   XCircle,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useSnackbar } from "@/hooks/use-snackbar";
 
 type StatusFilter = "ALL" | SubmissionStatusEnum;
 
@@ -51,13 +61,19 @@ const STATUS_META: Record<
 function SubmissionRow({
   sub,
   activityTitle,
+  onCancel,
+  canceling,
 }: {
   sub: Submission;
   activityTitle?: string;
+  onCancel: (id: string) => void;
+  canceling: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const meta = STATUS_META[sub.status];
   const Icon = meta.icon;
+  const isPending = sub.status === SubmissionStatusEnum.PENDING;
   const isRejected = sub.status === SubmissionStatusEnum.REJECTED;
 
   return (
@@ -115,6 +131,36 @@ function SubmissionRow({
               />
             </button>
           )}
+          {isPending &&
+            (confirmCancel ? (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onCancel(sub.id)}
+                  disabled={canceling}
+                  className="text-xs text-destructive hover:underline font-medium"
+                >
+                  Confirmar
+                </button>
+                <span className="text-muted-foreground text-xs">/</span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmCancel(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Não
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(true)}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+                title="Cancelar submissão"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            ))}
         </div>
       </div>
       {isRejected && sub.feedback && expanded && (
@@ -136,6 +182,18 @@ const FILTER_LABELS: Record<StatusFilter, string> = {
 function SubmissionsPageContent() {
   const fetch = useGetMySubmissionsService();
   const fetchActivities = useGetActivitiesService();
+  const cancelSubmission = useCancelSubmissionService();
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { mutate: doCancel, isPending: canceling } = useMutation({
+    mutationFn: (id: string) => cancelSubmission(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
+      enqueueSnackbar("Submissão cancelada.", { variant: "success" });
+    },
+    onError: () => enqueueSnackbar("Erro ao cancelar.", { variant: "error" }),
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
   const { data: activitiesData } = useQuery({
@@ -283,6 +341,8 @@ function SubmissionsPageContent() {
                 key={sub.id}
                 sub={sub}
                 activityTitle={activityMap.get(sub.activityId)}
+                onCancel={doCancel}
+                canceling={canceling}
               />
             ))}
           </div>

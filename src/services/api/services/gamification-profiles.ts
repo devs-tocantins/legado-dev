@@ -197,6 +197,7 @@ export function useGetProfileApprovedSubmissionsService() {
 export type UpdateMyGamificationProfileRequest = {
   username: string;
   githubUsername?: string | null;
+  bannerPreset?: string;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;
@@ -274,6 +275,33 @@ export function useTransferTokensService() {
         body: JSON.stringify(data),
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<TransferTokensResponse>);
+    },
+    [fetch]
+  );
+}
+
+// POST /gamification-profiles/:id/penalty — admin only
+export type ApplyPenaltyRequest = {
+  profileId: string;
+  amount: number;
+  reason: string;
+};
+
+export type ApplyPenaltyResponse = GamificationProfile;
+
+export function useApplyPenaltyService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: ApplyPenaltyRequest, requestConfig?: RequestConfigType) => {
+      return fetch(
+        `${API_URL}/api/v1/gamification-profiles/${data.profileId}/penalty`,
+        {
+          method: "POST",
+          body: JSON.stringify({ amount: data.amount, reason: data.reason }),
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<ApplyPenaltyResponse>);
     },
     [fetch]
   );

@@ -32,7 +32,7 @@ function LogoMark({ variant = "dark" }: { variant?: "dark" | "light" }) {
     <div
       className={
         variant === "light"
-          ? "flex h-9 w-9 shrink-0 items-center justify-center"
+          ? "flex shrink-0 items-center justify-center"
           : "flex h-10 w-10 shrink-0 items-center justify-center"
       }
     >
@@ -40,7 +40,7 @@ function LogoMark({ variant = "dark" }: { variant?: "dark" | "light" }) {
       <img
         src="/LOGO.svg"
         alt="legado.dev"
-        className="h-full w-auto"
+        className={variant === "light" ? "h-14 w-auto" : "h-full w-auto"}
         draggable={false}
       />
     </div>
@@ -76,11 +76,8 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <LeftPattern />
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-2.5">
+        <div className="relative z-10">
           <LogoMark variant="light" />
-          <span className="text-sm font-semibold text-white/60">
-            legado.dev
-          </span>
         </div>
 
         {/* Quote */}

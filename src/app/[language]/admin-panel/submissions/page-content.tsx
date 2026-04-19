@@ -4,34 +4,19 @@ import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useTranslation } from "@/services/i18n/client";
 import { PropsWithChildren, useCallback, useMemo, useState } from "react";
-import {
-  useGetSubmissionsQuery,
-  submissionsQueryKeys,
-} from "./queries/queries";
+import { useGetSubmissionsQuery } from "./queries/queries";
 import { TableVirtuoso } from "react-virtuoso";
 import TableComponents from "@/components/table/table-components-shadcn";
 import { Submission } from "@/services/api/types/submission";
-import useConfirmDialog from "@/components/confirm-dialog/use-confirm-dialog";
-import { useDeleteSubmissionService } from "@/services/api/services/submissions";
 import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
-import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import SubmissionFilter from "./submission-filter";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  SubmissionFilterType,
-  SubmissionSortType,
-} from "./submission-filter-types";
+import { SubmissionFilterType } from "./submission-filter-types";
 import { SortEnum } from "@/services/api/types/sort-type";
 import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 
 type SubmissionKeys = keyof Submission;
 
@@ -59,74 +44,15 @@ function SortableHeader(
   );
 }
 
-function Actions({ submission }: { submission: Submission }) {
-  const { confirmDialog } = useConfirmDialog();
-  const fetchDelete = useDeleteSubmissionService();
-  const queryClient = useQueryClient();
-  const { t } = useTranslation("admin-panel-submissions");
-
-  const handleDelete = async () => {
-    const isConfirmed = await confirmDialog({
-      title: t("admin-panel-submissions:confirm.delete.title"),
-      message: t("admin-panel-submissions:confirm.delete.message"),
-    });
-    if (isConfirmed) {
-      const sp = new URLSearchParams(window.location.search);
-      let filter: SubmissionFilterType | undefined = undefined;
-      let sort: SubmissionSortType | undefined = {
-        order: SortEnum.DESC,
-        orderBy: "id",
-      };
-      if (sp.get("filter")) filter = JSON.parse(sp.get("filter")!);
-      if (sp.get("sort")) sort = JSON.parse(sp.get("sort")!);
-
-      const previousData = queryClient.getQueryData<
-        InfiniteData<{ nextPage: number; data: Submission[] }>
-      >(submissionsQueryKeys.list().sub.by({ sort, filter }).key);
-      await queryClient.cancelQueries({
-        queryKey: submissionsQueryKeys.list().key,
-      });
-      const newData = {
-        ...previousData,
-        pages: previousData?.pages.map((page) => ({
-          ...page,
-          data: page?.data.filter((item) => item.id !== submission.id),
-        })),
-      };
-      queryClient.setQueryData(
-        submissionsQueryKeys.list().sub.by({ sort, filter }).key,
-        newData
-      );
-      await fetchDelete({ id: submission.id });
-    }
-  };
-
+function ReviewButton({ submission }: { submission: Submission }) {
   return (
-    <div className="flex items-center gap-1">
-      <Button
-        size="sm"
-        render={
-          <Link href={`/admin-panel/submissions/edit/${submission.id}`} />
-        }
-      >
-        {t("admin-panel-submissions:actions.edit")}
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="outline" size="icon" className="h-8 w-8" />}
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={handleDelete}
-          >
-            {t("admin-panel-submissions:actions.delete")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Button
+      size="sm"
+      variant="outline"
+      render={<Link href={`/admin-panel/submissions/edit/${submission.id}`} />}
+    >
+      Revisar
+    </Button>
   );
 }
 
@@ -263,7 +189,7 @@ function Submissions() {
               </td>
               <td className="p-3 w-[100px]">{sub?.awardedXp ?? 0} XP</td>
               <td className="p-3 w-[150px]">
-                {!!sub && <Actions submission={sub} />}
+                {!!sub && <ReviewButton submission={sub} />}
               </td>
             </>
           )}

@@ -233,3 +233,17 @@ export function useReviewSubmissionService() {
     [fetch]
   );
 }
+
+export function useCancelSubmissionService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/submissions/${id}/cancel`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>);
+    },
+    [fetch]
+  );
+}
