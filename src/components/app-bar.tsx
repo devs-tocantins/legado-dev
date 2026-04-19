@@ -45,7 +45,6 @@ import {
 } from "@/services/api/services/notifications";
 import { Notification } from "@/services/api/types/notification";
 import { getLevel } from "@/lib/gamification";
-import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -362,11 +361,7 @@ function ResponsiveAppBar() {
               >
                 <Avatar className="h-7 w-7">
                   <AvatarImage
-                    src={
-                      profile?.githubUsername
-                        ? getGitHubAvatarUrl(profile.githubUsername)
-                        : user.photo?.path
-                    }
+                    src={user?.photo?.path ? user.photo.path : undefined}
                   />
                   <AvatarFallback className="bg-primary/15 text-primary text-xs font-bold font-heading">
                     {user.firstName?.[0]}

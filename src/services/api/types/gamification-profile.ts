@@ -1,3 +1,5 @@
+import { FileEntity } from "./file-entity";
+
 export type GamificationProfile = {
   id: string;
   userId: number;
@@ -11,6 +13,7 @@ export type GamificationProfile = {
   isBanned?: boolean;
   firstName?: string;
   lastName?: string;
+  photo?: FileEntity | null;
   createdAt: string;
   updatedAt: string;
 };

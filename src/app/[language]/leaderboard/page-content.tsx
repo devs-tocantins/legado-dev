@@ -75,30 +75,45 @@ function PodiumCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-lg border p-3 text-center w-full",
+        "flex flex-col justify-between rounded-lg border p-3 text-center w-full relative overflow-hidden",
         cfg.height,
         cfg.border,
         cfg.bg,
         cfg.order
       )}
     >
-      <div className="flex flex-col items-center gap-1 pt-1">
+      <div className="flex flex-col items-center gap-1 pt-1 z-10">
         <div className="flex items-center justify-center">{cfg.icon}</div>
         <p className={cn("text-lg font-bold leading-none", cfg.rankColor)}>
           #{rank}
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-0.5">
+      <div className="flex flex-col items-center gap-1 z-10">
+        <div className="relative mb-1">
+          {profile.photo?.path ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photo.path}
+              alt={`@${profile.username}`}
+              className="h-10 w-10 rounded-full border-2 border-background object-cover"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+              {profile.username.substring(0, 2).toUpperCase()}
+            </div>
+          )}
+        </div>
         <Link
           href={`/u/${profile.username}`}
           className="font-semibold text-xs truncate max-w-full hover:text-primary transition-colors"
         >
           @{profile.username}
         </Link>
-        <p className={cn("text-xs font-medium", level.color)}>{level.name}</p>
-        <p className="text-lg font-bold font-mono mt-0.5">{formatXp(xp)}</p>
-        <p className="text-xs text-muted-foreground -mt-0.5">XP</p>
+        <p className={cn("text-[10px] font-medium", level.color)}>
+          {level.name}
+        </p>
+        <p className="text-base font-bold font-mono mt-0.5">{formatXp(xp)}</p>
       </div>
     </div>
   );

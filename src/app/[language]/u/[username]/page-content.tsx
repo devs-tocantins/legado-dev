@@ -23,7 +23,6 @@ import {
   getNextLevelXp,
   formatXp,
 } from "@/lib/gamification";
-import { getGitHubAvatarUrl } from "@/lib/github-avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,23 +135,23 @@ function avatarColor(username: string): string {
 
 function ProfileAvatar({
   username,
-  githubUsername,
+  photoPath,
   size = 64,
 }: {
   username: string;
-  githubUsername?: string | null;
+  photoPath?: string | null;
   size?: number;
 }) {
   const color = avatarColor(username);
   const initials = username.substring(0, 2).toUpperCase();
 
-  if (githubUsername) {
+  if (photoPath) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={getGitHubAvatarUrl(githubUsername)}
+        src={photoPath}
         alt={`@${username}`}
-        className="shrink-0 rounded-full border-4 border-background object-cover"
+        className="shrink-0 rounded-full border-4 border-background object-cover relative z-10"
         style={{ width: size, height: size }}
       />
     );
@@ -161,7 +160,7 @@ function ProfileAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full border-4 border-background font-bold font-heading text-white",
+        "flex shrink-0 items-center justify-center rounded-full border-4 border-background font-bold font-heading text-white relative z-10",
         color
       )}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.3) }}
@@ -553,7 +552,7 @@ function PublicProfilePageContent() {
         <div className="-mt-4 mb-3">
           <ProfileAvatar
             username={profile.username}
-            githubUsername={profile.githubUsername}
+            photoPath={profile.photo?.path}
             size={72}
           />
         </div>

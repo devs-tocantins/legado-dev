@@ -1,12 +1,245 @@
 "use client";
 
 import { useForm, FormProvider, useFormState } from "react-hook-form";
-import { useAuthPatchMeService } from "@/services/api/services/auth";
+import {
+  useAuthPatchMeService,
+  useAuthDeleteMeService,
+} from "@/services/api/services/auth";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle } from "lucide-react";
+
+// --- Form: Delete Account ---
+function FormDeleteAccount() {
+  const deleteMe = useAuthDeleteMeService();
+  const { logOut } = useAuthActions();
+  const { enqueueSnackbar } = useSnackbar();
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (confirmText !== "EXCLUIR") return;
+    setDeleting(true);
+    try {
+      const result = await deleteMe();
+      if (
+        result.status === HTTP_CODES_ENUM.NO_CONTENT ||
+        result.status === HTTP_CODES_ENUM.OK
+      ) {
+        setOpen(false);
+        logOut();
+        window.location.href = "/";
+      } else {
+        enqueueSnackbar("Erro ao tentar excluir a conta.", {
+          variant: "error",
+        });
+      }
+    } catch {
+      enqueueSnackbar("Erro de rede ao excluir a conta.", { variant: "error" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Card className="border-destructive/30 bg-destructive/5 mt-8">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base text-destructive flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          Zona de Risco
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Ao excluir sua conta, você perderá permanentemente acesso ao seu
+          perfil e todas as suas submissões serão anonimizadas. Seu saldo de XP
+          e tokens será zerado.
+        </p>
+
+        <AlertDialog open={open} onOpenChange={setOpen}>
+          <AlertDialogTrigger render={<Button variant="destructive" />}>
+            Excluir minha conta
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação <strong>não pode ser desfeita</strong>. Sua conta será
+                excluída, seus dados pessoais serão removidos e você
+                desaparecerá do ranking.
+                <br />
+                <br />
+                Para confirmar, digite <strong>EXCLUIR</strong> abaixo:
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="my-2">
+              <TextInput
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="EXCLUIR"
+                className="font-mono uppercase"
+              />
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                disabled={deleting}
+                onClick={() => setConfirmText("")}
+              >
+                Cancelar
+              </AlertDialogCancel>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={confirmText !== "EXCLUIR" || deleting}
+              >
+                {deleting ? "Excluindo..." : "Sim, excluir minha conta"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
+  );
+}
 import {
   useGetMyGamificationProfileService,
   useUpdateMyGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
-import { getGitHubAvatarUrl } from "@/lib/github-avatar";
+import { useFileUploadService } from "@/services/api/services/files";
+
+// --- Form: Photo Upload ---
+function FormPhotoUpload() {
+  const { user } = useAuth();
+  const fetchAuthPatchMe = useAuthPatchMeService();
+  const fileUploadService = useFileUploadService();
+  const { enqueueSnackbar } = useSnackbar();
+  const { setUser } = useAuthActions();
+
+  const [saving, setSaving] = useState(false);
+
+  const handleFileChange = async (_e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = _e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      enqueueSnackbar("Por favor, selecione uma imagem válida.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      enqueueSnackbar("A imagem deve ter no máximo 5MB.", { variant: "error" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const uploadResult = await fileUploadService(file);
+      if (uploadResult.status === HTTP_CODES_ENUM.CREATED) {
+        const photoEntity = uploadResult.data.file;
+        const patchResult = await fetchAuthPatchMe({ photo: photoEntity });
+
+        if (patchResult.status === HTTP_CODES_ENUM.OK) {
+          setUser(patchResult.data);
+          enqueueSnackbar("Foto de perfil atualizada!", { variant: "success" });
+        } else {
+          enqueueSnackbar("Erro ao salvar foto de perfil no perfil.", {
+            variant: "error",
+          });
+        }
+      } else {
+        let errorMsg = "Erro ao fazer upload da imagem.";
+        const serverError = (uploadResult.data as any)?.errors?.file;
+        if (serverError === "cantUploadFileType") {
+          errorMsg =
+            "Formato de arquivo não suportado. Envie apenas JPG ou PNG.";
+        } else if (serverError) {
+          errorMsg = serverError;
+        }
+        enqueueSnackbar(errorMsg, { variant: "error" });
+      }
+    } catch {
+      enqueueSnackbar("Erro de rede ao salvar foto.", { variant: "error" });
+    } finally {
+      setSaving(false);
+      // Reset input value so the same file can be selected again if needed
+      if (_e.target) {
+        (_e.target as any).value = "";
+      }
+    }
+  };
+
+  const previewUrl = user?.photo?.path ?? null;
+
+  return (
+    <Card className="border-primary/40 bg-primary/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Foto de Perfil</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Escolha uma foto para o seu perfil. Ela aparecerá no ranking, no seu
+            perfil público e no menu principal.
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="shrink-0 relative group">
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-[10px] text-center leading-tight px-1 font-medium">
+                  {user?.firstName?.charAt(0)}
+                  {user?.lastName?.charAt(0)}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  disabled={saving}
+                  onClick={() =>
+                    document.getElementById("photo-upload-input")?.click()
+                  }
+                  variant="outline"
+                >
+                  {saving ? "Salvando..." : "Trocar foto"}
+                </Button>
+                <input
+                  id="photo-upload-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Recomendado: 256x256px, máximo de 5MB (JPG, PNG, WEBP).
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 import { useQuery } from "@tanstack/react-query";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import * as yup from "yup";
@@ -372,26 +605,26 @@ function FormChangeEmail() {
 const COOLDOWN_SECONDS = 60;
 
 function useCooldown(key: string) {
-  const getRemaining = () => {
-    const last = Number(localStorage.getItem(key) ?? 0);
-    return Math.max(
-      0,
-      COOLDOWN_SECONDS - Math.floor((Date.now() - last) / 1000)
-    );
-  };
-
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
-    setRemaining(getRemaining());
+    const getRemainingCurrent = () => {
+      const last = Number(localStorage.getItem(key) ?? 0);
+      return Math.max(
+        0,
+        Math.floor((last + COOLDOWN_SECONDS * 1000 - Date.now()) / 1000)
+      );
+    };
+
+    setRemaining(getRemainingCurrent());
     const id = setInterval(() => {
-      const r = getRemaining();
+      const r = getRemainingCurrent();
       setRemaining(r);
       if (r === 0) clearInterval(id);
     }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
+    return () => clearInterval(id);
+  }, [key]);
   const start = () => {
     localStorage.setItem(key, String(Date.now()));
     setRemaining(COOLDOWN_SECONDS);
@@ -687,112 +920,6 @@ function FormUsername() {
   );
 }
 
-// --- Form: GitHub Username ---
-function FormGitHub() {
-  const fetchMyProfile = useGetMyGamificationProfileService();
-  const updateMyProfile = useUpdateMyGamificationProfileService();
-  const { enqueueSnackbar } = useSnackbar();
-
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["my-profile-github"],
-    queryFn: async () => {
-      const { status, data } = await fetchMyProfile();
-      if (status === HTTP_CODES_ENUM.OK) return data;
-      return null;
-    },
-  });
-
-  const [githubUsername, setGithubUsername] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setGithubUsername(profile?.githubUsername ?? "");
-  }, [profile?.githubUsername]);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
-    setSaving(true);
-    try {
-      const { status } = await updateMyProfile({
-        username: profile.username,
-        githubUsername: githubUsername.trim() || null,
-      });
-      if (status === HTTP_CODES_ENUM.OK) {
-        enqueueSnackbar("Foto de perfil atualizada!", { variant: "success" });
-      } else {
-        enqueueSnackbar("Erro ao salvar.", { variant: "error" });
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (isLoading || !profile) return null;
-
-  const previewUrl = githubUsername.trim()
-    ? getGitHubAvatarUrl(githubUsername.trim())
-    : null;
-
-  return (
-    <Card className="border-primary/40 bg-primary/5">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Foto de Perfil</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSave} className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            A foto de perfil na plataforma vem do seu GitHub.{" "}
-            <strong className="text-foreground">
-              Coloque seu username do GitHub abaixo
-            </strong>{" "}
-            e ela aparecerá automaticamente no ranking e no seu perfil público.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="shrink-0">
-              {previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-xs text-center leading-tight px-1">
-                  sem foto
-                </div>
-              )}
-            </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="text-sm font-medium">Username do GitHub</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm select-none">
-                    github.com/
-                  </span>
-                  <TextInput
-                    value={githubUsername}
-                    onChange={(e) => setGithubUsername(e.target.value.trim())}
-                    placeholder="seu-usuario"
-                    className="pl-[6.5rem]"
-                  />
-                </div>
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Ex: se seu perfil é github.com/leo-nardo, coloque{" "}
-                <code className="bg-muted px-1 rounded">leo-nardo</code>
-              </p>
-            </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
 // --- Wrappers for email-only providers ---
 function ChangeEmailWrapper() {
   const { user } = useAuth();
@@ -811,13 +938,15 @@ function EditProfile() {
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
-      <FormGitHub />
+      <FormPhotoUpload />
       <FormBanner />
       <FormUsername />
       <ChangeEmailWrapper />
       <ChangePasswordWrapper />
+      <FormDeleteAccount />
     </div>
   );
 }
 
 export default withPageRequiredAuth(EditProfile);
+th(EditProfile);

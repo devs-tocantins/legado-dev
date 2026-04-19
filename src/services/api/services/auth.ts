@@ -15,6 +15,34 @@ export type AuthLoginResponse = Tokens & {
   user: User;
 };
 
+export function useAuthLogoutService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/auth/logout`, {
+        method: "POST",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>);
+    },
+    [fetch]
+  );
+}
+
+export function useAuthDeleteMeService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/auth/me`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>);
+    },
+    [fetch]
+  );
+}
+
 export function useAuthLoginService() {
   const fetchBase = useFetch();
 
@@ -187,7 +215,7 @@ export function useAuthResetPasswordService() {
 }
 
 export type AuthPatchMeRequest =
-  | Partial<Pick<User, "firstName" | "lastName" | "email">>
+  | Partial<Pick<User, "firstName" | "lastName" | "email" | "photo">>
   | { password: string; oldPassword: string };
 
 export type AuthPatchMeResponse = User;
