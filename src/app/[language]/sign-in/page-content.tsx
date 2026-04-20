@@ -9,8 +9,6 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "@/components/link";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { isGoogleAuthEnabled } from "@/services/social-auth/google/google-config";
-import { isGitHubAuthEnabled } from "@/services/social-auth/github/github-config";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
 import SocialAuth from "@/services/social-auth/social-auth";
 import { useTranslation } from "react-i18next";
@@ -198,16 +196,12 @@ function SignInForm() {
           )}
         </form>
 
-        {(isGoogleAuthEnabled || isGitHubAuthEnabled) && (
-          <>
-            <div className="my-4 flex items-center gap-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">{t("or")}</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <SocialAuth />
-          </>
-        )}
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">{t("or")}</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <SocialAuth />
       </AuthLayout>
     </FormProvider>
   );
