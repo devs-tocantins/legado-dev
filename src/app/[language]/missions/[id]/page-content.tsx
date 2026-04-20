@@ -96,6 +96,20 @@ function MissionDetailPageContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mission) return;
+
+    if (mission.requiresProof && !proofUrl) {
+      setProofError("Esta missão exige o envio de um comprovante.");
+      return;
+    }
+
+    if (mission.requiresDescription && !description.trim()) {
+      enqueueSnackbar("Esta missão exige uma descrição detalhada.", {
+        variant: "error",
+      });
+      return;
+    }
+
     if (!description.trim() && !proofUrl) {
       setProofError("Envie um comprovante ou escreva uma descrição.");
       return;
@@ -260,7 +274,12 @@ function MissionDetailPageContent() {
           <div className="space-y-1.5">
             <label className="text-sm font-medium flex items-center gap-1.5">
               <Upload className="h-4 w-4" />
-              Comprovante (opcional)
+              Comprovante{" "}
+              {mission.requiresProof ? (
+                <span className="text-destructive">*</span>
+              ) : (
+                "(opcional)"
+              )}
             </label>
             {proofFile ? (
               <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
@@ -292,7 +311,8 @@ function MissionDetailPageContent() {
               <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
                 <Upload className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">
-                  JPG, PNG ou GIF · Máx. 5 MB
+                  JPG, PNG ou GIF · Máx. 5 MB{" "}
+                  {mission.requiresProof ? "" : "(opcional)"}
                 </span>
                 <input
                   type="file"
@@ -312,7 +332,16 @@ function MissionDetailPageContent() {
 
           {/* Description */}
           <MarkdownEditor
-            label="Descrição / Relato (opcional)"
+            label={
+              <span>
+                Descrição / Relato{" "}
+                {mission.requiresDescription ? (
+                  <span className="text-destructive">*</span>
+                ) : (
+                  "(opcional)"
+                )}
+              </span>
+            }
             value={description}
             onChange={(v) => setDescription(sanitizeMarkdownInput(v, 2000))}
             placeholder="Descreva como você cumpriu os requisitos da missão..."
