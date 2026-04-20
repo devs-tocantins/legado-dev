@@ -10,8 +10,6 @@ export type Mission = {
   status: MissionStatus;
   winnerId: string | null;
   isSecret: boolean;
-  requiresProof: boolean;
-  requiresDescription: boolean;
   createdAt: string;
   updatedAt: string;
 };

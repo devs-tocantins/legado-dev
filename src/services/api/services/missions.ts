@@ -47,8 +47,6 @@ export type CreateMissionRequest = {
   requirements?: string | null;
   xpReward: number;
   isSecret?: boolean;
-  requiresProof?: boolean;
-  requiresDescription?: boolean;
 };
 
 export function useCreateMissionService() {

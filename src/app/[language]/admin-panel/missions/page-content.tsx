@@ -57,12 +57,6 @@ function MissionForm({
   const [requirements, setRequirements] = useState(initial?.requirements ?? "");
   const [xpReward, setXpReward] = useState(String(initial?.xpReward ?? 100));
   const [isSecret, setIsSecret] = useState(initial?.isSecret ?? false);
-  const [requiresProof, setRequiresProof] = useState(
-    initial?.requiresProof ?? false
-  );
-  const [requiresDescription, setRequiresDescription] = useState(
-    initial?.requiresDescription ?? false
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,8 +66,6 @@ function MissionForm({
       requirements: requirements.trim() || null,
       xpReward: Number(xpReward),
       isSecret,
-      requiresProof,
-      requiresDescription,
     });
   };
 
@@ -141,44 +133,6 @@ function MissionForm({
           </span>
         </span>
       </label>
-
-      <div className="grid grid-cols-2 gap-4 pt-2">
-        <label className="flex items-center gap-3 cursor-pointer select-none border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={requiresProof}
-              onChange={(e) => setRequiresProof(e.target.checked)}
-            />
-            <div
-              className={`w-10 h-5 rounded-full transition-colors ${requiresProof ? "bg-primary" : "bg-input"}`}
-            />
-            <div
-              className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${requiresProof ? "translate-x-5" : "translate-x-0"}`}
-            />
-          </div>
-          <span className="text-sm font-medium">Requer comprovante</span>
-        </label>
-
-        <label className="flex items-center gap-3 cursor-pointer select-none border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={requiresDescription}
-              onChange={(e) => setRequiresDescription(e.target.checked)}
-            />
-            <div
-              className={`w-10 h-5 rounded-full transition-colors ${requiresDescription ? "bg-primary" : "bg-input"}`}
-            />
-            <div
-              className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${requiresDescription ? "translate-x-5" : "translate-x-0"}`}
-            />
-          </div>
-          <span className="text-sm font-medium">Requer descrição</span>
-        </label>
-      </div>
 
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Salvando..." : "Salvar Missão"}

@@ -16,7 +16,6 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "react-i18next";
 import SocialAuth from "@/services/social-auth/social-auth";
 import { isGoogleAuthEnabled } from "@/services/social-auth/google/google-config";
-import { isGitHubAuthEnabled } from "@/services/social-auth/github/github-config";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -407,7 +406,7 @@ function SignUpForm() {
           </p>
         </form>
 
-        {(isGoogleAuthEnabled || isGitHubAuthEnabled) && (
+        {isGoogleAuthEnabled && (
           <>
             <div className="my-4 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
