@@ -280,6 +280,8 @@ function LiveRankingCard() {
   );
 }
 
+import { HeroLogo3D } from "@/components/hero-logo-3d";
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function HomePageContent() {
@@ -288,121 +290,88 @@ export default function HomePageContent() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 90]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
   return (
     <main className="overflow-x-hidden">
       {/* ─── Hero ──────────────────────────────────────────────────────── */}
       <section
         ref={heroRef}
-        className="relative min-h-[90vh] flex items-center overflow-hidden bg-background"
+        className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black"
       >
-        <EdgeConstellation />
+        <div className="absolute inset-0 z-0">
+          <EdgeConstellation />
+        </div>
 
         <motion.div
-          className="relative z-10 mx-auto w-full max-w-6xl px-6 py-24"
-          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 w-full"
+          style={{ opacity: heroOpacity }}
         >
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left — text */}
-            <motion.div
-              variants={staggerContainer(0.14, 0.1)}
-              initial="hidden"
-              animate="visible"
-            >
-              {/* Logo */}
-              <motion.div variants={fadeUp} className="mb-6">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/LOGO.svg"
-                  alt="legado.dev"
-                  className="h-14 w-auto sm:h-16"
-                  draggable={false}
-                />
-              </motion.div>
-
-              {/* Headline */}
-              <motion.h1
-                className="mb-4 font-bold leading-[1.05] tracking-tight text-foreground"
-                style={{ fontSize: "clamp(3.5rem, 8vw, 6rem)" }}
-                variants={fadeUp}
-              >
-                legado.dev
-              </motion.h1>
-
-              <motion.p
-                variants={fadeUp}
-                className="mb-6 text-base font-medium text-muted-foreground sm:text-lg"
-              >
-                A sua história não será esquecida.
-              </motion.p>
-
-              {/* Subtitle */}
-              <motion.p
-                variants={fadeUp}
-                className="mb-10 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg"
-              >
-                Ganhe XP por palestras, artigos, mentorias e open source. Suba
-                no ranking e deixe um histórico permanente do seu impacto na
-                comunidade.
-              </motion.p>
-
-              {/* CTAs */}
-              <motion.div
-                variants={fadeUp}
-                className="flex flex-col gap-3 sm:flex-row"
-              >
-                <Link
-                  href="/sign-up"
-                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
-                >
-                  Começar agora
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                </Link>
-                <Link
-                  href="/leaderboard"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-7 py-3 text-sm font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted"
-                >
-                  <Trophy className="h-4 w-4 text-amber-400" />
-                  Ver Ranking
-                </Link>
-              </motion.div>
-            </motion.div>
-
-            {/* Right — live ranking card */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease, delay: 0.5 }}
-            >
-              <LiveRankingCard />
-            </motion.div>
+          {/* Animated 3D Logo Section */}
+          <div className="w-full max-w-7xl mx-auto">
+            <HeroLogo3D />
           </div>
+
+          {/* Action Buttons (Fade in after logo assembly) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 4, ease }}
+            className="flex flex-col items-center gap-6 mt-8 px-6"
+          >
+            <p className="max-w-md text-center text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Ganhe XP por palestras, artigos, mentorias e open source. Construa
+              um histórico permanente do seu impacto na comunidade.
+            </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/sign-up"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(229,155,19,0.3)]"
+              >
+                Começar agora
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm px-8 py-4 text-sm font-semibold text-foreground transition-all duration-200 hover:-translate-y-1 hover:bg-white/10"
+              >
+                <Trophy className="h-4 w-4 text-amber-400" />
+                Ver Ranking
+              </Link>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Live Ranking Preview (Floating) */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 5, ease }}
+          className="hidden xl:block absolute right-10 top-1/2 -translate-y-1/2 z-20 w-80"
+        >
+          <LiveRankingCard />
         </motion.div>
 
         {/* Scroll indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
+          transition={{ delay: 5.5 }}
         >
-          <motion.div
-            className="flex h-9 w-[22px] items-start justify-center rounded-full border border-border pt-1.5"
-            animate={{ opacity: [0.3, 0.65, 0.3] }}
-            transition={{ duration: 2.6, repeat: Infinity }}
-          >
+          <div className="flex h-9 w-[22px] items-start justify-center rounded-full border border-white/20 pt-1.5">
             <motion.div
-              className="h-1.5 w-0.5 rounded-full bg-muted-foreground/50"
+              className="h-1.5 w-0.5 rounded-full bg-white/40"
               animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
               transition={{ duration: 2.6, repeat: Infinity }}
             />
-          </motion.div>
+          </div>
         </motion.div>
       </section>
 
       {/* ─── Features ──────────────────────────────────────────────────── */}
+
       <section className="py-28 px-4">
         <div className="mx-auto max-w-5xl">
           <motion.div
