@@ -372,7 +372,7 @@ function ParticlesWebGL({
       <pointsMaterial
         size={0.06}
         vertexColors
-        transparent
+        transparent={!isMobile}
         opacity={theme === "light" ? 0.3 : 0.6}
         sizeAttenuation
       />
@@ -550,6 +550,11 @@ export function HeroLogo3D({
           camera={{ position: [0, 0, 10], fov: 35 }}
           dpr={isMobile ? 1 : [1, 2]}
           performance={{ min: 0.5 }}
+          gl={{
+            antialias: !isMobile,
+            powerPreference: "high-performance",
+            alpha: true,
+          }}
         >
           <ambientLight intensity={theme === "light" ? 1.0 : 0.7} />
           {theme !== "light" && !isMobile && <Environment preset="city" />}
@@ -563,11 +568,13 @@ export function HeroLogo3D({
             intensity={theme === "light" ? 2.5 : 2.5}
             color={theme === "light" ? "#F2B13E" : "#ffffff"}
           />
-          <pointLight
-            position={[5, 5, 10]}
-            intensity={theme === "light" ? 1.5 : 1.5}
-            color={theme === "light" ? "#3B82F6" : "#ffffff"}
-          />
+          {!isMobile && (
+            <pointLight
+              position={[5, 5, 10]}
+              intensity={theme === "light" ? 1.5 : 1.5}
+              color={theme === "light" ? "#3B82F6" : "#ffffff"}
+            />
+          )}
           <Scene3D
             time={time}
             yaw={yaw}
