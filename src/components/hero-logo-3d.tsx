@@ -165,7 +165,6 @@ function CubeInScene({
   cube: CubeData;
   time: number;
   theme: string;
-  isMobile?: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const sch = ENTRY[cube.id as keyof typeof ENTRY];
@@ -270,7 +269,7 @@ function Scene3D({
   );
 }
 
-function ParticlesWebGL({ theme }: { theme: string; isMobile?: boolean }) {
+function ParticlesWebGL({ theme }: { theme: string }) {
   const pointsRef = useRef<THREE.Points>(null);
   const timeRef = useRef(0);
 
