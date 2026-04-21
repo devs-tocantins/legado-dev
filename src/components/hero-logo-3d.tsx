@@ -1,5 +1,6 @@
 "use client";
 
+// Force redeploy - restoring production state
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Edges, Environment } from "@react-three/drei";
