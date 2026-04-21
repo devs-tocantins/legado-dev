@@ -27,7 +27,7 @@ const CATEGORY_META: Record<
   TransactionCategoryEnum,
   {
     label: string;
-    icon: React.ElementType;
+    icon: React.ComponentType<{ className?: string }>;
     color: string;
     bg: string;
     unit: "XP" | "Pts" | "auto";

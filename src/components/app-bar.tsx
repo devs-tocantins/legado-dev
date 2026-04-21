@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Trophy,
+  Target,
   Sun,
   Moon,
   ExternalLink,
@@ -41,7 +42,8 @@ import {
 } from "@/services/api/services/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Notification } from "@/services/api/types/notification";
-import { getLevel } from "@/lib/gamification";
+import { GamificationProfile } from "@/services/api/types/gamification-profile";
+import { getLevel, LEVELS } from "@/lib/gamification";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { formatDistanceToNow } from "date-fns";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
@@ -66,6 +68,8 @@ function LogoMark() {
 
 function LevelBadge({ totalXp }: { totalXp: number }) {
   const level = getLevel(totalXp);
+  const levelValue = LEVELS.findIndex((l) => l.name === level.name) + 1;
+
   return (
     <div
       className={cn(
@@ -74,7 +78,7 @@ function LevelBadge({ totalXp }: { totalXp: number }) {
         "bg-current/10 border-current/20"
       )}
     >
-      Lvl {level.value}
+      Lvl {levelValue}
     </div>
   );
 }
@@ -182,22 +186,22 @@ function NotificationBell() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.readAt && doMarkRead(n.id)}
+                  onClick={() => !n.isRead && doMarkRead(n.id)}
                   className={cn(
                     "p-4 hover:bg-muted/50 transition-colors cursor-pointer relative group",
-                    !n.readAt && "bg-primary/[0.03]"
+                    !n.isRead && "bg-primary/[0.03]"
                   )}
                 >
                   <div className="flex gap-3">
                     <div
                       className={cn(
                         "mt-1 h-2 w-2 shrink-0 rounded-full",
-                        !n.readAt ? "bg-primary" : "bg-transparent"
+                        !n.isRead ? "bg-primary" : "bg-transparent"
                       )}
                     />
                     <div className="space-y-1 min-w-0">
                       <p className="text-xs text-foreground leading-relaxed">
-                        <span className="font-bold">{n.title}</span> {n.message}
+                        <span className="font-bold">{n.title}</span> {n.body}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatDistanceToNow(new Date(n.createdAt), {
@@ -234,7 +238,7 @@ function ResponsiveAppBar() {
   const isDark = resolvedTheme === "dark";
 
   const fetchMyProfile = useGetMyGamificationProfileService();
-  const { data: profile } = useQuery({
+  const { data: profile } = useQuery<GamificationProfile | null>({
     queryKey: ["my-profile-appbar"],
     queryFn: async () => {
       const res = await fetchMyProfile();

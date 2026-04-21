@@ -522,7 +522,11 @@ function PublicProfilePageContent() {
     ? new Date(submissions[0].createdAt)
     : null;
 
-  const stats = [
+  const stats: Array<{
+    label: string;
+    value: string | number;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
     { label: "XP Total", value: formatXp(totalXp), icon: Zap },
     {
       label: "XP Mensal",

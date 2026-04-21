@@ -39,7 +39,11 @@ type StatusFilter = "ALL" | SubmissionStatusEnum;
 
 const STATUS_META: Record<
   SubmissionStatusEnum,
-  { icon: React.ElementType; color: string; label: string }
+  {
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    label: string;
+  }
 > = {
   [SubmissionStatusEnum.APPROVED]: {
     icon: CheckCircle2,

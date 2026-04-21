@@ -232,7 +232,11 @@ function DashboardPageContent() {
     }
   };
 
-  const stats = [
+  const stats: Array<{
+    label: string;
+    value: string | number;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
     {
       label: "XP Total",
       value: formatXp(profile?.totalXp ?? 0),

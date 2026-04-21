@@ -12,12 +12,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 
-// Direct imports for smaller bundle size
-import Zap from "lucide-react/dist/esm/icons/zap";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
-import Star from "lucide-react/dist/esm/icons/star";
-import Users from "lucide-react/dist/esm/icons/users";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+import { Zap, Trophy, Star, Users, ArrowRight } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";

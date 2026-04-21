@@ -1,34 +1,38 @@
 "use client";
 
+import useAuth from "@/services/auth/use-auth";
 import { RoleEnum } from "@/services/api/types/role";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
-  useGetAdminMetricsService,
   useGetAdminHealthService,
-  type AdminHealth,
+  useGetAdminMetricsService,
+  AdminHealth,
 } from "@/services/api/services/badges";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import Link from "@/components/link";
 import {
   Users,
-  ShieldCheck,
-  Ban,
-  ClipboardList,
+  UserX,
+  FileClock,
   CheckCircle2,
   XCircle,
   Zap,
   Coins,
-  Activity,
-  Medal,
-  Target,
   ArrowRight,
   Database,
   Mail,
   HardDrive,
   RefreshCw,
+  Activity,
+  ClipboardList,
+  UserCheck,
+  Target,
+  Trophy,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 function MetricCard({
   label,
@@ -38,7 +42,7 @@ function MetricCard({
 }: {
   label: string;
   value: number | string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   colorClass?: string;
 }) {
   return (
@@ -73,7 +77,7 @@ function NavCard({
   description,
 }: {
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   description: string;
 }) {
@@ -98,7 +102,7 @@ function NavCard({
 
 const SERVICE_LABELS: Record<
   keyof Omit<AdminHealth, "allOk">,
-  { label: string; Icon: any }
+  { label: string; Icon: React.ComponentType<{ className?: string }> }
 > = {
   database: { label: "Banco de Dados (Neon)", Icon: Database },
   smtp: { label: "E-mail (Brevo SMTP)", Icon: Mail },
@@ -204,7 +208,10 @@ function HealthSection() {
   );
 }
 
-function AdminPanel() {
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+
+function AdminDashboardPageContent() {
+  const { user } = useAuth();
   const fetchMetrics = useGetAdminMetricsService();
 
   const { data: metrics, isLoading } = useQuery({
@@ -214,6 +221,7 @@ function AdminPanel() {
       if (status === HTTP_CODES_ENUM.OK) return data;
       return null;
     },
+    staleTime: 60_000,
   });
 
   return (
@@ -223,89 +231,86 @@ function AdminPanel() {
           Painel Administrativo
         </h1>
         <p className="text-muted-foreground">
-          Visao geral da plataforma legado.dev
+          Bem-vindo de volta, {user?.firstName}. Aqui esta o resumo da
+          plataforma.
         </p>
       </div>
 
-      {/* Metrics */}
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          Metricas
+          Metricas Gerais
         </h2>
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
                 className="rounded-lg border bg-card p-5 h-24 animate-pulse"
               />
             ))}
           </div>
-        ) : metrics ? (
+        ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
               label="Usuarios totais"
-              value={metrics.totalUsers}
+              value={metrics?.totalUsers ?? 0}
               icon={Users}
               colorClass="bg-primary/10"
             />
             <MetricCard
               label="Usuarios ativos"
-              value={metrics.activeUsers}
-              icon={CheckCircle2}
+              value={metrics?.activeUsers ?? 0}
+              icon={UserCheck}
               colorClass="bg-emerald-500/10"
             />
             <MetricCard
               label="Usuarios banidos"
-              value={metrics.bannedUsers}
-              icon={Ban}
+              value={metrics?.bannedUsers ?? 0}
+              icon={UserX}
               colorClass="bg-destructive/10"
             />
             <MetricCard
               label="Submissoes pendentes"
-              value={metrics.submissionsPending}
-              icon={ClipboardList}
+              value={metrics?.submissionsPending ?? 0}
+              icon={FileClock}
               colorClass="bg-amber-500/10"
             />
             <MetricCard
               label="Aprovadas este mes"
-              value={metrics.submissionsApprovedThisMonth}
+              value={metrics?.submissionsApprovedThisMonth ?? 0}
               icon={CheckCircle2}
               colorClass="bg-emerald-500/10"
             />
             <MetricCard
               label="Rejeitadas este mes"
-              value={metrics.submissionsRejectedThisMonth}
+              value={metrics?.submissionsRejectedThisMonth ?? 0}
               icon={XCircle}
               colorClass="bg-destructive/10"
             />
             <MetricCard
               label="XP distribuido"
-              value={`${metrics.totalXpDistributed} XP`}
+              value={metrics?.totalXpDistributed ?? 0}
               icon={Zap}
               colorClass="bg-primary/10"
             />
             <MetricCard
               label="Pts. reconhecimento em circulacao"
-              value={metrics.tokensInCirculation}
+              value={metrics?.tokensInCirculation ?? 0}
               icon={Coins}
               colorClass="bg-amber-500/10"
             />
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Nao foi possivel carregar as metricas.
-          </p>
         )}
+        <p className="text-sm text-muted-foreground">
+          Ultima atualizacao: {new Date().toLocaleTimeString()}
+        </p>
       </section>
 
-      {/* Health */}
       <HealthSection />
 
-      {/* Navigation */}
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          Gerenciar
+          Gestao de Conteudo
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <NavCard
@@ -322,8 +327,8 @@ function AdminPanel() {
           />
           <NavCard
             href="/admin-panel/gamification-profiles"
-            icon={Users}
-            label="Perfis de gamificacao"
+            icon={UserCheck}
+            label="Perfis de Gamificacao"
             description="Gerenciar XP, tokens e penalidades"
           />
           <NavCard
@@ -334,19 +339,19 @@ function AdminPanel() {
           />
           <NavCard
             href="/admin-panel/badges"
-            icon={Medal}
+            icon={Trophy}
             label="Badges"
             description="Criar badges e conceder manualmente a usuarios"
           />
           <NavCard
             href="/admin-panel/transactions"
-            icon={Coins}
+            icon={History}
             label="Transacoes"
             description="Historico de todas as movimentacoes"
           />
           <NavCard
             href="/admin-panel/users"
-            icon={ShieldCheck}
+            icon={Users}
             label="Usuarios"
             description="Gerenciar contas de usuarios"
           />
@@ -356,6 +361,6 @@ function AdminPanel() {
   );
 }
 
-export default withPageRequiredAuth(AdminPanel, {
-  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
+export default withPageRequiredAuth(AdminDashboardPageContent, {
+  roles: [RoleEnum.ADMIN],
 });
