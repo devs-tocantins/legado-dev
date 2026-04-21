@@ -142,6 +142,7 @@ function NotificationBell() {
             variant="ghost"
             size="icon"
             nativeButton={true}
+            aria-label="Ver notificações"
             className="relative h-8 w-8 text-muted-foreground hover:text-foreground"
           />
         }
@@ -328,6 +329,9 @@ function ResponsiveAppBar() {
                 size="icon"
                 nativeButton={true}
                 onClick={toggleTheme}
+                aria-label={
+                  isDark ? "Mudar para tema claro" : "Mudar para tema escuro"
+                }
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
                 {isDark ? (
@@ -351,7 +355,10 @@ function ResponsiveAppBar() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none" />
+                  <button
+                    aria-label="Abrir menu do usuário"
+                    className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none"
+                  />
                 }
               >
                 <div className="h-7 w-7 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">

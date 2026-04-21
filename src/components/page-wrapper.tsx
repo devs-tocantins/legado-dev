@@ -19,7 +19,8 @@ export default function PageWrapper({ children }: { children: ReactNode }) {
   }, [isAuthPage]);
 
   return (
-    <div
+    <main
+      role="main"
       className={
         isAuthPage
           ? "relative overflow-hidden"
@@ -27,6 +28,6 @@ export default function PageWrapper({ children }: { children: ReactNode }) {
       }
     >
       {children}
-    </div>
+    </main>
   );
 }
