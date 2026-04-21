@@ -6,6 +6,20 @@
     "cta": "Começar agora",
     "ranking": "Ranking Geral"
   },
+  "stats": {
+    "impact": {
+      "label": "Impacto Imediato",
+      "value": "XP Real"
+    },
+    "recognition": {
+      "label": "Reconhecimento",
+      "value": "Ranking Global"
+    },
+    "prestige": {
+      "label": "Prestígio",
+      "value": "Badges Únicas"
+    }
+  },
   "features": {
     "badge": "Como funciona",
     "title": "Onde o esforço se torna {{reconhecimento}}",
@@ -14,15 +28,17 @@
       "title": "Impacto em XP",
       "description": "Suas ações no mundo real são convertidas em experiência digital, validando seu crescimento técnico contínuo."
     },
-    "marcos": {
+    "evolution": {
       "title": "Marcos de Evolução",
       "description": "Conquiste badges que comprovam sua senioridade e seu papel como referência para outros desenvolvedores."
     },
-    "crescimento": {
+    "collective": {
       "title": "Crescimento Coletivo",
       "description": "O verdadeiro legado é construído em conjunto. Use seus tokens para impulsionar quem te ajudou a chegar aqui."
     }
   },
+  "milestonesTitle": "Vitrines de Atividades",
+  "milestonesSubtitle": "Veja as contribuições mais recentes da nossa comunidade e inspire-se.",
   "footer_cta": {
     "title": "Sua história na tecnologia começa {{agora}}",
     "title_start": "Sua história na tecnologia começa",
