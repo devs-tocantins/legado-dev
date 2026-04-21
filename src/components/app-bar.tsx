@@ -1,13 +1,29 @@
 "use client";
 
+import { ptBR } from "date-fns/locale";
+import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import useAuth from "@/services/auth/use-auth";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import Link from "@/components/link";
-import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import { RoleEnum } from "@/services/api/types/role";
-import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
-import { Button } from "@/components/ui/button";
+import {
+  LogOut,
+  User,
+  Settings,
+  Bell,
+  Menu,
+  X,
+  LayoutDashboard,
+  BookOpen,
+  Trophy,
+  Sun,
+  Moon,
+  ExternalLink,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,39 +31,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Trophy,
-  BookOpen,
-  ClipboardList,
-  ShieldCheck,
-  Menu,
-  X,
-  Moon,
-  Sun,
-  LayoutDashboard,
-  LogOut,
-  User,
-  Settings,
-  Target,
-  ExternalLink,
-  Bell,
-  CheckCheck,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import {
   useGetNotificationsService,
   useGetUnreadCountService,
   useMarkAllReadService,
   useMarkReadService,
 } from "@/services/api/services/notifications";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Notification } from "@/services/api/types/notification";
 import { getLevel } from "@/lib/gamification";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
 
 // ─── Logo Mark ────────────────────────────────────────────────────────────────
 
@@ -70,9 +67,15 @@ function LogoMark() {
 function LevelBadge({ totalXp }: { totalXp: number }) {
   const level = getLevel(totalXp);
   return (
-    <span className={cn("text-[10px] font-semibold", level.color)}>
-      {level.name}
-    </span>
+    <div
+      className={cn(
+        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border",
+        level.color,
+        "bg-current/10 border-current/20"
+      )}
+    >
+      Lvl {level.value}
+    </div>
   );
 }
 
@@ -117,7 +120,7 @@ function NotificationBell() {
     },
   });
 
-  const { mutate: doMarkOne } = useMutation({
+  const { mutate: doMarkRead } = useMutation({
     mutationFn: async (id: string) => {
       await markRead(id);
     },
@@ -127,143 +130,125 @@ function NotificationBell() {
     },
   });
 
-  const unread = unreadData?.count ?? 0;
-
-  function notifIcon(type: Notification["type"]) {
-    if (type === "SUBMISSION_APPROVED" || type === "MISSION_WON") return "🏆";
-    if (type === "CONTRIBUTION_REPORT_UPHELD") return "⚠️";
-    return "🔔";
-  }
-
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        aria-label="Notificações"
+    <DropdownMenu onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            nativeButton={true}
+            className="relative h-8 w-8 text-muted-foreground hover:text-foreground"
+          />
+        }
       >
         <Bell className="h-4 w-4" />
-        {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-            {unread > 9 ? "9+" : unread}
+        {unreadData && unreadData.count > 0 && (
+          <span className="absolute right-1.5 top-1.5 flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-primary text-[8px] font-bold text-white items-center justify-center">
+              {unreadData.count > 9 ? "9+" : unreadData.count}
+            </span>
           </span>
         )}
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-border bg-popover shadow-lg">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-semibold">Notificações</span>
-              {unread > 0 && (
-                <button
-                  onClick={() => doMarkAll()}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <CheckCheck className="h-3.5 w-3.5" />
-                  Marcar todas como lidas
-                </button>
-              )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-bold text-sm">Notificações</h3>
+          {unreadData && unreadData.count > 0 && (
+            <button
+              onClick={() => doMarkAll()}
+              className="text-[10px] font-bold text-primary hover:underline"
+            >
+              Marcar todas como lidas
+            </button>
+          )}
+        </div>
+        <div className="max-h-[350px] overflow-y-auto">
+          {!notifications || notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">
+                Tudo limpo por aqui!
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Você não tem notificações no momento.
+              </p>
             </div>
-
-            <div className="max-h-96 overflow-y-auto">
-              {!notifications || notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  <Bell className="h-6 w-6 mx-auto mb-2 opacity-30" />
-                  Nenhuma notificação ainda.
-                </div>
-              ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={cn(
-                      "flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0",
-                      !n.isRead && "bg-primary/5"
-                    )}
-                    onClick={() => !n.isRead && doMarkOne(n.id)}
-                  >
-                    <span className="text-base shrink-0 mt-0.5">
-                      {notifIcon(n.type)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={cn(
-                          "text-sm leading-snug",
-                          !n.isRead && "font-semibold"
-                        )}
-                      >
-                        {n.title}
+          ) : (
+            <div className="divide-y divide-border/50">
+              {notifications.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => !n.readAt && doMarkRead(n.id)}
+                  className={cn(
+                    "p-4 hover:bg-muted/50 transition-colors cursor-pointer relative group",
+                    !n.readAt && "bg-primary/[0.03]"
+                  )}
+                >
+                  <div className="flex gap-3">
+                    <div
+                      className={cn(
+                        "mt-1 h-2 w-2 shrink-0 rounded-full",
+                        !n.readAt ? "bg-primary" : "bg-transparent"
+                      )}
+                    />
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-xs text-foreground leading-relaxed">
+                        <span className="font-bold">{n.title}</span> {n.message}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {n.body}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      <p className="text-[10px] text-muted-foreground">
                         {formatDistanceToNow(new Date(n.createdAt), {
                           addSuffix: true,
                           locale: ptBR,
                         })}
                       </p>
                     </div>
-                    {!n.isRead && (
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                    )}
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-// ─── Main AppBar ──────────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────
 
 function ResponsiveAppBar() {
   const { user, isLoaded } = useAuth();
   const { logOut } = useAuthActions();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = resolvedTheme === "dark";
 
   const fetchMyProfile = useGetMyGamificationProfileService();
   const { data: profile } = useQuery({
     queryKey: ["my-profile-appbar"],
     queryFn: async () => {
-      const { status, data } = await fetchMyProfile();
-      if (status === HTTP_CODES_ENUM.OK) return data;
-      return null;
+      const res = await fetchMyProfile();
+      return res.data;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Theme toggle
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved) {
-      const dark = saved === "dark";
-      document.documentElement.classList.toggle("dark", dark);
-      setIsDark(dark);
-    } else {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    }
-  }, []);
-
   const toggleTheme = () => {
-    const next = !isDark;
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-    setIsDark(next);
+    setTheme(isDark ? "light" : "dark");
   };
 
   const isAdmin = !!user?.role && Number(user.role.id) === RoleEnum.ADMIN;
-  const isModerator =
-    !!user?.role &&
-    [RoleEnum.ADMIN, RoleEnum.MODERATOR].includes(Number(user.role.id));
 
   const isActive = (href: string) => pathname?.includes(href) && href !== "/";
 
@@ -272,11 +257,7 @@ function ResponsiveAppBar() {
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/activities", label: "Atividades", icon: BookOpen },
         { href: "/missions", label: "Missões", icon: Target },
-        { href: "/submissions", label: "Histórico", icon: ClipboardList },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
-        ...(isModerator
-          ? [{ href: "/moderation", label: "Moderação", icon: ShieldCheck }]
-          : []),
       ]
     : [
         { href: "/activities", label: "Atividades", icon: BookOpen },
@@ -284,7 +265,7 @@ function ResponsiveAppBar() {
       ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b transition-colors duration-1000 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 dark:border-white/5 dark:bg-[#020307]/80 border-black/5 bg-[#FDFBF7]/80">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         {/* Logo */}
         <Link
@@ -292,7 +273,7 @@ function ResponsiveAppBar() {
           className="mr-6 flex items-center gap-2.5 font-bold tracking-tight"
         >
           <LogoMark />
-          <span className="hidden sm:block text-sm font-heading font-semibold text-white">
+          <span className="hidden sm:block text-sm font-heading font-semibold transition-colors duration-1000 dark:text-white text-slate-900">
             legado<span className="text-[#E59B13]">.dev</span>
           </span>
         </Link>
@@ -304,7 +285,7 @@ function ResponsiveAppBar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-300",
                 isActive(href)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -318,7 +299,7 @@ function ResponsiveAppBar() {
             <Link
               href="/admin-panel"
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-300",
                 isActive("/admin-panel")
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -333,18 +314,25 @@ function ResponsiveAppBar() {
         {/* Right side */}
         <div className="ml-auto flex items-center gap-1.5">
           {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-            {isDark ? (
-              <Sun className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center">
+            {mounted ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                nativeButton={true}
+                onClick={toggleTheme}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                {isDark ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
             ) : (
-              <Moon className="h-4 w-4" />
+              <div className="h-8 w-8" />
             )}
-          </Button>
+          </div>
 
           {/* Notification bell */}
           {user && <NotificationBell />}
@@ -359,27 +347,19 @@ function ResponsiveAppBar() {
                   <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none" />
                 }
               >
-                <Avatar className="h-7 w-7">
-                  <AvatarImage
-                    src={user?.photo?.path ? user.photo.path : undefined}
-                  />
-                  <AvatarFallback className="bg-primary/15 text-primary text-xs font-bold font-heading">
-                    {user.firstName?.[0]}
-                    {user.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden sm:flex sm:flex-col sm:items-start sm:gap-0">
-                  <span className="text-xs font-semibold leading-none">
-                    {user.firstName}
-                  </span>
-                  {profile?.username && (
-                    <span className="text-[10px] text-muted-foreground font-mono leading-none mt-0.5">
-                      @{profile.username}
-                    </span>
+                <div className="h-7 w-7 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                  {profile?.photo?.path ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.photo.path}
+                      alt={user.firstName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    user.firstName?.substring(0, 1).toUpperCase()
                   )}
                 </div>
               </DropdownMenuTrigger>
-
               <DropdownMenuContent align="end" className="w-52">
                 {/* User info header */}
                 <div className="px-3 py-2.5 space-y-0.5">
@@ -394,23 +374,24 @@ function ResponsiveAppBar() {
                       @{profile.username}
                     </p>
                   )}
-                  {!profile?.username && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {user.email}
-                    </p>
-                  )}
                 </div>
 
                 <DropdownMenuSeparator />
 
-                {profile?.username && (
-                  <DropdownMenuItem
-                    render={<Link href={`/u/${profile.username}`} />}
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Ver perfil público
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  render={
+                    <Link
+                      href={
+                        profile?.username
+                          ? `/u/${profile.username}`
+                          : "/profile"
+                      }
+                    />
+                  }
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Ver perfil público
+                </DropdownMenuItem>
 
                 <DropdownMenuItem render={<Link href="/profile" />}>
                   <User className="mr-2 h-4 w-4" />
@@ -421,14 +402,14 @@ function ResponsiveAppBar() {
                   render={<Link href="/settings/notifications" />}
                 >
                   <Bell className="mr-2 h-4 w-4" />
-                  Preferências de notificação
+                  Notificações
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
                   onClick={logOut}
-                  className="text-destructive focus:text-destructive"
+                  className="text-destructive focus:text-destructive cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
@@ -436,26 +417,32 @@ function ResponsiveAppBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
+                nativeButton={false}
                 render={<Link href="/sign-in" />}
               >
                 Entrar
               </Button>
               {IS_SIGN_UP_ENABLED && (
-                <Button size="sm" render={<Link href="/sign-up" />}>
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href="/sign-up" />}
+                >
                   Cadastrar
                 </Button>
               )}
             </div>
           )}
 
-          {/* Mobile hamburger — only for pages that need it (admin, etc) */}
+          {/* Mobile hamburger */}
           <Button
             variant="ghost"
             size="icon"
+            nativeButton={true}
             className="md:hidden h-8 w-8"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
@@ -469,25 +456,26 @@ function ResponsiveAppBar() {
         </div>
       </div>
 
-      {/* Mobile dropdown menu — for moderator/admin links not in bottom nav */}
+      {/* Mobile dropdown menu */}
       {mobileOpen && (
         <nav className="border-t border-border/50 bg-background/95 md:hidden">
           <div className="flex flex-col gap-0.5 p-3">
-            {isModerator && (
+            {navLinks.map(({ href, label, icon: Icon }) => (
               <Link
-                href="/moderation"
+                key={href}
+                href={href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive("/moderation")
-                    ? "bg-primary/8 text-primary"
+                  isActive(href)
+                    ? "bg-primary/10 text-primary"
                     : "text-foreground hover:bg-muted"
                 )}
               >
-                <ShieldCheck className="h-4 w-4" />
-                Moderação
+                <Icon className="h-4 w-4" />
+                {label}
               </Link>
-            )}
+            ))}
             {isAdmin && (
               <Link
                 href="/admin-panel"
@@ -497,26 +485,6 @@ function ResponsiveAppBar() {
                 <Settings className="h-4 w-4" />
                 Admin
               </Link>
-            )}
-            {!user && (
-              <>
-                <Link
-                  href="/sign-in"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  Entrar
-                </Link>
-                {IS_SIGN_UP_ENABLED && (
-                  <Link
-                    href="/sign-up"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cadastrar
-                  </Link>
-                )}
-              </>
             )}
           </div>
         </nav>

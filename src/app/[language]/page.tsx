@@ -8,7 +8,7 @@ type Props = {
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
-  await getServerTranslation(params.language, "common");
+  await getServerTranslation(params.language, "home");
   return {
     title: { absolute: "legado.dev — A sua história não será esquecida" },
   };

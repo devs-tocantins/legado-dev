@@ -37,7 +37,6 @@ import queryClient from "@/services/react-query/query-client";
 import ReactQueryDevtools from "@/services/react-query/react-query-devtools";
 import GoogleAuthProvider from "@/services/social-auth/google/google-auth-provider";
 import ConfirmDialogProvider from "@/components/confirm-dialog/confirm-dialog-provider";
-import InitColorSchemeScript from "@/components/theme/init-color-scheme-script";
 
 type Props = {
   params: Promise<{ language: string }>;
@@ -48,6 +47,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const { t } = await getServerTranslation(params.language, "common");
 
   return {
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    ),
     title: {
       default: t("title"),
       template: `%s | ${t("title")}`,
@@ -111,7 +113,6 @@ export default async function RootLayout(props: {
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}
         suppressHydrationWarning
       >
-        <InitColorSchemeScript />
         <QueryClientProvider client={queryClient}>
           <ReactQueryDevtools initialIsOpen={false} />
           <ThemeProvider>

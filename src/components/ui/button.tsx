@@ -48,11 +48,24 @@ function Button({
   size = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  // Extract props that might cause issues in React 19 or Base UI
+  const { asChild, nativeButton, ...rest } = props as any;
+
+  // Determine the final value for nativeButton.
+  // If a 'render' prop is used (Base UI's alternative to asChild),
+  // it's likely a Link or other non-button element.
+  const isNative = rest.render
+    ? false
+    : nativeButton !== undefined
+      ? nativeButton
+      : true;
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      nativeButton={isNative}
+      {...rest}
     />
   );
 }

@@ -38,7 +38,7 @@ function MetricCard({
 }: {
   label: string;
   value: number | string;
-  icon: React.ElementType;
+  icon: any;
   colorClass?: string;
 }) {
   return (
@@ -73,7 +73,7 @@ function NavCard({
   description,
 }: {
   href: string;
-  icon: React.ElementType;
+  icon: any;
   label: string;
   description: string;
 }) {

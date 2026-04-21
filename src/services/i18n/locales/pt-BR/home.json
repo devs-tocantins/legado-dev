@@ -14,17 +14,19 @@
       "title": "Impacto em XP",
       "description": "Suas ações no mundo real são convertidas em experiência digital, validando seu crescimento técnico contínuo."
     },
-    "evolution": {
+    "marcos": {
       "title": "Marcos de Evolução",
       "description": "Conquiste badges que comprovam sua senioridade e seu papel como referência para outros desenvolvedores."
     },
-    "collective": {
+    "crescimento": {
       "title": "Crescimento Coletivo",
       "description": "O verdadeiro legado é construído em conjunto. Use seus tokens para impulsionar quem te ajudou a chegar aqui."
     }
   },
   "footer_cta": {
     "title": "Sua história na tecnologia começa {{agora}}",
+    "title_start": "Sua história na tecnologia começa",
+    "title_now": "agora",
     "description": "Junte-se à maior comunidade de desenvolvedores do Tocantins e comece a construir seu histórico hoje.",
     "button_join": "Fazer parte do Legado",
     "button_activities": "Ver atividades"

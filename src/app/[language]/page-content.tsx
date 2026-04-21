@@ -1,23 +1,37 @@
 "use client";
 
 import {
-  motion,
+  m,
   useScroll,
   useTransform,
   AnimatePresence,
+  LazyMotion,
+  domMax,
 } from "framer-motion";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "@/components/link";
-import { Zap, Trophy, Star, Users, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// Direct imports for smaller bundle size
+import Zap from "lucide-react/dist/esm/icons/zap";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
+import Star from "lucide-react/dist/esm/icons/star";
+import Users from "lucide-react/dist/esm/icons/users";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
+
+import { useTranslation } from "react-i18next";
+import { useTheme } from "next-themes";
+import dynamic from "next/dynamic";
+import { useGetActivitiesService } from "@/services/api/services/activities";
 import { useGetGamificationProfilesService } from "@/services/api/services/gamification-profiles";
+import { Activity } from "@/services/api/types/activity";
 import { SortEnum } from "@/services/api/types/sort-type";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { getLevel, formatXp } from "@/lib/gamification";
 import { cn } from "@/lib/utils";
-import dynamic from "next/dynamic";
-import { useTranslation } from "react-i18next";
 
+// Dynamic import for WebGL Canvas
 const HeroLogo3D = dynamic(
   () => import("@/components/hero-logo-3d").then((mod) => mod.HeroLogo3D),
   { ssr: false }
@@ -72,7 +86,7 @@ function LiveRankingCard() {
         });
         if (status === HTTP_CODES_ENUM.OK) return data.data;
       } catch {
-        // Fallback to empty array if backend is unavailable
+        // Fallback to empty array
       }
       return [];
     },
@@ -80,14 +94,14 @@ function LiveRankingCard() {
   });
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-1 shadow-2xl backdrop-blur-xl">
-      <div className="rounded-[22px] border border-white/10 bg-black/40 p-5">
+    <div className="rounded-3xl border border-border/50 bg-card/5 p-1 shadow-2xl backdrop-blur-xl">
+      <div className="rounded-[22px] border border-border/50 bg-black/10 dark:bg-black/40 p-5">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500">
               <Trophy className="h-4 w-4" />
             </div>
-            <span className="text-sm font-bold tracking-tight text-white">
+            <span className="text-sm font-bold tracking-tight">
               {t("ranking_card.title")}
             </span>
           </div>
@@ -102,7 +116,7 @@ function LiveRankingCard() {
             ? Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-12 w-full animate-pulse rounded-xl bg-white/5"
+                  className="h-12 w-full animate-pulse rounded-xl bg-muted/20"
                 />
               ))
             : profiles?.map((profile, i) => {
@@ -110,14 +124,14 @@ function LiveRankingCard() {
                 return (
                   <div
                     key={profile.id}
-                    className="group flex items-center justify-between rounded-xl bg-white/[0.02] p-2.5 transition-colors hover:bg-white/[0.05]"
+                    className="group flex items-center justify-between rounded-xl bg-muted/[0.05] p-2.5 transition-colors hover:bg-muted/[0.1]"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-4 text-center text-xs font-bold text-white/30">
+                      <span className="w-4 text-center text-xs font-bold opacity-30">
                         {i + 1}
                       </span>
                       <div className="relative">
-                        <div className="h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-white/10 to-transparent flex items-center justify-center text-[10px] font-bold text-white/60">
+                        <div className="h-8 w-8 overflow-hidden rounded-full border border-border bg-gradient-to-br from-muted to-transparent flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                           {profile.photo?.path ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -131,7 +145,7 @@ function LiveRankingCard() {
                         </div>
                       </div>
                       <div className="min-w-0">
-                        <p className="max-w-[120px] truncate text-xs font-bold text-white">
+                        <p className="max-w-[120px] truncate text-xs font-bold">
                           @{profile.username}
                         </p>
                         <p
@@ -148,7 +162,7 @@ function LiveRankingCard() {
                       <p className="font-mono text-xs font-bold text-amber-500">
                         {formatXp(profile.totalXp)}
                       </p>
-                      <p className="text-[9px] text-white/30">
+                      <p className="text-[9px] opacity-30">
                         {t("ranking_card.xp")}
                       </p>
                     </div>
@@ -163,10 +177,111 @@ function LiveRankingCard() {
 
 function EdgeConstellation() {
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      <div className="absolute -left-[10%] -top-[10%] h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px]" />
-      <div className="absolute -right-[10%] -bottom-[10%] h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-[120px]" />
+    <div className="absolute inset-0 pointer-events-none opacity-20">
+      <svg
+        className="w-full h-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0" />
+            <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M 10 20 L 30 15 L 50 25 L 40 45 Z"
+          fill="none"
+          stroke="url(#lineGrad)"
+          strokeWidth="0.1"
+        />
+        <path
+          d="M 90 10 L 70 30 L 85 50 L 95 35 Z"
+          fill="none"
+          stroke="url(#lineGrad)"
+          strokeWidth="0.1"
+        />
+      </svg>
     </div>
+  );
+}
+
+// ─── Activity Logic ─────────────────────────────────────────────────────────
+
+function LatestActivitySection({ t }: { t: any }) {
+  const getActivities = useGetActivitiesService();
+  const { data } = useQuery({
+    queryKey: ["home-activities"],
+    queryFn: () => getActivities({ page: 1, limit: 4 }),
+  });
+
+  const activities = (data?.data as Activity[]) || [];
+
+  return (
+    <section className="py-24 border-t border-border/50 bg-background/50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="mb-12 text-center">
+          <div className="inline-flex items-center justify-center p-3 mb-4 rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+            <Zap className="w-6 h-6" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4 tracking-tight">
+            {t("milestonesTitle")}
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+            {t("milestonesSubtitle")}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {activities.length > 0
+            ? activities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="p-6 rounded-2xl bg-card/40 border border-border/40 transition-all hover:translate-y-[-4px] hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden">
+                      {activity.user?.photo?.path && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={activity.user.photo.path}
+                          alt={activity.user.firstName}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold truncate">
+                        {activity.user?.firstName}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                        {activity.type}
+                      </p>
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-medium line-clamp-2 mb-4 h-10">
+                    {activity.title}
+                  </h4>
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {new Date(activity.createdAt).toLocaleDateString()}
+                    </span>
+                    <div className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                      +{activity.xp} XP
+                    </div>
+                  </div>
+                </div>
+              ))
+            : Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-48 rounded-2xl bg-muted/20 animate-pulse border border-border/50"
+                />
+              ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -174,10 +289,16 @@ function EdgeConstellation() {
 
 export default function HomePageContent() {
   const { t } = useTranslation("home");
+  const { resolvedTheme } = useTheme();
   const heroRef = useRef<HTMLDivElement>(null);
   const [introFinished, setIntroFinished] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [is3DReady, setIs3DReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -197,256 +318,299 @@ export default function HomePageContent() {
     setIntroFinished(true);
   }, []);
 
+  const isLight = mounted && resolvedTheme === "light";
+
   return (
-    <main className="overflow-x-hidden">
-      {/* ─── Hero Cinematic Section ────────────────────────────────────── */}
-      <section
-        ref={heroRef}
-        className="relative h-[95vh] min-h-[750px] flex items-center justify-center overflow-hidden bg-[#020307]"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 55%, #0d1326 0%, #050812 55%, #020307 100%)",
-        }}
-      >
-        {/* Persistent Cinematic Background FX - Now in the section to fill it entirely */}
-        <BgParticles />
-        <FXOverlay />
-        <EdgeConstellation />
-
-        <motion.div
-          className="relative z-10 w-full h-full max-w-7xl mx-auto flex items-center justify-center"
-          style={{ opacity: heroOpacity }}
+    <LazyMotion features={domMax}>
+      <main className="relative overflow-x-hidden">
+        {/* ─── Hero Cinematic Section ────────────────────────────────────── */}
+        <section
+          ref={heroRef}
+          className="relative h-[95vh] min-h-[750px] flex items-center justify-center overflow-hidden transition-colors duration-1000"
+          style={{
+            background: isLight
+              ? "radial-gradient(ellipse at 50% 55%, #FDFBF7 0%, #F5F1E9 55%, #EBE4D8 100%)"
+              : "radial-gradient(ellipse at 50% 55%, #0d1326 0%, #050812 55%, #020307 100%)",
+          }}
         >
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* The Logo Group (Logo + Wordmark) */}
-            <motion.div
-              animate={{
-                x: showContent
-                  ? typeof window !== "undefined" && window.innerWidth < 1024
-                    ? 0
-                    : "-25%"
-                  : "0%",
-                y: showContent
-                  ? typeof window !== "undefined" && window.innerWidth < 1024
-                    ? "-15%"
-                    : 0
-                  : 0,
-                scale: showContent ? 0.82 : 1,
-              }}
-              transition={{
-                duration: 1.6,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="relative w-full h-full"
-            >
-              <HeroLogo3D
-                onIntroComplete={handleIntroComplete}
-                onReady={() => setIs3DReady(true)}
-              />
-            </motion.div>
+          {/* Cinematic Background FX */}
+          <BgParticles />
+          <FXOverlay />
+          {!isLight && <EdgeConstellation />}
 
-            {/* Right Side Content (Actions & Ranking) */}
-            <AnimatePresence>
-              {showContent && (
-                <motion.div
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ duration: 1.4, delay: 0.2, ease: "easeOut" }}
-                  className="absolute right-6 lg:right-12 xl:right-20 top-[52%] lg:top-1/2 -translate-y-1/2 z-20 w-full max-w-[460px] px-6 lg:px-0 hidden lg:block"
-                >
-                  <div className="space-y-10 text-white">
-                    <div className="space-y-4">
-                      <h2 className="text-3xl lg:text-5xl font-bold tracking-tighter text-white">
-                        legado<span className="text-[#E59B13]">.dev</span>
-                      </h2>
-                      <p className="text-lg lg:text-xl leading-relaxed text-white/80 font-medium">
-                        {t("hero.description")}
-                      </p>
+          <m.div
+            className="relative z-10 w-full h-full max-w-7xl mx-auto flex items-center justify-center"
+            style={{ opacity: heroOpacity }}
+          >
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* The Logo Group (Logo + Wordmark) - Drags to the side after intro */}
+              <m.div
+                animate={{
+                  x: showContent
+                    ? typeof window !== "undefined" && window.innerWidth < 1024
+                      ? 0
+                      : "-25%"
+                    : "0%",
+                  y: showContent
+                    ? typeof window !== "undefined" && window.innerWidth < 1024
+                      ? "-15%"
+                      : 0
+                    : 0,
+                  scale: showContent ? 0.82 : 1,
+                }}
+                transition={{
+                  duration: 1.6,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="relative w-full h-full"
+              >
+                <AnimatePresence>
+                  {!is3DReady && (
+                    <m.div
+                      key="loader"
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 flex items-center justify-center z-50 bg-background"
+                    >
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                        <p className="text-xs font-mono text-muted-foreground animate-pulse uppercase tracking-[0.2em]">
+                          Initializing...
+                        </p>
+                      </div>
+                    </m.div>
+                  )}
+                </AnimatePresence>
+
+                <HeroLogo3D
+                  onReady={() => setIs3DReady(true)}
+                  onIntroComplete={handleIntroComplete}
+                />
+              </m.div>
+
+              {/* Right Side Content (Actions & Ranking) */}
+              <AnimatePresence>
+                {showContent && (
+                  <m.div
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 50 }}
+                    transition={{ duration: 1.4, delay: 0.2, ease: "easeOut" }}
+                    className="absolute right-6 lg:right-12 xl:right-20 top-[52%] lg:top-1/2 -translate-y-1/2 z-20 w-full max-w-[460px] px-6 lg:px-0 hidden lg:block"
+                  >
+                    <div className="space-y-10">
+                      <div className="space-y-4">
+                        <h2 className="text-3xl lg:text-5xl font-bold tracking-tighter">
+                          legado<span className="text-[#E59B13]">.dev</span>
+                        </h2>
+                        <p className="text-lg lg:text-xl leading-relaxed text-muted-foreground font-medium">
+                          {t("hero.description")}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Button
+                          size="lg"
+                          className="h-14 px-8 text-lg font-bold rounded-xl group"
+                          render={<Link href="/sign-up" />}
+                        >
+                          {t("hero.cta")}
+                          <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="h-14 px-8 text-lg font-bold rounded-xl"
+                          render={<Link href="/leaderboard" />}
+                        >
+                          <Trophy className="h-5 w-5 text-amber-500" />
+                          {t("hero.ranking")}
+                        </Button>
+                      </div>
+
+                      <div className="pt-6">
+                        <LiveRankingCard />
+                      </div>
                     </div>
+                  </m.div>
+                )}
+              </AnimatePresence>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Link
-                        href="/sign-up"
-                        className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#E59B13] px-8 py-4 text-base font-bold text-white whitespace-nowrap transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(229,155,19,0.55)]"
+              {/* Mobile Actions */}
+              <AnimatePresence>
+                {showContent && (
+                  <m.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute bottom-12 left-0 right-0 z-20 px-8 lg:hidden flex flex-col items-center text-center gap-6"
+                  >
+                    <p className="text-base text-muted-foreground font-medium">
+                      {t("footer_cta.description")}
+                    </p>
+                    <div className="flex gap-4">
+                      <Button
+                        size="sm"
+                        className="px-7 py-3 rounded-xl font-bold shadow-xl"
+                        render={<Link href="/sign-up" />}
                       >
                         {t("hero.cta")}
-                        <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
-                      </Link>
-                      <Link
-                        href="/leaderboard"
-                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-8 py-4 text-base font-bold text-white whitespace-nowrap transition-all duration-300 hover:-translate-y-1 hover:bg-white/10"
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="px-7 py-3 rounded-xl font-bold"
+                        render={<Link href="/leaderboard" />}
                       >
-                        <Trophy className="h-5 w-5 text-amber-400" />
-                        {t("hero.ranking")}
-                      </Link>
+                        {t("ranking_card.title")}
+                      </Button>
                     </div>
+                  </m.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </m.div>
 
-                    <div className="pt-6">
-                      <LiveRankingCard />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Scroll Indicator */}
+          <m.div
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: introFinished ? 1 : 0 }}
+            transition={{ delay: 1 }}
+          >
+            <div className="flex h-9 w-[22px] items-start justify-center rounded-full border border-primary/20 pt-1.5">
+              <m.div
+                className="h-1.5 w-0.5 rounded-full bg-primary/40"
+                animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
+                transition={{ duration: 2.6, repeat: Infinity }}
+              />
+            </div>
+          </m.div>
+        </section>
 
-            {/* Mobile Actions */}
-            <AnimatePresence>
-              {showContent && (
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute bottom-12 left-0 right-0 z-20 px-8 lg:hidden flex flex-col items-center text-center gap-6"
-                >
-                  <p className="text-base text-white/70 font-medium">
-                    {t("footer_cta.description")}
-                  </p>
-                  <div className="flex gap-4">
-                    <Link
-                      href="/sign-up"
-                      className="rounded-xl bg-[#E59B13] px-7 py-3 text-sm font-bold text-white shadow-xl"
-                    >
-                      {t("hero.cta")}
-                    </Link>
-                    <Link
-                      href="/leaderboard"
-                      className="rounded-xl border border-white/10 bg-white/5 px-7 py-3 text-sm font-bold text-white"
-                    >
-                      {t("ranking_card.title")}
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: introFinished ? 1 : 0 }}
-          transition={{ delay: 1 }}
+        {/* ─── Content Section ───────────────────────────────────────────── */}
+        <div
+          className={cn(
+            "transition-all duration-1000 transform",
+            showContent
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-12"
+          )}
         >
-          <div className="flex h-9 w-[22px] items-start justify-center rounded-full border border-white/20 pt-1.5">
-            <motion.div
-              className="h-1.5 w-0.5 rounded-full bg-white/40"
-              animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
-              transition={{ duration: 2.6, repeat: Infinity }}
-            />
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ─── Features Section ──────────────────────────────────────────── */}
-      <section className="py-28 px-4 bg-background border-t border-border/50">
-        <div className="mx-auto max-w-5xl">
-          <motion.div
-            className="mb-20 text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-40px" }}
-            variants={staggerContainer(0.1)}
-          >
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-foreground">
-              {t("features.title", { reconhecimento: "" })}
-              <span className="text-primary italic">reconhecimento</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              {t("features.description")}
-            </p>
-          </motion.div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            <motion.div
-              variants={fadeUp}
-              className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 text-foreground"
-            >
-              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
-                <Zap className="h-6 w-6" />
-              </div>
-              <h3 className="mb-3 text-xl font-bold tracking-tight">
-                {t("features.xp.title")}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-sm">
-                {t("features.xp.description")}
-              </p>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 text-foreground"
-            >
-              <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-500">
-                <Star className="h-6 w-6" />
-              </div>
-              <h3 className="mb-3 text-xl font-bold tracking-tight">
-                {t("features.evolution.title")}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-sm">
-                {t("features.evolution.description")}
-              </p>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 text-foreground"
-            >
-              <div className="mb-4 inline-flex rounded-xl bg-blue-500/10 p-3 text-blue-500">
-                <Users className="h-6 w-6" />
-              </div>
-              <h3 className="mb-3 text-xl font-bold tracking-tight">
-                {t("features.collective.title")}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-sm">
-                {t("features.collective.description")}
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Final CTA ─────────────────────────────────────────────────── */}
-      <section className="py-32 px-4 relative overflow-hidden border-t border-border/50 bg-background">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle_at_bottom,var(--primary),transparent)]" />
-        <div className="mx-auto max-w-3xl text-center relative z-10">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer(0.12)}
-            className="space-y-8"
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-4xl md:text-6xl font-bold tracking-tighter text-foreground"
-            >
-              {t("footer_cta.title", { agora: "" })}
-              <span className="text-primary">agora.</span>
-            </motion.h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              {t("footer_cta.description")}
-            </p>
-            <motion.div
-              variants={fadeUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 text-base font-bold text-primary-foreground whitespace-nowrap shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all"
+          {/* Features Section */}
+          <section className="py-28 px-4 border-t border-border/50">
+            <div className="mx-auto max-w-5xl">
+              <m.div
+                className="mb-20 text-center"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-40px" }}
+                variants={staggerContainer(0.1)}
               >
-                {t("footer_cta.button_join")}
-              </Link>
-              <Link
-                href="/activities"
-                className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-8 py-4 text-base font-bold text-foreground whitespace-nowrap hover:bg-muted hover:-translate-y-1 transition-all"
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+                  {t("features.title", { reconhecimento: "" })}
+                  <span className="text-primary italic">reconhecimento</span>
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                  {t("features.description")}
+                </p>
+              </m.div>
+
+              <div className="grid gap-8 md:grid-cols-3">
+                <m.div
+                  variants={fadeUp}
+                  className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+                >
+                  <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold tracking-tight">
+                    {t("features.xp.title")}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">
+                    {t("features.xp.description")}
+                  </p>
+                </m.div>
+
+                <m.div
+                  variants={fadeUp}
+                  className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+                >
+                  <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-500">
+                    <Star className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold tracking-tight">
+                    {t("features.evolution.title")}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">
+                    {t("features.evolution.description")}
+                  </p>
+                </m.div>
+
+                <m.div
+                  variants={fadeUp}
+                  className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+                >
+                  <div className="mb-4 inline-flex rounded-xl bg-blue-500/10 p-3 text-blue-500">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold tracking-tight">
+                    {t("features.collective.title")}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">
+                    {t("features.collective.description")}
+                  </p>
+                </m.div>
+              </div>
+            </div>
+          </section>
+
+          <LatestActivitySection t={t} />
+
+          {/* CTA Final */}
+          <section className="py-32 px-4 relative overflow-hidden border-t border-border/50">
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle_at_bottom,var(--primary),transparent)]" />
+            <div className="mx-auto max-w-3xl text-center relative z-10">
+              <m.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={staggerContainer(0.12)}
+                className="space-y-8"
               >
-                {t("footer_cta.button_activities")}
-              </Link>
-            </motion.div>
-          </motion.div>
+                <m.h2
+                  variants={fadeUp}
+                  className="text-4xl md:text-6xl font-bold tracking-tighter"
+                >
+                  {t("footer_cta.title", { agora: "" })}
+                  <span className="text-primary">agora.</span>
+                </m.h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  {t("footer_cta.description")}
+                </p>
+                <m.div
+                  variants={fadeUp}
+                  className="flex flex-col sm:flex-row gap-4 justify-center"
+                >
+                  <Button
+                    size="lg"
+                    className="h-14 px-8 text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
+                    render={<Link href="/sign-up" />}
+                  >
+                    {t("footer_cta.button_join")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-14 px-8 text-lg font-bold rounded-xl"
+                    render={<Link href="/activities" />}
+                  >
+                    {t("footer_cta.button_activities")}
+                  </Button>
+                </m.div>
+              </m.div>
+            </div>
+          </section>
         </div>
-      </section>
-    </main>
+      </main>
+    </LazyMotion>
   );
 }
