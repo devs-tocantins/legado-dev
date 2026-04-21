@@ -242,7 +242,10 @@ function ResponsiveAppBar() {
     queryKey: ["my-profile-appbar"],
     queryFn: async () => {
       const res = await fetchMyProfile();
-      return res.data;
+      if (res.status === HTTP_CODES_ENUM.OK) {
+        return res.data;
+      }
+      return null;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
