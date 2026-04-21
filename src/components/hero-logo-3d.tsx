@@ -585,7 +585,7 @@ export function HeroLogo3D({
             isTablet={isTablet}
             transitionProgress={transitionProgress}
           />
-          <ParticlesWebGL theme={theme} isMobile={isMobile} />
+          {!isMobile && <ParticlesWebGL theme={theme} isMobile={isMobile} />}
         </Canvas>
       </div>
 
