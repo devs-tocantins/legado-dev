@@ -501,14 +501,6 @@ export function HeroLogo3D({
     dragStart.current = null;
   };
 
-  const timer = useMemo(() => {
-    try {
-      return new THREE.Timer();
-    } catch {
-      return null;
-    }
-  }, []);
-
   if (!mounted) return null;
 
   return (
@@ -537,7 +529,6 @@ export function HeroLogo3D({
           camera={{ position: [0, 0, 10], fov: 35 }}
           dpr={[1, 2]}
           performance={{ min: 0.5 }}
-          clock={timer as any}
         >
           <ambientLight intensity={theme === "light" ? 1.0 : 0.7} />
           {theme !== "light" && <Environment preset="city" />}

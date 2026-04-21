@@ -2,7 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
+import { Trophy } from "lucide-react";
 import { useGetGamificationProfilesService } from "@/services/api/services/gamification-profiles";
 import { SortEnum } from "@/services/api/types/sort-type";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
