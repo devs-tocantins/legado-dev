@@ -8,6 +8,15 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import { useMemo, PropsWithChildren, useEffect, useState } from "react";
 import StyledJsxRegistry from "./registry";
 
+// ─── Silencer for THREE.Clock Warning ───────────────────────────────────────
+if (typeof window !== "undefined") {
+  const warn = console.warn;
+  console.warn = (...args) => {
+    if (args[0]?.includes?.("THREE.Clock")) return;
+    warn(...args);
+  };
+}
+
 function MuiThemeBridge({ children }: PropsWithChildren) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

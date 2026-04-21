@@ -295,9 +295,19 @@ export default function HomePageContent() {
   const [showContent, setShowContent] = useState(false);
   const [is3DReady, setIs3DReady] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const checkSize = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 1024);
+      setIsTablet(w >= 1024 && w < 1440);
+    };
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
   }, []);
 
   const { scrollYProgress } = useScroll({
@@ -326,7 +336,7 @@ export default function HomePageContent() {
         {/* ─── Hero Cinematic Section ────────────────────────────────────── */}
         <section
           ref={heroRef}
-          className="relative h-[95vh] min-h-[750px] flex items-center justify-center overflow-hidden transition-colors duration-1000"
+          className="relative h-[95vh] min-h-[600px] lg:min-h-[750px] flex items-center justify-center overflow-hidden transition-colors duration-1000"
           style={{
             background: isLight
               ? "radial-gradient(ellipse at 50% 55%, #FDFBF7 0%, #F5F1E9 55%, #EBE4D8 100%)"
@@ -343,27 +353,8 @@ export default function HomePageContent() {
             style={{ opacity: heroOpacity }}
           >
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* The Logo Group (Logo + Wordmark) - Drags to the side after intro */}
-              <m.div
-                animate={{
-                  x: showContent
-                    ? typeof window !== "undefined" && window.innerWidth < 1024
-                      ? 0
-                      : "-25%"
-                    : "0%",
-                  y: showContent
-                    ? typeof window !== "undefined" && window.innerWidth < 1024
-                      ? "-15%"
-                      : 0
-                    : 0,
-                  scale: showContent ? 0.82 : 1,
-                }}
-                transition={{
-                  duration: 1.6,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                className="relative w-full h-full"
-              >
+              {/* The Logo Group (Logo + Wordmark) - Now uses internal 3D transition */}
+              <m.div className="relative w-full h-full">
                 <AnimatePresence>
                   {!is3DReady && (
                     <m.div
@@ -384,6 +375,9 @@ export default function HomePageContent() {
                 <HeroLogo3D
                   onReady={() => setIs3DReady(true)}
                   onIntroComplete={handleIntroComplete}
+                  showContent={showContent}
+                  isMobile={isMobile}
+                  isTablet={isTablet}
                 />
               </m.div>
 
@@ -469,21 +463,23 @@ export default function HomePageContent() {
             </div>
           </m.div>
 
-          {/* Scroll Indicator */}
-          <m.div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: introFinished ? 1 : 0 }}
-            transition={{ delay: 1 }}
-          >
-            <div className="flex h-9 w-[22px] items-start justify-center rounded-full border border-primary/20 pt-1.5">
-              <m.div
-                className="h-1.5 w-0.5 rounded-full bg-primary/40"
-                animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
-                transition={{ duration: 2.6, repeat: Infinity }}
-              />
-            </div>
-          </m.div>
+          {/* Scroll Indicator - Hidden on mobile to avoid overlap with buttons */}
+          {introFinished && !isMobile && (
+            <m.div
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              <div className="flex h-9 w-[22px] items-start justify-center rounded-full border border-white/20 pt-1.5">
+                <m.div
+                  className="h-1.5 w-0.5 rounded-full bg-primary/40"
+                  animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
+                  transition={{ duration: 2.6, repeat: Infinity }}
+                />
+              </div>
+            </m.div>
+          )}
         </section>
 
         {/* ─── Content Section ───────────────────────────────────────────── */}

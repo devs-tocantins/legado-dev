@@ -5,15 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Edges, Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { useTheme } from "next-themes";
-
-// ─── Silencer for THREE.Clock Warning ───────────────────────────────────────
-if (typeof window !== "undefined") {
-  const warn = console.warn;
-  console.warn = (...args) => {
-    if (args[0]?.includes?.("THREE.Clock")) return;
-    warn(...args);
-  };
-}
+import { m } from "framer-motion";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const CUBE_SIZE = 1.4;
@@ -218,27 +210,58 @@ function Scene3D({
   yaw,
   pitch,
   theme,
+  showContent,
+  isMobile,
+  isTablet,
+  transitionProgress,
 }: {
   time: number;
   yaw: number;
   pitch: number;
   theme: string;
+  showContent: boolean;
+  isMobile: boolean;
+  isTablet: boolean;
+  transitionProgress: React.MutableRefObject<number>;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (groupRef.current) {
       groupRef.current.rotation.y = -yaw;
       groupRef.current.rotation.x = -pitch;
 
-      const aspect = state.size.width / state.size.height;
-      const baseScale = aspect < 1 ? 0.55 : 0.65;
-      groupRef.current.scale.setScalar(baseScale);
+      // Lerp transition progress
+      const target = showContent ? 1 : 0;
+      transitionProgress.current = THREE.MathUtils.lerp(
+        transitionProgress.current,
+        target,
+        delta * 2.5
+      );
+      const p = transitionProgress.current;
+
+      // Continuous smooth scaling logic based on viewport width
+      const width = state.size.width;
+      const factor = Math.min(Math.max((width - 480) / (1200 - 480), 0), 1);
+
+      const baseScale = 0.5 + 0.15 * factor;
+      const targetScale = 0.82;
+      groupRef.current.scale.setScalar(
+        baseScale * THREE.MathUtils.lerp(1, targetScale, p)
+      );
+
+      // Calculate offsets based on responsive state - Adjusted to be slightly more to the right
+      const targetX = isMobile ? 0 : isTablet ? -1.6 : -2.3;
+      const baseY = 1.0 - 0.2 * factor;
+      const targetY = isMobile ? 1.4 : baseY;
+
+      groupRef.current.position.x = THREE.MathUtils.lerp(0, targetX, p);
+      groupRef.current.position.y = THREE.MathUtils.lerp(baseY, targetY, p);
     }
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.8, 0]}>
+    <group ref={groupRef}>
       {CUBES.map((c) => (
         <CubeInScene key={c.id} cube={c} time={time} theme={theme} />
       ))}
@@ -367,9 +390,15 @@ export function FXOverlay() {
 export function HeroLogo3D({
   onIntroComplete,
   onReady,
+  showContent = false,
+  isMobile = false,
+  isTablet = false,
 }: {
   onIntroComplete?: () => void;
   onReady?: () => void;
+  showContent?: boolean;
+  isMobile?: boolean;
+  isTablet?: boolean;
 }) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -385,6 +414,9 @@ export function HeroLogo3D({
   const [pitch, setPitch] = useState(INITIAL_PITCH);
   const [introDone, setIntroDone] = useState(false);
   const [dragging, setDragging] = useState(false);
+
+  // Transition states for internal animation
+  const transitionProgress = useRef(0);
 
   const lastInteract = useRef(Date.now());
   const dragStart = useRef<{
@@ -522,18 +554,35 @@ export function HeroLogo3D({
             intensity={theme === "light" ? 1.5 : 1.5}
             color={theme === "light" ? "#3B82F6" : "#ffffff"}
           />
-          <Scene3D time={time} yaw={yaw} pitch={pitch} theme={theme} />
+          <Scene3D
+            time={time}
+            yaw={yaw}
+            pitch={pitch}
+            theme={theme}
+            showContent={showContent}
+            isMobile={isMobile}
+            isTablet={isTablet}
+            transitionProgress={transitionProgress}
+          />
           <ParticlesWebGL theme={theme} />
         </Canvas>
       </div>
 
       {/* Wordmark */}
-      <div
-        className="absolute left-0 right-0 bottom-16 md:bottom-24 text-center pointer-events-none"
+      <m.div
+        className="absolute left-0 right-0 text-center pointer-events-none"
         style={{
+          top: isMobile ? "62%" : "auto",
+          bottom: isMobile ? "auto" : "24%",
           opacity: interpolate([3.3, 3.8], [0, 1], Easing.easeOutCubic)(time),
           transform: `translateY(${interpolate([3.3, 3.9], [20, 0], Easing.easeOutBack)(time)}px)`,
         }}
+        animate={{
+          x: showContent ? (isMobile ? 0 : isTablet ? "-16%" : "-22%") : 0,
+          y: showContent ? (isMobile ? "-55%" : 0) : 0,
+          scale: showContent ? 0.82 : 1,
+        }}
+        transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
       >
         <div
           style={{
@@ -565,7 +614,7 @@ export function HeroLogo3D({
         >
           Sua história não será esquecida
         </div>
-      </div>
+      </m.div>
     </div>
   );
 }
