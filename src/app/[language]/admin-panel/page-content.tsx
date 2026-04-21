@@ -98,7 +98,7 @@ function NavCard({
 
 const SERVICE_LABELS: Record<
   keyof Omit<AdminHealth, "allOk">,
-  { label: string; Icon: React.ElementType }
+  { label: string; Icon: any }
 > = {
   database: { label: "Banco de Dados (Neon)", Icon: Database },
   smtp: { label: "E-mail (Brevo SMTP)", Icon: Mail },
@@ -157,7 +157,7 @@ function HealthSection() {
             const { label, Icon } = SERVICE_LABELS[key];
             return (
               <div
-                key={key}
+                key={String(key)}
                 className={cn(
                   "rounded-lg border p-4 flex items-center gap-3",
                   svc.ok
