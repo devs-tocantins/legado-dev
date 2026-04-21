@@ -524,6 +524,31 @@ export function HeroLogo3D({
 
   if (!mounted) return null;
 
+  if (isMobile) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-transparent touch-none select-none z-10">
+        {/* Simple CSS Fallback for Mobile */}
+        <div className="relative flex flex-col items-center justify-center transform scale-90">
+          <div className="relative w-48 h-48 mb-8 animate-pulse">
+            <img
+              src="/LOGO.svg"
+              alt="legado.dev"
+              className="w-full h-full drop-shadow-[0_0_30px_rgba(229,155,19,0.3)]"
+            />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl sm:text-6xl font-heading font-bold tracking-tighter transition-colors duration-1000 dark:text-white text-slate-900">
+              legado<span className="text-[#E59B13]">.dev</span>
+            </h1>
+            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">
+              A forja dos desenvolvedores lendários.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       onPointerDown={onPointerDown}
