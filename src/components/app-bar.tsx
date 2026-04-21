@@ -292,8 +292,8 @@ function ResponsiveAppBar() {
           className="mr-6 flex items-center gap-2.5 font-bold tracking-tight"
         >
           <LogoMark />
-          <span className="hidden sm:block text-sm font-heading font-semibold">
-            legado.dev
+          <span className="hidden sm:block text-sm font-heading font-semibold text-white">
+            legado<span className="text-[#E59B13]">.dev</span>
           </span>
         </Link>
 

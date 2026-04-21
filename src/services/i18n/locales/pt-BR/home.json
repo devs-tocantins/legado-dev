@@ -1,4 +1,37 @@
 {
   "title": "legado.dev — A sua história não será esquecida",
-  "signIn": "Entrar"
+  "signIn": "Entrar",
+  "hero": {
+    "description": "Sua jornada técnica merece ser eternizada. Transforme palestras, mentorias e código em um legado real para a comunidade e construa um histórico imutável do seu impacto.",
+    "cta": "Começar agora",
+    "ranking": "Ranking Geral"
+  },
+  "features": {
+    "badge": "Como funciona",
+    "title": "Onde o esforço se torna {{reconhecimento}}",
+    "description": "Cada mentoria dada, cada artigo escrito e cada linha de código aberto agora tem um lugar permanente. Sua contribuição molda o ecossistema.",
+    "xp": {
+      "title": "Impacto em XP",
+      "description": "Suas ações no mundo real são convertidas em experiência digital, validando seu crescimento técnico contínuo."
+    },
+    "evolution": {
+      "title": "Marcos de Evolução",
+      "description": "Conquiste badges que comprovam sua senioridade e seu papel como referência para outros desenvolvedores."
+    },
+    "collective": {
+      "title": "Crescimento Coletivo",
+      "description": "O verdadeiro legado é construído em conjunto. Use seus tokens para impulsionar quem te ajudou a chegar aqui."
+    }
+  },
+  "footer_cta": {
+    "title": "Sua história na tecnologia começa {{agora}}",
+    "description": "Junte-se à maior comunidade de desenvolvedores do Tocantins e comece a construir seu histórico hoje.",
+    "button_join": "Fazer parte do Legado",
+    "button_activities": "Ver atividades"
+  },
+  "ranking_card": {
+    "title": "Top Talentos",
+    "live": "LIVE",
+    "xp": "XP"
+  }
 }

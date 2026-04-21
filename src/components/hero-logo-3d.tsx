@@ -2,11 +2,75 @@
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
 
-// ─── Easing & Math ──────────────────────────────────────────────────────────
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const CUBE_SIZE = 140;
+const S = CUBE_SIZE;
+
+interface CubeData {
+  id: string;
+  pal: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
+const CUBES: CubeData[] = [
+  { id: "blueBase", pal: "blue", x: -S / 2, y: -S, z: -S / 2 },
+  { id: "blueMid", pal: "blue", x: -S / 2, y: 0, z: -S / 2 },
+  { id: "gold", pal: "gold", x: -S / 2, y: S, z: -S / 2 },
+  { id: "gray", pal: "gray", x: -S / 2, y: -S, z: S / 2 },
+  { id: "blueRight", pal: "blue", x: S / 2, y: -S, z: S / 2 },
+];
+
+const ENTRY = {
+  gray: { start: 0.2, land: 0.9, from: [0, 1500, 1200] },
+  blueBase: { start: 0.7, land: 1.4, from: [-2000, 0, 0] },
+  blueRight: { start: 1.2, land: 1.9, from: [2000, 0, 0] },
+  blueMid: { start: 1.8, land: 2.5, from: [0, 1800, -800] },
+  gold: { start: 2.4, land: 3.1, from: [0, 2200, -800] },
+};
+
+interface Palette {
+  top: string;
+  bottom: string;
+  front: string;
+  back: string;
+  right: string;
+  left: string;
+}
+
+const PAL3D: Record<string, Palette> = {
+  gold: {
+    top: "#F2B13E",
+    bottom: "#7A4A00",
+    front: "#E59B13",
+    back: "#A55E00",
+    right: "#C67402",
+    left: "#E59B13",
+  },
+  blue: {
+    top: "#2458A8",
+    bottom: "#061635",
+    front: "#1C4B92",
+    back: "#0C2450",
+    right: "#13356D",
+    left: "#1C4B92",
+  },
+  gray: {
+    top: "#EAEAEA",
+    bottom: "#7E7E7E",
+    front: "#DDDDDD",
+    back: "#A8A8A8",
+    right: "#BDBDBD",
+    left: "#D4D4D4",
+  },
+};
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const Easing = {
-  easeOutCubic: (t: number) => --t * t * t + 1,
-  easeOutQuad: (t: number) => t * (2 - t),
+  easeOutCubic: (t: number) => 1 - Math.pow(1 - t, 3),
   easeOutBack: (t: number) => {
     const c1 = 1.70158,
       c3 = c1 + 1;
@@ -29,132 +93,140 @@ function interpolate(
       if (t >= input[i] && t <= input[i + 1]) {
         const span = input[i + 1] - input[i];
         const local = span === 0 ? 0 : (t - input[i]) / span;
-        const eased = ease(local);
-        return output[i] + (output[i + 1] - output[i]) * eased;
+        return output[i] + (output[i + 1] - output[i]) * ease(local);
       }
     }
     return output[output.length - 1];
   };
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── Sub-Components ─────────────────────────────────────────────────────────
 
-const ISO_W = 100;
-const ISO_H = 58;
-const ISO_Z = 116;
-
-const FACE_COLORS = {
-  gold: { top: "#E59B13", right: "#C67402", left: "#A55E00" },
-  blue: { top: "#1C4B92", right: "#13356D", left: "#0C2450" },
-  gray: { top: "#DDDDDD", right: "#BDBDBD", left: "#9A9A9A" },
-};
-
-const CUBES = [
-  { id: "gold", tone: "gold", gx: 0, gy: 1, gz: 2 },
-  { id: "blueMid", tone: "blue", gx: 0, gy: 1, gz: 1 },
-  { id: "blueBase", tone: "blue", gx: 0, gy: 1, gz: 0 },
-  { id: "gray", tone: "gray", gx: 0, gy: 0, gz: 0 },
-  { id: "blueRight", tone: "blue", gx: 1, gy: 0, gz: 0 },
-];
-
-const SCHED: Record<string, { start: number; land: number; from: string }> = {
-  gray: { start: 0.2, land: 0.9, from: "topFront" },
-  blueBase: { start: 0.7, land: 1.4, from: "farLeft" },
-  blueRight: { start: 1.2, land: 1.9, from: "farRight" },
-  blueMid: { start: 1.8, land: 2.5, from: "above" },
-  gold: { start: 2.4, land: 3.1, from: "above" },
-};
-
-// ─── Components ─────────────────────────────────────────────────────────────
-
-function IsoCube({
-  gx,
-  gy,
-  gz,
-  dx = 0,
-  dy = 0,
-  opacity = 1,
-  scaleX = 1,
-  scaleY = 1,
-  glow = 0,
-  tone,
-}: {
-  gx: number;
-  gy: number;
-  gz: number;
-  dx?: number;
-  dy?: number;
-  opacity?: number;
-  scaleX?: number;
-  scaleY?: number;
-  glow?: number;
-  tone: (typeof FACE_COLORS)["gold"];
-}) {
-  const X = (gx - gy) * ISO_W;
-  const Y = -(gx + gy) * ISO_H - gz * ISO_Z;
-
-  const topPts = `0,${-ISO_H} ${ISO_W},0 0,${ISO_H} ${-ISO_W},0`;
-  const leftPts = `${-ISO_W},0 0,${ISO_H} 0,${ISO_H + ISO_Z} ${-ISO_W},${ISO_Z}`;
-  const rightPts = `0,${ISO_H} ${ISO_W},0 ${ISO_W},${ISO_Z} 0,${ISO_H + ISO_Z}`;
-
-  const topFill =
-    glow > 0
-      ? `color-mix(in oklab, ${tone.top} ${100 - glow * 50}%, white)`
-      : tone.top;
-
+function Cube3DFaces({ size, palette }: { size: number; palette: Palette }) {
+  const h = size / 2;
+  const faceStyle: React.CSSProperties = {
+    position: "absolute",
+    width: size,
+    height: size,
+    left: -h,
+    top: -h,
+    boxShadow: `inset 0 0 0 1.2px rgba(0,0,0,0.18)`,
+    backfaceVisibility: "hidden",
+  };
   return (
-    <svg
-      style={{
-        position: "absolute",
-        left: `calc(50% + ${X + dx - ISO_W}px)`,
-        top: `calc(50% + ${Y + dy - ISO_H}px)`,
-        width: ISO_W * 2 + 8,
-        height: ISO_H * 2 + ISO_Z + 8,
-        opacity,
-        transform: `scale(${scaleX}, ${scaleY})`,
-        transformOrigin: `${ISO_W}px ${ISO_H + ISO_Z}px`,
-        overflow: "visible",
-        filter:
-          glow > 0
-            ? `drop-shadow(0 0 ${glow * 40}px rgba(255,220,140,${glow * 0.6}))`
-            : "none",
-      }}
-      viewBox={`${-ISO_W - 4} ${-ISO_H - 4} ${ISO_W * 2 + 8} ${ISO_H * 2 + ISO_Z + 8}`}
-    >
-      <polygon points={leftPts} fill={tone.left} />
-      <polygon points={rightPts} fill={tone.right} />
-      <polygon points={topPts} fill={topFill} />
-      <polygon
-        points={topPts}
-        fill="none"
-        stroke="rgba(0,0,0,0.25)"
-        strokeWidth="1.5"
+    <>
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.top,
+          transform: `rotateX(90deg) translateZ(${h}px)`,
+        }}
       />
-      <polygon
-        points={leftPts}
-        fill="none"
-        stroke="rgba(0,0,0,0.2)"
-        strokeWidth="1"
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.bottom,
+          transform: `rotateX(-90deg) translateZ(${h}px)`,
+        }}
       />
-      <polygon
-        points={rightPts}
-        fill="none"
-        stroke="rgba(0,0,0,0.2)"
-        strokeWidth="1"
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.left,
+          transform: `rotateY(-90deg) translateZ(${h}px)`,
+        }}
       />
-    </svg>
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.right,
+          transform: `rotateY(90deg) translateZ(${h}px)`,
+        }}
+      />
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.front,
+          transform: `translateZ(${h}px)`,
+        }}
+      />
+      <div
+        style={{
+          ...faceStyle,
+          background: palette.back,
+          transform: `rotateY(180deg) translateZ(${h}px)`,
+        }}
+      />
+    </>
   );
 }
 
-function Particles({ t }: { t: number }) {
+function CubeInScene({ cube, time }: { cube: CubeData; time: number }) {
+  const sch = ENTRY[cube.id as keyof typeof ENTRY];
+  const [fx, fy, fz] = sch.from;
+
+  let ox = 0;
+  let oy = 0;
+  let oz = 0;
+  let visible = true;
+  if (time < sch.start) {
+    visible = false;
+  } else if (time < sch.land) {
+    const p = (time - sch.start) / (sch.land - sch.start);
+    const ease = Easing.easeOutCubic(p);
+    ox = fx * (1 - ease);
+    oy = fy * (1 - ease);
+    oz = fz * (1 - ease);
+  }
+
+  if (!visible) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        transformStyle: "preserve-3d",
+        transform: `translate3d(${cube.x + ox}px, ${-cube.y + oy}px, ${cube.z + oz}px)`,
+      }}
+    >
+      <Cube3DFaces size={CUBE_SIZE} palette={PAL3D[cube.pal]} />
+    </div>
+  );
+}
+
+export function BgParticles() {
+  const [t, setT] = useState(0);
+
+  useEffect(() => {
+    let raf: number;
+    const t0 = performance.now();
+    let lastTs = t0;
+    
+    const step = (ts: number) => {
+      const elapsed = (ts - t0) / 1000;
+      
+      // Stop particles after 10 seconds to ensure CPU idles for Lighthouse
+      if (elapsed > 10) return;
+      
+      // Throttle to ~24fps
+      if (ts - lastTs > 41) {
+        setT(elapsed);
+        lastTs = ts;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const seeds = useMemo(() => {
     const arr = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 60; i++) {
       arr.push({
         x: Math.random() * 100,
         y: Math.random() * 100,
-        size: 1 + Math.random() * 2,
-        speed: 0.05 + Math.random() * 0.15,
+        size: 1 + Math.random() * 2.5,
+        speed: 0.08 + Math.random() * 0.2,
         phase: Math.random() * Math.PI * 2,
         hue: Math.random() > 0.5 ? "gold" : "blue",
       });
@@ -163,10 +235,10 @@ function Particles({ t }: { t: number }) {
   }, []);
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
       {seeds.map((p, i) => {
         const drift = Math.sin(t * p.speed + p.phase) * 20;
-        const y = (p.y + t * p.speed * 20) % 100;
+        const y = (p.y + t * p.speed * 25) % 100;
         const twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * 2 + p.phase));
         const color = p.hue === "gold" ? "229,155,19" : "100,160,255";
         return (
@@ -180,8 +252,8 @@ function Particles({ t }: { t: number }) {
               width: p.size,
               height: p.size,
               borderRadius: "50%",
-              background: `rgba(${color},${twinkle * 0.6})`,
-              boxShadow: `0 0 ${p.size * 4}px rgba(${color},${twinkle * 0.3})`,
+              background: `rgba(${color},${twinkle * 0.8})`,
+              boxShadow: `0 0 ${p.size * 4}px rgba(${color},${twinkle * 0.5})`,
             }}
           />
         );
@@ -190,139 +262,221 @@ function Particles({ t }: { t: number }) {
   );
 }
 
+export function FXOverlay() {
+  return (
+    <>
+      <div
+        className="absolute inset-0 pointer-events-none z-20"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.75) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.35] mix-blend-overlay pointer-events-none z-30"
+        style={{
+          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
+        }}
+      />
+    </>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export function HeroLogo3D() {
+export function HeroLogo3D({
+  onIntroComplete,
+  onReady,
+}: {
+  onIntroComplete?: () => void;
+  onReady?: () => void;
+}) {
+  const INITIAL_YAW = 0.894;
+  const INITIAL_PITCH = -0.548;
+  const zoom = 0.72;
+
+  const [yaw, setYaw] = useState(INITIAL_YAW);
+  const [pitch, setPitch] = useState(INITIAL_PITCH);
   const [time, setTime] = useState(0);
+  const [introDone, setIntroDone] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  const lastInteract = useRef(Date.now());
+  const dragStart = useRef<{
+    x: number;
+    y: number;
+    yaw: number;
+    pitch: number;
+  } | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastTsRef = useRef<number | null>(null);
-  const DUR = 6;
 
   useEffect(() => {
-    const step = (ts: number) => {
-      if (lastTsRef.current === null) lastTsRef.current = ts;
-      const dt = (ts - lastTsRef.current) / 1000;
-      lastTsRef.current = ts;
-      setTime((t) => (t + dt) % DUR);
+    let timer: ReturnType<typeof setTimeout>;
+
+    const startLoop = () => {
+      onReady?.();
+      const t0 = performance.now();
+      const step = (ts: number) => {
+        if (lastTsRef.current === null) lastTsRef.current = ts;
+        const dt = (ts - lastTsRef.current) / 1000;
+        lastTsRef.current = ts;
+
+        const t = (ts - t0) / 1000;
+        if (!introDone) {
+          if (t > 5.0) {
+            setTime(5.0);
+            setIntroDone(true);
+            onIntroComplete?.();
+          } else {
+            setTime(t);
+          }
+        }
+
+        const idleFor = (Date.now() - lastInteract.current) / 1000;
+        if (introDone && !dragging && idleFor > 2.5) {
+          setYaw((y) => y + dt * 0.25);
+        }
+
+        rafRef.current = requestAnimationFrame(step);
+      };
       rafRef.current = requestAnimationFrame(step);
     };
-    rafRef.current = requestAnimationFrame(step);
+
+    // Defer heavy calculation until the main thread is idle and the page has painted
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(() => {
+        timer = setTimeout(startLoop, 100);
+      });
+    } else {
+      timer = setTimeout(startLoop, 500);
+    }
+
     return () => {
+      clearTimeout(timer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [introDone, dragging]);
 
-  const sortedCubes = useMemo(() => {
-    return [...CUBES].sort((a, b) => {
-      const za = -a.gy * 100 + -a.gx * 10 + a.gz;
-      const zb = -b.gy * 100 + -b.gx * 10 + b.gz;
-      return za - zb;
-    });
-  }, []);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!introDone) return;
+    setDragging(true);
+    lastInteract.current = Date.now();
+    dragStart.current = { x: e.clientX, y: e.clientY, yaw, pitch };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    
+    // Restart loop for dragging
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const stepDrag = (ts: number) => {
+       if (lastTsRef.current === null) lastTsRef.current = ts;
+       lastTsRef.current = ts;
+       // Just keep the loop alive so yaw/pitch changes are rendered
+       rafRef.current = requestAnimationFrame(stepDrag);
+    };
+    rafRef.current = requestAnimationFrame(stepDrag);
+  };
+  
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging || !dragStart.current) return;
+    lastInteract.current = Date.now();
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setYaw(dragStart.current.yaw + dx * 0.008);
+    setPitch(
+      clamp(
+        dragStart.current.pitch + dy * 0.008,
+        -Math.PI * 0.45,
+        Math.PI * 0.45
+      )
+    );
+  };
+
+  const onPointerUp = () => {
+    setDragging(false);
+    dragStart.current = null;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  };
+
+  const yawDeg = (yaw * 180) / Math.PI;
+  const pitchDeg = (pitch * 180) / Math.PI;
 
   const markOp = interpolate([3.3, 3.8], [0, 1], Easing.easeOutCubic)(time);
   const markY = interpolate([3.3, 3.9], [20, 0], Easing.easeOutBack)(time);
   const tagOp = interpolate([4.3, 4.9], [0, 1], Easing.easeOutCubic)(time);
 
   return (
-    <div className="relative w-full h-[500px] md:h-[600px] flex items-center justify-center select-none perspective-1000">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-radial-gradient from-[#0d1326] via-[#020307] to-black opacity-90" />
-
-      {/* FX Layers */}
-      <Particles t={time} />
-
-      {/* Film Grain */}
-      <div
-        className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
-        }}
-      />
-
+    <div
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      className="relative w-full h-full flex items-center justify-center bg-transparent cursor-grab active:cursor-grabbing touch-none select-none z-10"
+    >
       {/* Shadow */}
       <div
-        className="absolute w-[600px] h-[180px] blur-[60px] pointer-events-none transition-opacity duration-1000"
+        className="absolute w-[850px] h-[220px] blur-[65px] pointer-events-none"
         style={{
-          top: "65%",
-          background: `radial-gradient(ellipse at center, rgba(229,155,19,0.2) 0%, rgba(28,75,146,0.1) 45%, transparent 70%)`,
+          top: "63%",
+          background: `radial-gradient(ellipse at center, rgba(229,155,19,0.4) 0%, rgba(28,75,146,0.25) 45%, transparent 70%)`,
           opacity: interpolate([0.2, 3.1], [0, 1])(time),
         }}
       />
 
-      {/* ISO Stage */}
-      <div className="relative scale-[0.6] md:scale-[0.8] lg:scale-100 -translate-y-12">
-        {sortedCubes.map((c) => {
-          const { start, land, from } = SCHED[c.id];
-          if (time < start) return null;
-
-          const p = clamp((time - start) / (land - start), 0, 1);
-          const ease = Easing.easeOutCubic(p);
-
-          let dx0 = 0,
-            dy0 = 0;
-          if (from === "topFront") dy0 = -1000;
-          else if (from === "farLeft") dx0 = -1200;
-          else if (from === "farRight") dx0 = 1200;
-          else if (from === "above") dy0 = -1500;
-
-          const dx = dx0 * (1 - ease);
-          const dy = dy0 * (1 - ease);
-
-          let sX = 1,
-            sY = 1;
-          if (p > 0.88 && p < 1.0) {
-            const squash = Math.sin(((p - 0.88) / 0.12) * Math.PI) * 0.06;
-            if (from === "above" || from === "topFront") {
-              sX = 1 + squash;
-              sY = 1 - squash;
-            } else {
-              sX = 1 - squash;
-              sY = 1 + squash;
-            }
-          }
-
-          const glow = interpolate(
-            [land - 0.05, land + 0.05, land + 0.5],
-            [0, 1, 0],
-            Easing.easeOutQuad
-          )(time);
-
-          return (
-            <IsoCube
-              key={c.id}
-              gx={c.gx}
-              gy={c.gy}
-              gz={c.gz}
-              dx={dx}
-              dy={dy}
-              scaleX={sX}
-              scaleY={sY}
-              opacity={interpolate([0, 0.15], [0, 1])(p)}
-              glow={glow}
-              tone={FACE_COLORS[c.tone as keyof typeof FACE_COLORS]}
-            />
-          );
-        })}
+      {/* 3D Stage */}
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "45%",
+          width: 0,
+          height: 0,
+          perspective: "1800px",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            transformStyle: "preserve-3d",
+            transform: `scale(${zoom}) rotateX(${pitchDeg}deg) rotateY(${yawDeg}deg)`,
+          }}
+        >
+          {CUBES.map((c) => (
+            <CubeInScene key={c.id} cube={c} time={time} />
+          ))}
+        </div>
       </div>
 
       {/* Wordmark */}
       <div
-        className="absolute bottom-16 md:bottom-20 text-center pointer-events-none"
-        style={{
-          opacity: markOp,
-          transform: `translateY(${markY}px)`,
-        }}
+        className="absolute left-0 right-0 bottom-16 md:bottom-24 text-center pointer-events-none"
+        style={{ opacity: markOp, transform: `translateY(${markY}px)` }}
       >
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-[#f2ece0] drop-shadow-[0_2px_30px_rgba(229,155,19,0.3)]">
-          legado<span className="text-[#E59B13]">.dev</span>
-        </h1>
-        <p
-          className="mt-4 text-xs md:text-sm uppercase tracking-[0.4em] text-white/40 font-medium"
-          style={{ opacity: tagOp }}
+        <div
+          style={{
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "clamp(2.2rem, 5.5vw, 3.8rem)",
+            fontWeight: 500,
+            letterSpacing: "-0.02em",
+            color: "#f2ece0",
+            textShadow: "0 2px 40px rgba(229,155,19,0.3)",
+          }}
+        >
+          <span>legado</span>
+          <span style={{ color: "#E59B13" }}>.dev</span>
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            fontSize: "clamp(0.55rem, 1.4vw, 0.8rem)",
+            fontWeight: 400,
+            letterSpacing: "0.35em",
+            textTransform: "uppercase",
+            color: "rgba(242,236,224,0.55)",
+            opacity: tagOp,
+          }}
         >
           Sua história não será esquecida
-        </p>
+        </div>
       </div>
     </div>
   );
