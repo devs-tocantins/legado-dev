@@ -338,12 +338,14 @@ function ParticlesWebGL({ theme }: { theme: string }) {
           count={60}
           array={particles.positions}
           itemSize={3}
+          args={[particles.positions, 3]}
         />
         <bufferAttribute
           attach="attributes-color"
           count={60}
           array={particles.colors}
           itemSize={3}
+          args={[particles.colors, 3]}
         />
       </bufferGeometry>
       <pointsMaterial
