@@ -161,7 +161,6 @@ function CubeInScene({
   cube,
   time,
   theme,
-  isMobile,
 }: {
   cube: CubeData;
   time: number;
@@ -202,12 +201,7 @@ function CubeInScene({
       material={materials[cube.pal as keyof typeof materials]}
     >
       <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
-      {!isMobile && (
-        <Edges
-          color={theme === "light" ? "#cccccc" : "#000000"}
-          threshold={15}
-        />
-      )}
+      <Edges color={theme === "light" ? "#cccccc" : "#000000"} threshold={15} />
     </mesh>
   );
 }
@@ -270,29 +264,17 @@ function Scene3D({
   return (
     <group ref={groupRef}>
       {CUBES.map((c) => (
-        <CubeInScene
-          key={c.id}
-          cube={c}
-          time={time}
-          theme={theme}
-          isMobile={isMobile}
-        />
+        <CubeInScene key={c.id} cube={c} time={time} theme={theme} />
       ))}
     </group>
   );
 }
 
-function ParticlesWebGL({
-  theme,
-  isMobile,
-}: {
-  theme: string;
-  isMobile?: boolean;
-}) {
+function ParticlesWebGL({ theme }: { theme: string; isMobile?: boolean }) {
   const pointsRef = useRef<THREE.Points>(null);
   const timeRef = useRef(0);
 
-  const particleCount = isMobile ? 30 : 60;
+  const particleCount = 60;
 
   const particles = useMemo(() => {
     const arr = new Float32Array(particleCount * 3);
@@ -524,31 +506,6 @@ export function HeroLogo3D({
 
   if (!mounted) return null;
 
-  if (isMobile) {
-    return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center bg-transparent touch-none select-none z-10">
-        {/* Simple CSS Fallback for Mobile */}
-        <div className="relative flex flex-col items-center justify-center transform scale-90">
-          <div className="relative w-48 h-48 mb-8 animate-pulse">
-            <img
-              src="/LOGO.svg"
-              alt="legado.dev"
-              className="w-full h-full drop-shadow-[0_0_30px_rgba(229,155,19,0.3)]"
-            />
-          </div>
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-6xl font-heading font-bold tracking-tighter transition-colors duration-1000 dark:text-white text-slate-900">
-              legado<span className="text-[#E59B13]">.dev</span>
-            </h1>
-            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">
-              A forja dos desenvolvedores lendários.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       onPointerDown={onPointerDown}
@@ -573,16 +530,16 @@ export function HeroLogo3D({
       <div className="absolute inset-0 pointer-events-none">
         <Canvas
           camera={{ position: [0, 0, 10], fov: 35 }}
-          dpr={isMobile ? 1 : [1, 2]}
+          dpr={[1, 2]}
           performance={{ min: 0.5 }}
           gl={{
-            antialias: !isMobile,
+            antialias: true,
             powerPreference: "high-performance",
             alpha: true,
           }}
         >
           <ambientLight intensity={theme === "light" ? 1.0 : 0.7} />
-          {theme !== "light" && !isMobile && <Environment preset="city" />}
+          {theme !== "light" && <Environment preset="city" />}
           <hemisphereLight
             intensity={theme === "light" ? 0.8 : 0.4}
             color="#ffffff"
@@ -593,13 +550,11 @@ export function HeroLogo3D({
             intensity={theme === "light" ? 2.5 : 2.5}
             color={theme === "light" ? "#F2B13E" : "#ffffff"}
           />
-          {!isMobile && (
-            <pointLight
-              position={[5, 5, 10]}
-              intensity={theme === "light" ? 1.5 : 1.5}
-              color={theme === "light" ? "#3B82F6" : "#ffffff"}
-            />
-          )}
+          <pointLight
+            position={[5, 5, 10]}
+            intensity={theme === "light" ? 1.5 : 1.5}
+            color={theme === "light" ? "#3B82F6" : "#ffffff"}
+          />
           <Scene3D
             time={time}
             yaw={yaw}
@@ -610,7 +565,7 @@ export function HeroLogo3D({
             isTablet={isTablet}
             transitionProgress={transitionProgress}
           />
-          {!isMobile && <ParticlesWebGL theme={theme} isMobile={isMobile} />}
+          <ParticlesWebGL theme={theme} />
         </Canvas>
       </div>
 
