@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Edges } from "@react-three/drei";
+import * as THREE from "three";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-
-const CUBE_SIZE = 140;
+const CUBE_SIZE = 1.4; // Scaled down by 100 for Three.js units
 const S = CUBE_SIZE;
 
 interface CubeData {
@@ -24,11 +26,11 @@ const CUBES: CubeData[] = [
 ];
 
 const ENTRY = {
-  gray: { start: 0.2, land: 0.9, from: [0, 1500, 1200] },
-  blueBase: { start: 0.7, land: 1.4, from: [-2000, 0, 0] },
-  blueRight: { start: 1.2, land: 1.9, from: [2000, 0, 0] },
-  blueMid: { start: 1.8, land: 2.5, from: [0, 1800, -800] },
-  gold: { start: 2.4, land: 3.1, from: [0, 2200, -800] },
+  gray: { start: 0.2, land: 0.9, from: [0, 15, 12] },
+  blueBase: { start: 0.7, land: 1.4, from: [-20, 0, 0] },
+  blueRight: { start: 1.2, land: 1.9, from: [20, 0, 0] },
+  blueMid: { start: 1.8, land: 2.5, from: [0, -18, -8] },
+  gold: { start: 2.4, land: 3.1, from: [0, -22, -8] },
 };
 
 interface Palette {
@@ -67,7 +69,23 @@ const PAL3D: Record<string, Palette> = {
   },
 };
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// BoxGeometry face order in Three.js is: right, left, top, bottom, front, back
+function getMaterialsForPalette(palette: Palette) {
+  return [
+    new THREE.MeshStandardMaterial({ color: palette.right, roughness: 0.2, metalness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: palette.left, roughness: 0.2, metalness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: palette.top, roughness: 0.2, metalness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: palette.bottom, roughness: 0.2, metalness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: palette.front, roughness: 0.2, metalness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: palette.back, roughness: 0.2, metalness: 0.4 }),
+  ];
+}
+
+const MATERIAL_MAP = {
+  gold: getMaterialsForPalette(PAL3D.gold),
+  blue: getMaterialsForPalette(PAL3D.blue),
+  gray: getMaterialsForPalette(PAL3D.gray),
+};
 
 const Easing = {
   easeOutCubic: (t: number) => 1 - Math.pow(1 - t, 3),
@@ -100,165 +118,129 @@ function interpolate(
   };
 }
 
-// ─── Sub-Components ─────────────────────────────────────────────────────────
-
-function Cube3DFaces({ size, palette }: { size: number; palette: Palette }) {
-  const h = size / 2;
-  const faceStyle: React.CSSProperties = {
-    position: "absolute",
-    width: size,
-    height: size,
-    left: -h,
-    top: -h,
-    boxShadow: `inset 0 0 0 1.2px rgba(0,0,0,0.18)`,
-    backfaceVisibility: "hidden",
-  };
-  return (
-    <>
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.top,
-          transform: `rotateX(90deg) translateZ(${h}px)`,
-        }}
-      />
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.bottom,
-          transform: `rotateX(-90deg) translateZ(${h}px)`,
-        }}
-      />
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.left,
-          transform: `rotateY(-90deg) translateZ(${h}px)`,
-        }}
-      />
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.right,
-          transform: `rotateY(90deg) translateZ(${h}px)`,
-        }}
-      />
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.front,
-          transform: `translateZ(${h}px)`,
-        }}
-      />
-      <div
-        style={{
-          ...faceStyle,
-          background: palette.back,
-          transform: `rotateY(180deg) translateZ(${h}px)`,
-        }}
-      />
-    </>
-  );
-}
+// ─── Scene Components ───────────────────────────────────────────────────────
 
 function CubeInScene({ cube, time }: { cube: CubeData; time: number }) {
+  const meshRef = useRef<THREE.Mesh>(null);
   const sch = ENTRY[cube.id as keyof typeof ENTRY];
   const [fx, fy, fz] = sch.from;
 
-  let ox = 0;
-  let oy = 0;
-  let oz = 0;
-  let visible = true;
-  if (time < sch.start) {
-    visible = false;
-  } else if (time < sch.land) {
-    const p = (time - sch.start) / (sch.land - sch.start);
-    const ease = Easing.easeOutCubic(p);
-    ox = fx * (1 - ease);
-    oy = fy * (1 - ease);
-    oz = fz * (1 - ease);
-  }
+  useFrame(() => {
+    if (!meshRef.current) return;
 
-  if (!visible) return null;
+    let ox = 0;
+    let oy = 0;
+    let oz = 0;
+    let visible = true;
+    
+    if (time < sch.start) {
+      visible = false;
+    } else if (time < sch.land) {
+      const p = (time - sch.start) / (sch.land - sch.start);
+      const ease = Easing.easeOutCubic(p);
+      ox = fx * (1 - ease);
+      oy = fy * (1 - ease);
+      oz = fz * (1 - ease);
+    }
+
+    meshRef.current.visible = visible;
+    meshRef.current.position.set(cube.x + ox, cube.y - oy, cube.z + oz);
+  });
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        transformStyle: "preserve-3d",
-        transform: `translate3d(${cube.x + ox}px, ${-cube.y + oy}px, ${cube.z + oz}px)`,
-      }}
-    >
-      <Cube3DFaces size={CUBE_SIZE} palette={PAL3D[cube.pal]} />
-    </div>
+    <mesh ref={meshRef} material={MATERIAL_MAP[cube.pal as keyof typeof MATERIAL_MAP]}>
+      <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
+      <Edges color="rgba(0, 0, 0, 0.45)" threshold={15} />
+    </mesh>
+  );
+}
+
+function Scene3D({ time, yaw, pitch }: { time: number, yaw: number, pitch: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = -yaw;
+      groupRef.current.rotation.x = -pitch;
+    }
+  });
+
+  return (
+    <group ref={groupRef} scale={0.65} position={[0, 0.8, 0]}>
+      {CUBES.map((c) => (
+        <CubeInScene key={c.id} cube={c} time={time} />
+      ))}
+    </group>
   );
 }
 
 export function BgParticles() {
-  const [t, setT] = useState(0);
+  return (
+    <div className="absolute inset-0 pointer-events-none z-0">
+      <Canvas camera={{ position: [0, 0, 10] }}>
+        <ParticlesWebGL />
+      </Canvas>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    let raf: number;
-    const t0 = performance.now();
-    let lastTs = t0;
+function ParticlesWebGL() {
+  const pointsRef = useRef<THREE.Points>(null);
+  
+  const particles = useMemo(() => {
+    const arr = new Float32Array(60 * 3);
+    const colors = new Float32Array(60 * 3);
+    const sizes = new Float32Array(60);
+    const speeds = new Float32Array(60);
+    const phases = new Float32Array(60);
     
-    const step = (ts: number) => {
-      const elapsed = (ts - t0) / 1000;
+    const gold = new THREE.Color("rgb(229,155,19)");
+    const blue = new THREE.Color("rgb(100,160,255)");
+    
+    for (let i = 0; i < 60; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 30; // x
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 20; // y
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 5; // z
       
-      // Stop particles after 10 seconds to ensure CPU idles for Lighthouse
-      if (elapsed > 10) return;
+      const isGold = Math.random() > 0.5;
+      const c = isGold ? gold : blue;
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
       
-      // Throttle to ~24fps
-      if (ts - lastTs > 41) {
-        setT(elapsed);
-        lastTs = ts;
-      }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+      sizes[i] = 1.0 + Math.random() * 2.5;
+      speeds[i] = 0.5 + Math.random() * 1.5;
+      phases[i] = Math.random() * Math.PI * 2;
+    }
+    
+    return { positions: arr, colors, sizes, speeds, phases };
   }, []);
 
-  const seeds = useMemo(() => {
-    const arr = [];
+  useFrame((state, delta) => {
+    if (!pointsRef.current) return;
+    const t = state.clock.getElapsedTime();
+    const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
+    
     for (let i = 0; i < 60; i++) {
-      arr.push({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: 1 + Math.random() * 2.5,
-        speed: 0.08 + Math.random() * 0.2,
-        phase: Math.random() * Math.PI * 2,
-        hue: Math.random() > 0.5 ? "gold" : "blue",
-      });
+      const drift = Math.sin(t * particles.speeds[i] + particles.phases[i]) * 0.02;
+      positions[i * 3] += drift; // x
+      positions[i * 3 + 1] += particles.speeds[i] * delta * 1.5; // y going up
+      
+      if (positions[i * 3 + 1] > 10) {
+        positions[i * 3 + 1] = -10;
+      }
     }
-    return arr;
-  }, []);
+    pointsRef.current.geometry.attributes.position.needsUpdate = true;
+  });
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {seeds.map((p, i) => {
-        const drift = Math.sin(t * p.speed + p.phase) * 20;
-        const y = (p.y + t * p.speed * 25) % 100;
-        const twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * 2 + p.phase));
-        const color = p.hue === "gold" ? "229,155,19" : "100,160,255";
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: `${p.x}%`,
-              top: `${y}%`,
-              transform: `translateX(${drift}px)`,
-              width: p.size,
-              height: p.size,
-              borderRadius: "50%",
-              background: `rgba(${color},${twinkle * 0.8})`,
-              boxShadow: `0 0 ${p.size * 4}px rgba(${color},${twinkle * 0.5})`,
-            }}
-          />
-        );
-      })}
-    </div>
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={60} array={particles.positions} itemSize={3} />
+        <bufferAttribute attach="attributes-color" count={60} array={particles.colors} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.06} vertexColors transparent opacity={0.6} sizeAttenuation />
+    </points>
   );
 }
 
@@ -266,14 +248,14 @@ export function FXOverlay() {
   return (
     <>
       <div
-        className="absolute inset-0 pointer-events-none z-20"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.75) 100%)",
+            "radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.4) 100%)",
         }}
       />
       <div
-        className="absolute inset-0 opacity-[0.35] mix-blend-overlay pointer-events-none z-30"
+        className="absolute inset-0 opacity-[0.35] mix-blend-overlay pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
         }}
@@ -291,70 +273,59 @@ export function HeroLogo3D({
   onIntroComplete?: () => void;
   onReady?: () => void;
 }) {
-  const INITIAL_YAW = 0.894;
+  const INITIAL_YAW = -0.677; // ~-38.78 degrees (rotated 180 degrees from 141.22)
   const INITIAL_PITCH = -0.548;
-  const zoom = 0.72;
 
+  const [time, setTime] = useState(0);
   const [yaw, setYaw] = useState(INITIAL_YAW);
   const [pitch, setPitch] = useState(INITIAL_PITCH);
-  const [time, setTime] = useState(0);
   const [introDone, setIntroDone] = useState(false);
   const [dragging, setDragging] = useState(false);
 
   const lastInteract = useRef(Date.now());
-  const dragStart = useRef<{
-    x: number;
-    y: number;
-    yaw: number;
-    pitch: number;
-  } | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastTsRef = useRef<number | null>(null);
+  const dragStart = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
+    let raf: number;
+    let t0: number;
+    let isActive = true;
 
-    const startLoop = () => {
+    const init = () => {
       onReady?.();
-      const t0 = performance.now();
+      t0 = performance.now();
       const step = (ts: number) => {
-        if (lastTsRef.current === null) lastTsRef.current = ts;
-        const dt = (ts - lastTsRef.current) / 1000;
-        lastTsRef.current = ts;
-
-        const t = (ts - t0) / 1000;
+        if (!isActive) return;
+        const elapsed = (ts - t0) / 1000;
+        
         if (!introDone) {
-          if (t > 5.0) {
+          if (elapsed > 5.0) {
             setTime(5.0);
             setIntroDone(true);
             onIntroComplete?.();
           } else {
-            setTime(t);
+            setTime(elapsed);
           }
         }
 
         const idleFor = (Date.now() - lastInteract.current) / 1000;
         if (introDone && !dragging && idleFor > 2.5) {
-          setYaw((y) => y + dt * 0.25);
+          setYaw((y) => y + (1/60) * 0.25);
         }
-
-        rafRef.current = requestAnimationFrame(step);
+        
+        raf = requestAnimationFrame(step);
       };
-      rafRef.current = requestAnimationFrame(step);
+      raf = requestAnimationFrame(step);
     };
 
-    // Defer heavy calculation until the main thread is idle and the page has painted
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(() => {
-        timer = setTimeout(startLoop, 100);
-      });
+      window.requestIdleCallback(() => setTimeout(init, 100));
     } else {
-      timer = setTimeout(startLoop, 500);
+      setTimeout(init, 500);
     }
 
     return () => {
-      clearTimeout(timer);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      isActive = false;
+      cancelAnimationFrame(raf);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [introDone, dragging]);
@@ -365,18 +336,8 @@ export function HeroLogo3D({
     lastInteract.current = Date.now();
     dragStart.current = { x: e.clientX, y: e.clientY, yaw, pitch };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    
-    // Restart loop for dragging
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    const stepDrag = (ts: number) => {
-       if (lastTsRef.current === null) lastTsRef.current = ts;
-       lastTsRef.current = ts;
-       // Just keep the loop alive so yaw/pitch changes are rendered
-       rafRef.current = requestAnimationFrame(stepDrag);
-    };
-    rafRef.current = requestAnimationFrame(stepDrag);
   };
-  
+
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging || !dragStart.current) return;
     lastInteract.current = Date.now();
@@ -395,11 +356,7 @@ export function HeroLogo3D({
   const onPointerUp = () => {
     setDragging(false);
     dragStart.current = null;
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
   };
-
-  const yawDeg = (yaw * 180) / Math.PI;
-  const pitchDeg = (pitch * 180) / Math.PI;
 
   const markOp = interpolate([3.3, 3.8], [0, 1], Easing.easeOutCubic)(time);
   const markY = interpolate([3.3, 3.9], [20, 0], Easing.easeOutBack)(time);
@@ -422,28 +379,14 @@ export function HeroLogo3D({
         }}
       />
 
-      {/* 3D Stage */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "45%",
-          width: 0,
-          height: 0,
-          perspective: "1800px",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            transformStyle: "preserve-3d",
-            transform: `scale(${zoom}) rotateX(${pitchDeg}deg) rotateY(${yawDeg}deg)`,
-          }}
-        >
-          {CUBES.map((c) => (
-            <CubeInScene key={c.id} cube={c} time={time} />
-          ))}
-        </div>
+      {/* 3D Stage via WebGL */}
+      <div className="absolute inset-0 pointer-events-none">
+        <Canvas camera={{ position: [0, 0, 10], fov: 35 }}>
+          <ambientLight intensity={1.5} />
+          <pointLight position={[5, 10, 10]} intensity={2.0} color="#ffffff" />
+          <pointLight position={[-5, -10, 8]} intensity={3.0} color="#ffffff" />
+          <Scene3D time={time} yaw={yaw} pitch={pitch} />
+        </Canvas>
       </div>
 
       {/* Wordmark */}

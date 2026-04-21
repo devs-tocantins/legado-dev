@@ -239,28 +239,6 @@ export default function HomePageContent() {
               }}
               className="relative w-full h-full"
             >
-              <AnimatePresence>
-                {!is3DReady && (
-                  <motion.div
-                    initial={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1.2 }}
-                    className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none"
-                  >
-                    <div className="flex flex-col items-center gap-6">
-                      <div className="relative flex items-center justify-center h-24 w-24">
-                        <div className="absolute inset-0 rounded-full border-2 border-white/5 border-t-[#E59B13]/40 border-l-[#1C4B92]/40 animate-[spin_3s_linear_infinite]" />
-                        <div className="absolute inset-2 rounded-full border-2 border-white/10 border-b-[#E59B13]/60 border-r-[#1C4B92]/60 animate-[spin_2s_linear_infinite_reverse]" />
-                        <div className="absolute inset-4 rounded-full border-2 border-white/5 border-t-[#E59B13]/80 animate-[spin_1.5s_linear_infinite]" />
-                        <div className="h-2 w-2 rounded-full bg-[#E59B13] animate-pulse shadow-[0_0_15px_rgba(229,155,19,0.8)]" />
-                      </div>
-                      <p className="text-white/30 font-mono text-[10px] tracking-[0.3em] uppercase animate-pulse">
-                        Iniciando Sistema
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
               <HeroLogo3D
                 onIntroComplete={handleIntroComplete}
                 onReady={() => setIs3DReady(true)}
@@ -287,17 +265,17 @@ export default function HomePageContent() {
                       </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-5">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <Link
                         href="/sign-up"
-                        className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#E59B13] px-10 py-4.5 text-base font-bold text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(229,155,19,0.55)]"
+                        className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#E59B13] px-8 py-4 text-base font-bold text-white whitespace-nowrap transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(229,155,19,0.55)]"
                       >
                         {t("hero.cta")}
                         <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
                       </Link>
                       <Link
                         href="/leaderboard"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-10 py-4.5 text-base font-bold text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10"
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-8 py-4 text-base font-bold text-white whitespace-nowrap transition-all duration-300 hover:-translate-y-1 hover:bg-white/10"
                       >
                         <Trophy className="h-5 w-5 text-amber-400" />
                         {t("hero.ranking")}
@@ -455,13 +433,13 @@ export default function HomePageContent() {
             >
               <Link
                 href="/sign-up"
-                className="rounded-xl bg-primary px-10 py-5 text-base font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all"
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 text-base font-bold text-primary-foreground whitespace-nowrap shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all"
               >
                 {t("footer_cta.button_join")}
               </Link>
               <Link
                 href="/activities"
-                className="rounded-xl border border-border bg-background px-10 py-5 text-base font-bold text-foreground hover:bg-muted hover:-translate-y-1 transition-all"
+                className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-8 py-4 text-base font-bold text-foreground whitespace-nowrap hover:bg-muted hover:-translate-y-1 transition-all"
               >
                 {t("footer_cta.button_activities")}
               </Link>
