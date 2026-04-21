@@ -354,7 +354,7 @@ function ParticlesWebGL({ theme }: { theme: string; isMobile?: boolean }) {
       <pointsMaterial
         size={0.06}
         vertexColors
-        transparent={!isMobile}
+        transparent
         opacity={theme === "light" ? 0.3 : 0.6}
         sizeAttenuation
       />
