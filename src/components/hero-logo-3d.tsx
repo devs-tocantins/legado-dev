@@ -161,10 +161,12 @@ function CubeInScene({
   cube,
   time,
   theme,
+  isMobile,
 }: {
   cube: CubeData;
   time: number;
   theme: string;
+  isMobile?: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const sch = ENTRY[cube.id as keyof typeof ENTRY];
@@ -200,7 +202,12 @@ function CubeInScene({
       material={materials[cube.pal as keyof typeof materials]}
     >
       <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
-      <Edges color={theme === "light" ? "#cccccc" : "#000000"} threshold={15} />
+      {!isMobile && (
+        <Edges
+          color={theme === "light" ? "#cccccc" : "#000000"}
+          threshold={15}
+        />
+      )}
     </mesh>
   );
 }
@@ -263,29 +270,43 @@ function Scene3D({
   return (
     <group ref={groupRef}>
       {CUBES.map((c) => (
-        <CubeInScene key={c.id} cube={c} time={time} theme={theme} />
+        <CubeInScene
+          key={c.id}
+          cube={c}
+          time={time}
+          theme={theme}
+          isMobile={isMobile}
+        />
       ))}
     </group>
   );
 }
 
-function ParticlesWebGL({ theme }: { theme: string }) {
+function ParticlesWebGL({
+  theme,
+  isMobile,
+}: {
+  theme: string;
+  isMobile?: boolean;
+}) {
   const pointsRef = useRef<THREE.Points>(null);
   const timeRef = useRef(0);
 
+  const particleCount = isMobile ? 30 : 60;
+
   const particles = useMemo(() => {
-    const arr = new Float32Array(60 * 3);
-    const colors = new Float32Array(60 * 3);
-    const sizes = new Float32Array(60);
-    const speeds = new Float32Array(60);
-    const phases = new Float32Array(60);
+    const arr = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+    const speeds = new Float32Array(particleCount);
+    const phases = new Float32Array(particleCount);
 
     const gold = new THREE.Color("rgb(229,155,19)");
     const blue = new THREE.Color("rgb(100,160,255)");
     const lightBlue = new THREE.Color("rgb(59,130,246)");
     const darkGold = new THREE.Color("rgb(180,123,17)");
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < particleCount; i++) {
       arr[i * 3] = (Math.random() - 0.5) * 30;
       arr[i * 3 + 1] = (Math.random() - 0.5) * 20;
       arr[i * 3 + 2] = (Math.random() - 0.5) * 5;
@@ -308,7 +329,7 @@ function ParticlesWebGL({ theme }: { theme: string }) {
     }
 
     return { positions: arr, colors, sizes, speeds, phases };
-  }, [theme]);
+  }, [theme, particleCount]);
 
   useFrame((_state, delta) => {
     if (!pointsRef.current) return;
@@ -317,7 +338,7 @@ function ParticlesWebGL({ theme }: { theme: string }) {
     const positions = pointsRef.current.geometry.attributes.position
       .array as Float32Array;
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < particleCount; i++) {
       const drift =
         Math.sin(t * particles.speeds[i] + particles.phases[i]) * 0.02;
       positions[i * 3] += drift;
@@ -335,14 +356,14 @@ function ParticlesWebGL({ theme }: { theme: string }) {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={60}
+          count={particleCount}
           array={particles.positions}
           itemSize={3}
           args={[particles.positions, 3]}
         />
         <bufferAttribute
           attach="attributes-color"
-          count={60}
+          count={particleCount}
           array={particles.colors}
           itemSize={3}
           args={[particles.colors, 3]}
@@ -527,11 +548,11 @@ export function HeroLogo3D({
       <div className="absolute inset-0 pointer-events-none">
         <Canvas
           camera={{ position: [0, 0, 10], fov: 35 }}
-          dpr={[1, 2]}
+          dpr={isMobile ? 1 : [1, 2]}
           performance={{ min: 0.5 }}
         >
           <ambientLight intensity={theme === "light" ? 1.0 : 0.7} />
-          {theme !== "light" && <Environment preset="city" />}
+          {theme !== "light" && !isMobile && <Environment preset="city" />}
           <hemisphereLight
             intensity={theme === "light" ? 0.8 : 0.4}
             color="#ffffff"
@@ -557,7 +578,7 @@ export function HeroLogo3D({
             isTablet={isTablet}
             transitionProgress={transitionProgress}
           />
-          <ParticlesWebGL theme={theme} />
+          <ParticlesWebGL theme={theme} isMobile={isMobile} />
         </Canvas>
       </div>
 
