@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   useGetMissionService,
   useGetMyMissionSubmissionService,
+  useGetMissionParticipantsService,
   useSubmitMissionService,
 } from "@/services/api/services/missions";
 import { useFileUploadService } from "@/services/api/services/files";
@@ -24,6 +25,8 @@ import {
   ArrowLeft,
   AlertCircle,
   Trophy,
+  Users,
+  Clock,
 } from "lucide-react";
 import { getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -40,6 +43,7 @@ function MissionDetailPageContent() {
 
   const getMission = useGetMissionService();
   const getMySubmission = useGetMyMissionSubmissionService();
+  const getParticipants = useGetMissionParticipantsService();
   const submitMission = useSubmitMissionService();
   const uploadFile = useFileUploadService();
 
@@ -56,6 +60,15 @@ function MissionDetailPageContent() {
     queryKey: ["my-mission-submission", id],
     queryFn: async () => {
       const { status, data } = await getMySubmission(id);
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+  });
+
+  const { data: participantsData } = useQuery({
+    queryKey: ["mission-participants", id],
+    queryFn: async () => {
+      const { status, data } = await getParticipants(id);
       if (status === HTTP_CODES_ENUM.OK) return data;
       return null;
     },
@@ -216,6 +229,59 @@ function MissionDetailPageContent() {
             próximas!
           </p>
         </div>
+      )}
+
+      {/* Participants */}
+      {participantsData !== null && participantsData !== undefined && (
+        <Card>
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-semibold">
+                Participantes ({participantsData.count})
+              </p>
+            </div>
+            {participantsData.count === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma participação ainda. Seja o primeiro!
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {participantsData.participants.map((p, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="font-medium text-foreground">
+                      @{p.username}
+                    </span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span
+                        className={
+                          p.status === "APPROVED"
+                            ? "text-emerald-500 font-medium"
+                            : p.status === "REJECTED"
+                              ? "text-destructive"
+                              : "text-yellow-600"
+                        }
+                      >
+                        {p.status === "APPROVED"
+                          ? "Aprovada"
+                          : p.status === "REJECTED"
+                            ? "Rejeitada"
+                            : "Pendente"}
+                      </span>
+                      <Clock className="h-3 w-3 shrink-0" />
+                      <span>
+                        {new Date(p.submittedAt).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* My submission status */}

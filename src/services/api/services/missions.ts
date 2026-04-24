@@ -132,6 +132,29 @@ export function useSubmitMissionService() {
   );
 }
 
+export type MissionParticipant = {
+  username: string;
+  status: string;
+  submittedAt: string;
+};
+
+export type MissionParticipantsResponse = {
+  count: number;
+  participants: MissionParticipant[];
+};
+
+export function useGetMissionParticipantsService() {
+  const fetch = useFetch();
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) =>
+      fetch(`${API_URL}/api/v1/missions/${id}/participants`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<MissionParticipantsResponse>),
+    [fetch]
+  );
+}
+
 export function useGetMyMissionSubmissionService() {
   const fetch = useFetch();
   return useCallback(
