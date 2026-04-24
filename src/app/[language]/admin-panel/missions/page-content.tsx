@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   useGetAllMissionsService,
   useCreateMissionService,
@@ -27,6 +31,7 @@ import {
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { getApiError } from "@/lib/utils";
 import { MarkdownEditor, MarkdownContent } from "@/components/markdown-editor";
+import { cn } from "@/lib/utils";
 import {
   Target,
   Plus,
@@ -39,7 +44,13 @@ import {
   ChevronDown,
   ChevronUp,
   Lock,
+  Search,
+  LayoutGrid,
+  List,
 } from "lucide-react";
+import removeDuplicatesFromArrayObjects from "@/services/helpers/remove-duplicates-from-array-of-objects";
+
+type ViewMode = "card" | "list";
 
 // ── Mission Form ────────────────────────────────────────────────────────────────
 
@@ -197,15 +208,25 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
   const getSubmissions = useGetMissionSubmissionsService();
   const reviewSubmission = useReviewMissionSubmissionService();
 
-  const { data: submissions, isLoading } = useQuery({
-    queryKey: ["mission-submissions", mission.id],
-    queryFn: async () => {
+  const [subData, setSubData] = useState<any[]>([]);
+  const [subLoading, setSubLoading] = useState(false);
+
+  const loadSubmissions = async () => {
+    if (subData.length > 0 || subLoading) return;
+    setSubLoading(true);
+    try {
       const { status, data } = await getSubmissions(mission.id);
-      if (status === HTTP_CODES_ENUM.OK) return data;
-      return [];
-    },
-    enabled: open,
-  });
+      if (status === HTTP_CODES_ENUM.OK) setSubData(data as any[]);
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) loadSubmissions();
+  };
 
   const { mutate: doReview, isPending: reviewing } = useMutation({
     mutationFn: async ({
@@ -228,9 +249,8 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
           : "Submissão rejeitada.",
         { variant: "success" }
       );
-      queryClient.invalidateQueries({
-        queryKey: ["mission-submissions", mission.id],
-      });
+      setSubData([]);
+      loadSubmissions();
       queryClient.invalidateQueries({ queryKey: ["admin-missions"] });
     },
     onError: (err: any) => {
@@ -238,13 +258,13 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
     },
   });
 
-  const pending = submissions?.filter((s) => s.status === "PENDING") ?? [];
+  const pending = subData?.filter((s: any) => s.status === "PENDING") ?? [];
 
   return (
     <div className="mt-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ClipboardList className="h-4 w-4" />
@@ -264,15 +284,15 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
 
       {open && (
         <div className="mt-3 space-y-3">
-          {isLoading && (
+          {subLoading && (
             <p className="text-sm text-muted-foreground">Carregando...</p>
           )}
-          {!isLoading && (!submissions || submissions.length === 0) && (
+          {!subLoading && subData.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Nenhuma submissão ainda.
             </p>
           )}
-          {submissions?.map((sub) => (
+          {subData.map((sub: any) => (
             <div
               key={sub.id}
               className="rounded-lg border border-border p-3 space-y-2 bg-muted/20"
@@ -298,7 +318,6 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
                       : "Rejeitada"}
                 </Badge>
               </div>
-
               {sub.description && (
                 <p className="text-sm whitespace-pre-wrap">{sub.description}</p>
               )}
@@ -317,7 +336,6 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
                   Feedback: {sub.feedback}
                 </p>
               )}
-
               {sub.status === "PENDING" && !mission.winnerId && (
                 <div className="space-y-1.5 pt-1">
                   <input
@@ -366,6 +384,167 @@ function SubmissionsPanel({ mission }: { mission: Mission }) {
   );
 }
 
+// ── Mission Card (admin) ─────────────────────────────────────────────────────────
+
+function MissionCardAdmin({
+  mission,
+  onEdit,
+  onDelete,
+}: {
+  mission: Mission;
+  onEdit: (m: Mission) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base font-semibold leading-snug">
+            {mission.title}
+          </CardTitle>
+          <div className="flex items-center gap-2 shrink-0">
+            {mission.isSecret && (
+              <Badge variant="outline" className="gap-1 text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                Secreta
+              </Badge>
+            )}
+            <Badge
+              variant={mission.status === "OPEN" ? "default" : "secondary"}
+            >
+              {mission.status === "OPEN" ? (
+                <>
+                  <Zap className="h-3 w-3 mr-1" />
+                  {mission.xpReward} XP
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Encerrada
+                </>
+              )}
+            </Badge>
+            {mission.status === "OPEN" && (
+              <>
+                <button
+                  onClick={() => onEdit(mission)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(mission.id)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 space-y-2">
+        {mission.description && (
+          <MarkdownContent
+            content={mission.description}
+            className="text-muted-foreground"
+          />
+        )}
+        {mission.requirements && (
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer font-medium">Requisitos</summary>
+            <div className="mt-1">
+              <MarkdownContent content={mission.requirements} />
+            </div>
+          </details>
+        )}
+        <SubmissionsPanel mission={mission} />
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Mission Row (admin) ──────────────────────────────────────────────────────────
+
+function MissionRowAdmin({
+  mission,
+  onEdit,
+  onDelete,
+}: {
+  mission: Mission;
+  onEdit: (m: Mission) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="border-b last:border-b-0">
+      <div
+        className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{mission.title}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {mission.isSecret && (
+            <Badge
+              variant="outline"
+              className="gap-1 text-muted-foreground text-xs"
+            >
+              <Lock className="h-3 w-3" />
+              Secreta
+            </Badge>
+          )}
+          <Badge
+            variant={mission.status === "OPEN" ? "default" : "secondary"}
+            className="text-xs"
+          >
+            {mission.status === "OPEN" ? `${mission.xpReward} XP` : "Encerrada"}
+          </Badge>
+          {mission.status === "OPEN" && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(mission);
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(mission.id);
+                }}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          {expanded ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </div>
+      {expanded && (
+        <div className="px-4 pb-3 space-y-2 bg-muted/10">
+          {mission.description && (
+            <MarkdownContent
+              content={mission.description}
+              className="text-sm text-muted-foreground"
+            />
+          )}
+          <SubmissionsPanel mission={mission} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 function AdminMissionsPageContent() {
@@ -378,15 +557,34 @@ function AdminMissionsPageContent() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
-  const { data: missions, isLoading } = useQuery({
-    queryKey: ["admin-missions"],
-    queryFn: async () => {
-      const { status, data } = await getAllMissions();
-      if (status === HTTP_CODES_ENUM.OK) return data;
-      return [];
-    },
-  });
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ["admin-missions", search],
+      initialPageParam: 1,
+      queryFn: async ({ pageParam, signal }) => {
+        const { status, data } = await getAllMissions(
+          { page: pageParam, limit: 10, search: search || undefined },
+          { signal }
+        );
+        if (status === HTTP_CODES_ENUM.OK) {
+          return {
+            data: data.data,
+            nextPage: data.hasNextPage ? pageParam + 1 : undefined,
+          };
+        }
+        return { data: [], nextPage: undefined };
+      },
+      getNextPageParam: (lastPage) => lastPage?.nextPage,
+      gcTime: 0,
+    });
+
+  const missions = useMemo(() => {
+    const all = data?.pages.flatMap((p) => p?.data ?? []) ?? [];
+    return removeDuplicatesFromArrayObjects(all as Mission[], "id");
+  }, [data]);
 
   const { mutate: doCreate, isPending: creating } = useMutation({
     mutationFn: async (data: CreateMissionRequest) => {
@@ -430,6 +628,7 @@ function AdminMissionsPageContent() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -446,6 +645,46 @@ function AdminMissionsPageContent() {
         </Button>
       </div>
 
+      {/* Controls */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar missões..."
+            className="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="flex items-center border border-input rounded-lg overflow-hidden">
+          <button
+            onClick={() => setViewMode("card")}
+            className={cn(
+              "p-2 transition-colors",
+              viewMode === "card"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-muted-foreground"
+            )}
+            title="Visualização em cards"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "p-2 transition-colors",
+              viewMode === "list"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-muted-foreground"
+            )}
+            title="Visualização em lista"
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
       {isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -454,89 +693,57 @@ function AdminMissionsPageContent() {
         </div>
       )}
 
-      {!isLoading && missions?.length === 0 && (
+      {!isLoading && missions.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <Target className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p>Nenhuma missão criada ainda.</p>
+          <p>
+            {search
+              ? "Nenhuma missão encontrada para esta busca."
+              : "Nenhuma missão criada ainda."}
+          </p>
         </div>
       )}
 
-      <div className="space-y-4">
-        {missions?.map((mission) => (
-          <Card key={mission.id}>
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base font-semibold leading-snug">
-                  {mission.title}
-                </CardTitle>
-                <div className="flex items-center gap-2 shrink-0">
-                  {mission.isSecret && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-muted-foreground"
-                    >
-                      <Lock className="h-3 w-3" />
-                      Secreta
-                    </Badge>
-                  )}
-                  <Badge
-                    variant={
-                      mission.status === "OPEN" ? "default" : "secondary"
-                    }
-                  >
-                    {mission.status === "OPEN" ? (
-                      <>
-                        <Zap className="h-3 w-3 mr-1" />
-                        {mission.xpReward} XP
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Encerrada
-                      </>
-                    )}
-                  </Badge>
-                  {mission.status === "OPEN" && (
-                    <>
-                      <button
-                        onClick={() => setEditingMission(mission)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => doDelete(mission.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-2">
-              {mission.description && (
-                <MarkdownContent
-                  content={mission.description}
-                  className="text-muted-foreground"
-                />
-              )}
-              {mission.requirements && (
-                <details className="text-xs text-muted-foreground">
-                  <summary className="cursor-pointer font-medium">
-                    Requisitos
-                  </summary>
-                  <div className="mt-1">
-                    <MarkdownContent content={mission.requirements} />
-                  </div>
-                </details>
-              )}
-              <SubmissionsPanel mission={mission} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {viewMode === "card" ? (
+        <div className="space-y-4">
+          {missions.map((mission) => (
+            <MissionCardAdmin
+              key={mission.id}
+              mission={mission}
+              onEdit={setEditingMission}
+              onDelete={(id) => doDelete(id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border divide-y">
+          {missions.map((mission) => (
+            <MissionRowAdmin
+              key={mission.id}
+              mission={mission}
+              onEdit={setEditingMission}
+              onDelete={(id) => doDelete(id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Load more */}
+      {hasNextPage && (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="gap-2"
+          >
+            <ChevronDown
+              className={cn("h-4 w-4", isFetchingNextPage && "animate-bounce")}
+            />
+            {isFetchingNextPage ? "Carregando..." : "Carregar mais"}
+          </Button>
+        </div>
+      )}
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

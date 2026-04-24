@@ -738,8 +738,8 @@ function MissoesTab() {
   const { data: missions, isLoading } = useQuery({
     queryKey: ["moderation-missions"],
     queryFn: async () => {
-      const { status, data } = await fetchAllMissions();
-      if (status === HTTP_CODES_ENUM.OK) return data as Mission[];
+      const { status, data } = await fetchAllMissions({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data as Mission[];
       return [] as Mission[];
     },
   });

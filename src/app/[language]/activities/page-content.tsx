@@ -9,10 +9,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "@/components/link";
-import { Zap, Clock, FileCheck, Search, Lock, ChevronDown } from "lucide-react";
+import {
+  Zap,
+  Clock,
+  FileCheck,
+  Search,
+  Lock,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonActivityGrid } from "@/components/ui/skeleton-patterns";
+
+type ViewMode = "card" | "list";
 
 function ActivityCard({ activity }: { activity: Activity }) {
   return (
@@ -27,13 +39,11 @@ function ActivityCard({ activity }: { activity: Activity }) {
             {activity.fixedReward} XP
           </Badge>
         </div>
-
         {activity.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">
             {activity.description.replace(/[#*`_>~\[\]]/g, "").trim()}
           </p>
         )}
-
         <div className="flex flex-wrap gap-2 pt-1">
           {activity.cooldownHours > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -68,9 +78,51 @@ function ActivityCard({ activity }: { activity: Activity }) {
   );
 }
 
+function ActivityRow({ activity }: { activity: Activity }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{activity.title}</p>
+        <div className="flex flex-wrap gap-2 mt-0.5">
+          {activity.cooldownHours > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {activity.cooldownHours}h cooldown
+            </span>
+          )}
+          {activity.requiresProof && (
+            <span className="flex items-center gap-1 text-xs text-amber-500">
+              <FileCheck className="h-3 w-3" />
+              Requer comprovante
+            </span>
+          )}
+          {activity.isHidden && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              Secreta
+            </span>
+          )}
+        </div>
+      </div>
+      <Badge className="shrink-0 text-xs">
+        <Zap className="h-3 w-3 mr-1" />
+        {activity.fixedReward} XP
+      </Badge>
+      <Link
+        href={`/submissions/new?activityId=${activity.id}`}
+        className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+      >
+        Submeter
+        <ChevronRight className="h-3 w-3" />
+      </Link>
+    </div>
+  );
+}
+
 function ActivitiesPageContent() {
   const fetch = useGetActivitiesService();
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
@@ -120,20 +172,56 @@ function ActivitiesPageContent() {
         </p>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar atividades..."
-          className="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      {/* Controls */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar atividades..."
+            className="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="flex items-center border border-input rounded-lg overflow-hidden">
+          <button
+            onClick={() => setViewMode("card")}
+            className={cn(
+              "p-2 transition-colors",
+              viewMode === "card"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-muted-foreground"
+            )}
+            title="Visualização em cards"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "p-2 transition-colors",
+              viewMode === "list"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-muted-foreground"
+            )}
+            title="Visualização em lista"
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Grid */}
+      {/* Content */}
       {isLoading ? (
-        <SkeletonActivityGrid count={6} />
+        viewMode === "card" ? (
+          <SkeletonActivityGrid count={6} />
+        ) : (
+          <div className="rounded-md border divide-y">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 bg-muted animate-pulse" />
+            ))}
+          </div>
+        )
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Zap}
@@ -150,13 +238,21 @@ function ActivitiesPageContent() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((activity) => (
-              <ActivityCard key={activity.id} activity={activity} />
-            ))}
-          </div>
+          {viewMode === "card" ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((activity) => (
+                <ActivityCard key={activity.id} activity={activity} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border divide-y">
+              {filtered.map((activity) => (
+                <ActivityRow key={activity.id} activity={activity} />
+              ))}
+            </div>
+          )}
 
-          {hasNextPage && (
+          {hasNextPage && !search && (
             <div className="flex justify-center pt-2">
               <Button
                 variant="outline"

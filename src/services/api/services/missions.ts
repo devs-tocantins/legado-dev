@@ -3,16 +3,29 @@ import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
 import { Mission, MissionSubmission } from "../types/mission";
+import { InfinityPaginationType } from "../types/infinity-pagination";
 import { RequestConfigType } from "./types/request-config";
+
+export type MissionsRequest = {
+  page: number;
+  limit: number;
+  search?: string;
+};
+
+export type MissionsResponse = InfinityPaginationType<Mission>;
 
 export function useGetMissionsService() {
   const fetch = useFetch();
   return useCallback(
-    (requestConfig?: RequestConfigType) =>
-      fetch(`${API_URL}/api/v1/missions`, {
-        method: "GET",
-        ...requestConfig,
-      }).then(wrapperFetchJsonResponse<Mission[]>),
+    (data: MissionsRequest, requestConfig?: RequestConfigType) => {
+      const url = new URL(`${API_URL}/api/v1/missions`);
+      url.searchParams.append("page", data.page.toString());
+      url.searchParams.append("limit", data.limit.toString());
+      if (data.search) url.searchParams.append("search", data.search);
+      return fetch(url, { method: "GET", ...requestConfig }).then(
+        wrapperFetchJsonResponse<MissionsResponse>
+      );
+    },
     [fetch]
   );
 }
@@ -20,11 +33,15 @@ export function useGetMissionsService() {
 export function useGetAllMissionsService() {
   const fetch = useFetch();
   return useCallback(
-    (requestConfig?: RequestConfigType) =>
-      fetch(`${API_URL}/api/v1/missions/admin/all`, {
-        method: "GET",
-        ...requestConfig,
-      }).then(wrapperFetchJsonResponse<Mission[]>),
+    (data: MissionsRequest, requestConfig?: RequestConfigType) => {
+      const url = new URL(`${API_URL}/api/v1/missions/admin/all`);
+      url.searchParams.append("page", data.page.toString());
+      url.searchParams.append("limit", data.limit.toString());
+      if (data.search) url.searchParams.append("search", data.search);
+      return fetch(url, { method: "GET", ...requestConfig }).then(
+        wrapperFetchJsonResponse<MissionsResponse>
+      );
+    },
     [fetch]
   );
 }
