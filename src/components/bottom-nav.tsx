@@ -10,6 +10,7 @@ import {
   User,
   Home,
   LogIn,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,7 @@ function BottomNav() {
   const authedLinks: NavItem[] = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
     { href: "/activities", label: "Atividades", icon: BookOpen },
+    { href: "/submissions", label: "Histórico", icon: ClipboardList },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
     { href: "/profile", label: "Perfil", icon: User },
   ];

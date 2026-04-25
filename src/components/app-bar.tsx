@@ -25,6 +25,7 @@ import {
   Moon,
   ExternalLink,
   ClipboardCheck,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -269,6 +270,7 @@ function ResponsiveAppBar() {
         { href: "/activities", label: "Atividades", icon: BookOpen },
         { href: "/missions", label: "Missões", icon: Target },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
+        { href: "/submissions", label: "Histórico", icon: ClipboardList },
       ]
     : [
         { href: "/activities", label: "Atividades", icon: BookOpen },
