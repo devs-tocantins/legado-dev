@@ -362,5 +362,5 @@ function AdminDashboardPageContent() {
 }
 
 export default withPageRequiredAuth(AdminDashboardPageContent, {
-  roles: [RoleEnum.ADMIN],
+  roles: [RoleEnum.ADMIN, RoleEnum.MODERATOR],
 });

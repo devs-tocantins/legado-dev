@@ -35,7 +35,8 @@
       },
       "options": {
         "1": "Administrador",
-        "2": "Usuário"
+        "2": "Usuário",
+        "3": "Moderador"
       }
     },
     "password": {
