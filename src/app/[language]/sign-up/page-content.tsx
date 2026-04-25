@@ -2,13 +2,8 @@
 
 import withPageRequiredGuest from "@/services/auth/with-page-required-guest";
 import { useForm, FormProvider, useFormState, useWatch } from "react-hook-form";
-import {
-  useAuthLoginService,
-  useAuthSignUpService,
-} from "@/services/api/services/auth";
+import { useAuthSignUpService } from "@/services/api/services/auth";
 import { useCheckUsernameService } from "@/services/api/services/gamification-profiles";
-import useAuthActions from "@/services/auth/use-auth-actions";
-import useAuthTokens from "@/services/auth/use-auth-tokens";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Link from "@/components/link";
@@ -17,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import SocialAuth from "@/services/social-auth/social-auth";
 import { isGoogleAuthEnabled } from "@/services/social-auth/google/google-config";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Check, X, Loader2, MailCheck } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { AuthLayout } from "@/components/auth-layout";
@@ -83,14 +78,43 @@ function SubmitButton() {
   );
 }
 
+function EmailConfirmationPending({ email }: { email: string }) {
+  return (
+    <AuthLayout
+      title="Verifique seu e-mail"
+      subtitle="Quase lá! Só falta confirmar."
+    >
+      <div className="flex flex-col items-center gap-4 py-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <MailCheck className="h-8 w-8 text-primary" />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Enviamos um link de confirmação para{" "}
+          <span className="font-semibold text-foreground">{email}</span>.
+          <br />
+          Clique no link do e-mail para ativar sua conta e entrar.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Não encontrou? Verifique a pasta de spam.
+        </p>
+        <Button
+          variant="outline"
+          className="w-full mt-2"
+          render={<Link href="/sign-in" />}
+        >
+          Ir para o login
+        </Button>
+      </div>
+    </AuthLayout>
+  );
+}
+
 function SignUpForm() {
-  const { setUser } = useAuthActions();
-  const { setTokensInfo } = useAuthTokens();
-  const fetchAuthLogin = useAuthLoginService();
   const fetchAuthSignUp = useAuthSignUpService();
   const checkUsernameService = useCheckUsernameService();
   const { t } = useTranslation("sign-up");
   const validationSchema = useValidationSchema();
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [policyChecked, setPolicyChecked] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<
@@ -179,20 +203,14 @@ function SignUpForm() {
       return;
     }
 
-    const { data: dataSignIn, status: statusSignIn } = await fetchAuthLogin({
-      email: formData.email,
-      password: formData.password,
-    });
-
-    if (statusSignIn === HTTP_CODES_ENUM.OK) {
-      setTokensInfo({
-        token: dataSignIn.token,
-        refreshToken: dataSignIn.refreshToken,
-        tokenExpires: dataSignIn.tokenExpires,
-      });
-      setUser(dataSignIn.user);
+    if (statusSignUp === HTTP_CODES_ENUM.NO_CONTENT) {
+      setRegisteredEmail(formData.email);
     }
   });
+
+  if (registeredEmail) {
+    return <EmailConfirmationPending email={registeredEmail} />;
+  }
 
   return (
     <FormProvider {...methods}>
