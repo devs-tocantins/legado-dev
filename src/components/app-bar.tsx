@@ -24,6 +24,7 @@ import {
   Sun,
   Moon,
   ExternalLink,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -256,10 +257,9 @@ function ResponsiveAppBar() {
     setTheme(isDark ? "light" : "dark");
   };
 
-  const isAdmin =
-    !!user?.role &&
-    (Number(user.role.id) === RoleEnum.ADMIN ||
-      Number(user.role.id) === RoleEnum.MODERATOR);
+  const isAdmin = !!user?.role && Number(user.role.id) === RoleEnum.ADMIN;
+  const isModerator =
+    !!user?.role && Number(user.role.id) === RoleEnum.MODERATOR;
 
   const isActive = (href: string) => pathname?.includes(href) && href !== "/";
 
@@ -306,6 +306,20 @@ function ResponsiveAppBar() {
               {label}
             </Link>
           ))}
+          {isModerator && (
+            <Link
+              href="/moderation"
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-300",
+                isActive("/moderation")
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              Moderação
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin-panel"
@@ -493,6 +507,16 @@ function ResponsiveAppBar() {
                 {label}
               </Link>
             ))}
+            {isModerator && (
+              <Link
+                href="/moderation"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                Moderação
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 href="/admin-panel"
