@@ -435,32 +435,53 @@ export function HeroLogo3D({
     let raf: number;
     let t0: number;
     let isActive = true;
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const init = () => {
       onReady?.();
-      t0 = performance.now();
-      const step = (ts: number) => {
+
+      // On the very first visit assets aren't cached yet — the canvas becomes
+      // visible a few frames after onReady fires, so t0 would start ticking
+      // before the user can actually see frame 0. We detect "first visit" via
+      // sessionStorage (resets when the tab/session closes) and hold the clock
+      // for 900 ms so the full intro is always visible on a cold load.
+      const SESSION_KEY = "hero-anim-seen";
+      const isFirstVisit = !sessionStorage.getItem(SESSION_KEY);
+      if (isFirstVisit) sessionStorage.setItem(SESSION_KEY, "1");
+      const grace = isFirstVisit ? 900 : 0;
+
+      const startLoop = () => {
         if (!isActive) return;
-        const elapsed = (ts - t0) / 1000;
+        t0 = performance.now();
+        const step = (ts: number) => {
+          if (!isActive) return;
+          const elapsed = (ts - t0) / 1000;
 
-        if (!introDone) {
-          if (elapsed > 5.0) {
-            setTime(5.0);
-            setIntroDone(true);
-            onIntroComplete?.();
-          } else {
-            setTime(elapsed);
+          if (!introDone) {
+            if (elapsed > 5.0) {
+              setTime(5.0);
+              setIntroDone(true);
+              onIntroComplete?.();
+            } else {
+              setTime(elapsed);
+            }
           }
-        }
 
-        const idleFor = (Date.now() - lastInteract.current) / 1000;
-        if (introDone && !dragging && idleFor > 2.5) {
-          setYaw((y) => y + (1 / 60) * 0.25);
-        }
+          const idleFor = (Date.now() - lastInteract.current) / 1000;
+          if (introDone && !dragging && idleFor > 2.5) {
+            setYaw((y) => y + (1 / 60) * 0.25);
+          }
 
+          raf = requestAnimationFrame(step);
+        };
         raf = requestAnimationFrame(step);
       };
-      raf = requestAnimationFrame(step);
+
+      if (grace > 0) {
+        graceTimer = setTimeout(startLoop, grace);
+      } else {
+        startLoop();
+      }
     };
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
@@ -472,6 +493,7 @@ export function HeroLogo3D({
     return () => {
       isActive = false;
       cancelAnimationFrame(raf);
+      if (graceTimer) clearTimeout(graceTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [introDone, dragging]);
