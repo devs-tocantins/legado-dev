@@ -159,3 +159,35 @@ export function useDeleteTransactionService() {
     [fetch]
   );
 }
+
+export type ProfileTokenTransactionsRequest = {
+  profileId: string;
+  page: number;
+  limit: number;
+};
+
+export type ProfileTokenTransactionsResponse =
+  InfinityPaginationType<Transaction>;
+
+export function useGetProfileTokenTransactionsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: ProfileTokenTransactionsRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      const url = new URL(
+        `${API_URL}/api/v1/transactions/profile/${data.profileId}/tokens`
+      );
+      url.searchParams.append("page", data.page.toString());
+      url.searchParams.append("limit", data.limit.toString());
+
+      return fetch(url, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProfileTokenTransactionsResponse>);
+    },
+    [fetch]
+  );
+}

@@ -9,6 +9,11 @@ import {
   useGetProfileApprovedSubmissionsService,
   useGetGamificationProfilesService,
 } from "@/services/api/services/gamification-profiles";
+import { useGetProfileTokenTransactionsService } from "@/services/api/services/transactions";
+import {
+  Transaction,
+  TransactionCategoryEnum,
+} from "@/services/api/types/transaction";
 import {
   useGetProfileBadgesService,
   BadgeCategoryEnum,
@@ -36,6 +41,8 @@ import {
   Ban,
   Flag,
   Medal,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
@@ -339,6 +346,108 @@ function BadgesSection({ badges }: { badges: GamificationProfileBadge[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function TokenActivityRow({ tx }: { tx: Transaction }) {
+  const isSent = tx.category === TransactionCategoryEnum.TOKEN_TRANSFER;
+  const Icon = isSent ? ArrowUpRight : ArrowDownLeft;
+  const label = isSent ? "Reconhecimento enviado" : "Reconhecimento recebido";
+  const amountCls = isSent ? "text-muted-foreground" : "text-amber-500";
+  const sign = isSent ? "" : "+";
+  const iconBg = isSent ? "bg-muted" : "bg-amber-500/10";
+  const iconCls = isSent ? "text-muted-foreground" : "text-amber-500";
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+          iconBg
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5", iconCls)} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        {tx.description && (
+          <p className="text-xs text-muted-foreground truncate">
+            {tx.description}
+          </p>
+        )}
+      </div>
+      <div className="shrink-0 text-right space-y-0.5">
+        <p
+          className={cn(
+            "text-sm font-semibold font-mono tabular-nums",
+            amountCls
+          )}
+        >
+          {sign}
+          {tx.amount} Pts
+        </p>
+        <p className="text-xs text-muted-foreground font-mono">
+          {new Date(tx.createdAt).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TokenActivitySection({ profileId }: { profileId: string }) {
+  const fetchTokenTxs = useGetProfileTokenTransactionsService();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["profile-token-txs", profileId],
+    queryFn: async () => {
+      const { status, data } = await fetchTokenTxs({
+        profileId,
+        page: 1,
+        limit: 10,
+      });
+      if (status === 200) return data.data as Transaction[];
+      return [] as Transaction[];
+    },
+    enabled: !!profileId,
+    staleTime: 60_000,
+  });
+
+  const txs = data ?? [];
+
+  if (!isLoading && txs.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+        Tokens de Gratidão
+      </h2>
+      {isLoading ? (
+        <div className="rounded-lg border bg-card divide-y">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse px-4 py-3 flex items-center gap-3"
+            >
+              <div className="h-8 w-8 bg-muted rounded-lg shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 bg-muted rounded w-36" />
+                <div className="h-3 bg-muted rounded w-52" />
+              </div>
+              <div className="h-4 bg-muted rounded w-12" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card">
+          {txs.map((tx) => (
+            <TokenActivityRow key={tx.id} tx={tx} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -663,6 +772,9 @@ function PublicProfilePageContent() {
         {badgesData && badgesData.length > 0 && (
           <BadgesSection badges={badgesData} />
         )}
+
+        {/* Token activity */}
+        <TokenActivitySection profileId={profile.id} />
 
         {/* Contributions timeline */}
         <div className="mb-8">
