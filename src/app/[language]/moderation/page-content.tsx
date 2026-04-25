@@ -652,6 +652,7 @@ function AtividadesTab() {
 
   const handleReviewed = () => {
     queryClient.invalidateQueries({ queryKey: ["pending-submissions"] });
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
     refetch();
   };
 
@@ -751,6 +752,7 @@ function MissoesTab() {
 
   const handleReviewed = () => {
     queryClient.invalidateQueries({ queryKey: ["moderation-missions"] });
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
   };
 
   return (
