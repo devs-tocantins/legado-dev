@@ -256,7 +256,10 @@ function ResponsiveAppBar() {
     setTheme(isDark ? "light" : "dark");
   };
 
-  const isAdmin = !!user?.role && Number(user.role.id) === RoleEnum.ADMIN;
+  const isAdmin =
+    !!user?.role &&
+    (Number(user.role.id) === RoleEnum.ADMIN ||
+      Number(user.role.id) === RoleEnum.MODERATOR);
 
   const isActive = (href: string) => pathname?.includes(href) && href !== "/";
 
