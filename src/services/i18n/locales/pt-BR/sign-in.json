@@ -33,7 +33,8 @@
     "user": {
       "validation": {
         "server": {
-          "banned": "Sua conta foi banida. Entre em contato com a administração."
+          "banned": "Sua conta foi banida. Entre em contato com a administração.",
+          "inactive": "Você ainda não confirmou seu e-mail. Verifique sua caixa de entrada."
         }
       }
     }

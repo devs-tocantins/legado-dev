@@ -78,10 +78,12 @@ function SignInForm() {
 
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       if (data.errors?.user) {
-        setError("root", {
-          type: "manual",
-          message: t("inputs.user.validation.server.banned"),
-        });
+        const userError = data.errors.user as string;
+        const messageKey =
+          userError === "inactive"
+            ? "inputs.user.validation.server.inactive"
+            : "inputs.user.validation.server.banned";
+        setError("root", { type: "manual", message: t(messageKey) });
         return;
       }
       (Object.keys(data.errors) as Array<keyof SignInFormData>).forEach(

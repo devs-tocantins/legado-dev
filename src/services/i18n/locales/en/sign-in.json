@@ -33,7 +33,8 @@
     "user": {
       "validation": {
         "server": {
-          "banned": "Your account has been banned. Please contact the administration."
+          "banned": "Your account has been banned. Please contact the administration.",
+          "inactive": "You have not confirmed your email yet. Please check your inbox."
         }
       }
     }
