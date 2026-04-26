@@ -511,10 +511,10 @@ export function HeroLogo3D({
     lastInteract.current = Date.now();
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    setYaw(dragStart.current.yaw + dx * 0.008);
+    setYaw(dragStart.current.yaw - dx * 0.008);
     setPitch(
       clamp(
-        dragStart.current.pitch + dy * 0.008,
+        dragStart.current.pitch - dy * 0.008,
         -Math.PI * 0.45,
         Math.PI * 0.45
       )
