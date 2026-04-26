@@ -1,24 +1,24 @@
 {
   "title": "Nossas Regras",
-  "subtitle": "Como o Legado funciona e o que a gente valoriza na nossa comunidade.",
+  "subtitle": "Como o Legado funciona e o que a gente valoriza na nossa comunidade de tecnologia.",
   "voluntary": {
     "title": "Trabalho Voluntário",
-    "description": "Aqui a gente valoriza quem faz pelo bem da galera. Se você recebeu dinheiro para fazer uma palestra ou atividade, ela não vale pontos. O sistema serve para reconhecer quem doa tempo e conhecimento sem ganhar nada em troca."
+    "description": "Aqui a gente valoriza quem faz pelo bem da galera da TI. Se você recebeu dinheiro para fazer uma palestra técnica ou qualquer atividade de tecnologia, ela não vale pontos. O sistema serve para reconhecer quem doa tempo e conhecimento para fortalecer nossa área sem ganhar nada em troca."
   },
   "local": {
     "title": "Foco no Tocantins",
-    "description": "Nossa missão é fortalecer a tecnologia aqui no estado. Para ganhar pontos, a sua atividade precisa ajudar diretamente a comunidade tocantinense. Seja ensinando alguém daqui ou participando de eventos locais, o impacto tem que ser em solo tocantinense."
+    "description": "Nossa missão é fortalecer o cenário de desenvolvimento e TI aqui no estado. Para ganhar pontos, a sua atividade precisa ajudar diretamente a comunidade técnica tocantinense. Seja ensinando programação para alguém daqui ou participando de eventos locais de tecnologia, o impacto tem que ser em solo tocantinense."
   },
   "equality": {
     "title": "Aqui todo mundo é igual",
-    "description": "Seu nível no sistema mostra o quanto você já ajudou, não o quanto você sabe mais que os outros. Um 'Novato' e uma 'Lenda' têm o mesmo valor. Ninguém é importante demais para deixar de fazer o básico ou ajudar quem está começando."
+    "description": "Seu nível no sistema mostra o quanto você já ajudou a nossa comunidade, não o quanto você sabe mais que os outros. Um 'Novato' e uma 'Lenda' têm o mesmo valor. Ninguém é importante demais para deixar de ajudar quem está começando no mundo da tecnologia."
   },
   "gratitude": {
     "title": "Gratidão se renova todo dia",
-    "description": "Você ganha tokens todos os dias para agradecer quem te deu uma mão. Se não usar, eles somem no fim do dia. Não tem problema não usar, mas se alguém te ajudou, não custa nada dar esse reconhecimento."
+    "description": "Você ganha tokens todos os dias para agradecer quem te deu uma mão com aquele bug ou dúvida técnica. Se não usar, eles somem no fim do dia. Não tem problema não usar, mas se alguém te ajudou a evoluir como dev, não custa nada dar esse reconhecimento."
   },
   "summary": {
     "title": "Resumindo...",
-    "description": "Se ajudou a comunidade do Tocantins de forma voluntária, então vale ponto. É simples assim."
+    "description": "Se ajudou a comunidade de tecnologia do Tocantins de forma voluntária, então vale ponto. É simples assim."
   }
 }
