@@ -67,6 +67,9 @@ function MissionForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [requirements, setRequirements] = useState(initial?.requirements ?? "");
   const [xpReward, setXpReward] = useState(String(initial?.xpReward ?? 100));
+  const [auditorReward, setAuditorReward] = useState(
+    String(initial?.auditorReward ?? 10)
+  );
   const [isSecret, setIsSecret] = useState(initial?.isSecret ?? false);
   const [requiresProof, setRequiresProof] = useState(
     initial?.requiresProof ?? false
@@ -81,7 +84,8 @@ function MissionForm({
       title: title.trim(),
       description: description.trim() || null,
       requirements: requirements.trim() || null,
-      xpReward: Number(xpReward),
+      xpReward: Math.floor(Number(xpReward)),
+      auditorReward: Math.floor(Number(auditorReward)),
       isSecret,
       requiresProof,
       requiresDescription,
@@ -117,16 +121,32 @@ function MissionForm({
         placeholder="Critérios que serão usados para avaliar as submissões. Suporta **markdown**."
       />
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium">Recompensa em XP *</label>
-        <input
-          type="number"
-          min={1}
-          value={xpReward}
-          onChange={(e) => setXpReward(e.target.value)}
-          required
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Recompensa em XP *</label>
+          <input
+            type="number"
+            min={1}
+            value={xpReward}
+            onChange={(e) => setXpReward(e.target.value)}
+            required
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium">
+            Recompensa Auditor (XP) *
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={auditorReward}
+            onChange={(e) => setAuditorReward(e.target.value)}
+            required
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
       </div>
 
       <label className="flex items-center gap-3 cursor-pointer select-none">
@@ -411,15 +431,16 @@ function MissionCardAdmin({
             )}
             <Badge
               variant={mission.status === "OPEN" ? "default" : "secondary"}
+              className="gap-1.5"
             >
               {mission.status === "OPEN" ? (
                 <>
-                  <Zap className="h-3 w-3 mr-1" />
-                  {mission.xpReward} XP
+                  <Zap className="h-3 w-3" />
+                  {mission.xpReward} + {mission.auditorReward} XP
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  <CheckCircle2 className="h-3 w-3" />
                   Encerrada
                 </>
               )}
@@ -499,7 +520,9 @@ function MissionRowAdmin({
             variant={mission.status === "OPEN" ? "default" : "secondary"}
             className="text-xs"
           >
-            {mission.status === "OPEN" ? `${mission.xpReward} XP` : "Encerrada"}
+            {mission.status === "OPEN"
+              ? `${mission.xpReward} + ${mission.auditorReward} XP`
+              : "Encerrada"}
           </Badge>
           {mission.status === "OPEN" && (
             <>
@@ -747,7 +770,7 @@ function AdminMissionsPageContent() {
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Missão</DialogTitle>
           </DialogHeader>
@@ -760,7 +783,7 @@ function AdminMissionsPageContent() {
         open={!!editingMission}
         onOpenChange={(o) => !o && setEditingMission(null)}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Missão</DialogTitle>
           </DialogHeader>

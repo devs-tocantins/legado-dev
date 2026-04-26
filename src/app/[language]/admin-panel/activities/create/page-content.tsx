@@ -155,7 +155,7 @@ function FormCreateActivity() {
 
   return (
     <FormProvider {...methods}>
-      <div className="mx-auto max-w-md p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <div className="mb-4">
           <Button
             variant="ghost"
