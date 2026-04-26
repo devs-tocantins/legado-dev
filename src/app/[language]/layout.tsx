@@ -28,7 +28,8 @@ import "@/services/i18n/config";
 import { languages } from "@/services/i18n/config";
 import type { Metadata } from "next";
 import ToastContainer from "@/components/snackbar-provider";
-import { getServerTranslation } from "@/services/i18n";
+import { getServerTranslation, getI18nResources } from "@/services/i18n";
+import TranslationsProvider from "@/services/i18n/translations-provider";
 import StoreLanguageProvider from "@/services/i18n/store-language-provider";
 import ThemeProvider from "@/components/theme/theme-provider";
 import LeavePageProvider from "@/services/leave-page/leave-page-provider";
@@ -103,6 +104,10 @@ export default async function RootLayout(props: {
   const params = await props.params;
 
   const { language } = params;
+  const globalResources = await getI18nResources(language, [
+    "common",
+    "confirm-dialog",
+  ]);
 
   const { children } = props;
 
@@ -116,18 +121,27 @@ export default async function RootLayout(props: {
           <ReactQueryDevtools initialIsOpen={false} />
           <ThemeProvider>
             <StoreLanguageProvider>
-              <ConfirmDialogProvider>
-                <AuthProvider>
-                  <GoogleAuthProvider>
-                    <LeavePageProvider>
-                      <ResponsiveAppBar />
-                      <PageWrapper>{children}</PageWrapper>
-                      <BottomNav />
-                      <ToastContainer position="bottom-left" hideProgressBar />
-                    </LeavePageProvider>
-                  </GoogleAuthProvider>
-                </AuthProvider>
-              </ConfirmDialogProvider>
+              <TranslationsProvider
+                language={language}
+                namespaces={["common", "confirm-dialog"]}
+                resources={globalResources}
+              >
+                <ConfirmDialogProvider>
+                  <AuthProvider>
+                    <GoogleAuthProvider>
+                      <LeavePageProvider>
+                        <ResponsiveAppBar />
+                        <PageWrapper>{children}</PageWrapper>
+                        <BottomNav />
+                        <ToastContainer
+                          position="bottom-left"
+                          hideProgressBar
+                        />
+                      </LeavePageProvider>
+                    </GoogleAuthProvider>
+                  </AuthProvider>
+                </ConfirmDialogProvider>
+              </TranslationsProvider>
             </StoreLanguageProvider>
           </ThemeProvider>
         </QueryClientProvider>

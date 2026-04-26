@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getServerTranslation } from "@/services/i18n";
+import { getServerTranslation, getI18nResources } from "@/services/i18n";
+import TranslationsProvider from "@/services/i18n/translations-provider";
 import HomePageContent from "./page-content";
 
 type Props = {
@@ -14,6 +15,17 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   };
 }
 
-export default function Home() {
-  return <HomePageContent />;
+export default async function Home(props: Props) {
+  const params = await props.params;
+  const resources = await getI18nResources(params.language, ["home", "common"]);
+
+  return (
+    <TranslationsProvider
+      language={params.language}
+      namespaces={["home", "common"]}
+      resources={resources}
+    >
+      <HomePageContent />
+    </TranslationsProvider>
+  );
 }
