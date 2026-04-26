@@ -3,6 +3,7 @@ export type Activity = {
   title: string;
   description?: string;
   fixedReward: number;
+  auditorReward: number;
   isHidden: boolean;
   secretCode?: string | null;
   requiresProof: boolean;

@@ -67,6 +67,7 @@ export type ActivityPostRequest = {
   title: string;
   description?: string;
   fixedReward: number;
+  auditorReward: number;
   requiresProof: boolean;
   requiresDescription?: boolean;
   cooldownHours: number;
@@ -97,6 +98,7 @@ export type ActivityPatchRequest = {
     title: string;
     description: string;
     fixedReward: number;
+    auditorReward: number;
     requiresProof: boolean;
     requiresDescription: boolean;
     cooldownHours: number;

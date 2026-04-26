@@ -23,6 +23,7 @@ type CreateFormData = {
   title: string;
   description: string;
   fixedReward: number;
+  auditorReward: number;
   requiresProof: boolean;
   requiresDescription: boolean;
   cooldownHours: number;
@@ -53,6 +54,23 @@ const useValidationSchema = () => {
       .required(
         t(
           "admin-panel-activities-create:inputs.fixedReward.validation.required"
+        )
+      ),
+    auditorReward: yup
+      .number()
+      .transform(toInteger)
+      .integer(
+        t(
+          "admin-panel-activities-create:inputs.auditorReward.validation.integer"
+        )
+      )
+      .min(
+        0,
+        t("admin-panel-activities-create:inputs.auditorReward.validation.min")
+      )
+      .required(
+        t(
+          "admin-panel-activities-create:inputs.auditorReward.validation.required"
         )
       ),
     requiresProof: yup.boolean().default(false),
@@ -94,6 +112,7 @@ function FormCreateActivity() {
       title: "",
       description: "",
       fixedReward: 0,
+      auditorReward: 10,
       requiresProof: false,
       requiresDescription: false,
       cooldownHours: 0,
@@ -107,6 +126,7 @@ function FormCreateActivity() {
       title: formData.title,
       description: formData.description,
       fixedReward: formData.fixedReward,
+      auditorReward: formData.auditorReward,
       requiresProof: formData.requiresProof,
       requiresDescription: formData.requiresDescription,
       cooldownHours: formData.cooldownHours,
@@ -179,6 +199,14 @@ function FormCreateActivity() {
                 type="number"
                 label={t(
                   "admin-panel-activities-create:inputs.fixedReward.label"
+                )}
+              />
+              <FormTextInput<CreateFormData>
+                name="auditorReward"
+                testId="auditorReward"
+                type="number"
+                label={t(
+                  "admin-panel-activities-create:inputs.auditorReward.label"
                 )}
               />
               <FormTextInput<CreateFormData>

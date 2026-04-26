@@ -18,6 +18,14 @@
         "integer": "Recompensa deve ser um numero inteiro"
       }
     },
+    "auditorReward": {
+      "label": "Recompensa do Auditor (XP)",
+      "validation": {
+        "required": "Recompensa do auditor e obrigatoria",
+        "min": "Recompensa do auditor deve ser no minimo 0",
+        "integer": "Recompensa do auditor deve ser um numero inteiro"
+      }
+    },
     "cooldownHours": {
       "label": "Cooldown (horas)",
       "validation": {

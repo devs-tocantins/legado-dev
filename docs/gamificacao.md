@@ -4,6 +4,21 @@ Este documento descreve as regras de negócio do sistema de gamificação do leg
 
 ---
 
+## 📜 Manifesto do Legado Dev
+
+O **Legado Dev** existe para fortalecer o ecossistema de tecnologia do **Tocantins**. Para manter a integridade do sistema, toda submissão deve seguir estes pilares:
+
+### 1. O Pilar do Voluntariado (Sem Ganhos Pessoais)
+A essência do sistema é a doação de tempo e conhecimento. Se você recebeu qualquer compensação financeira pela atividade, ela **não** gera pontos.
+
+### 2. O Pilar da Localidade (Foco no Tocantins)
+O impacto deve ser sentido dentro das fronteiras do estado ou beneficiar diretamente membros da comunidade tocantinense.
+
+### 3. Igualdade de Níveis
+No Legado Dev, **XP não é ego**. O seu nível no sistema reflete seu histórico de contribuição, não sua senioridade no mercado. Uma ajuda de um usuário "Lenda" é validada com o mesmo rigor que a de um "Novato".
+
+---
+
 ## Níveis (Level do Perfil)
 
 O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é armazenado; é computado no momento da leitura.
@@ -27,7 +42,7 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 |-------|----|------------|
 | Atividade aprovada | `activity.fixedReward` | Definido pelo admin por atividade |
 | Token de gratidão recebido | +1 XP por token | Afeta `totalXp` e `currentMonthlyXp` |
-| Revisão de submissão (moderador) | +10 XP | Toda revisão, independente do resultado |
+| Revisão de submissão (moderador) | `activity.auditorReward` | Recompensa customizável por atividade |
 | Missão vencida | `mission.xpReward` | Definido pelo admin por missão |
 | Penalidade (admin) | Negativo (configurável) | Deduz XP por abuso |
 
@@ -41,18 +56,18 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 | Anual | `currentYearlyXp` | Dia 1 de janeiro (cron) |
 | Global (Hall da Fama) | `totalXp` | Nunca |
 
-O reset mensal zera `currentMonthlyXp` e `gratitudeTokens`. O reset anual zera `currentYearlyXp`. Ambos são executados por cron jobs do NestJS (`@nestjs/schedule`).
+O reset mensal zera `currentMonthlyXp` e o reset diário renova os `gratitudeTokens`. O reset anual zera `currentYearlyXp`. Ambos são executados por cron jobs do NestJS (`@nestjs/schedule`).
 
 ---
 
 ## Tokens de Gratidão (Economia P2P)
 
-- Cada membro recebe uma cota mensal de tokens de gratidão
-- Tokens são transferidos para outros membros como reconhecimento por ajudas
-- Ao receber tokens: +1 XP por token (afeta `totalXp` e `currentMonthlyXp`)
-- Tokens não transferidos expiram no dia 1 do mês seguinte (reset pelo cron)
-- A transferência não passa por moderação — é imediata
-- Remetente perde tokens; destinatário ganha XP e tokens recebidos ficam registrados na Transaction
+- Cada membro recebe uma cota **diária** de tokens de gratidão.
+- Tokens são transferidos para outros membros como reconhecimento por ajudas.
+- Ao receber tokens: +1 XP por token (afeta `totalXp` e `currentMonthlyXp`).
+- Tokens não transferidos expiram no fim de cada dia (reset pelo cron).
+- A transferência não passa por moderação — é imediata.
+- Remetente perde tokens; destinatário ganha XP e tokens recebidos ficam registrados na Transaction.
 
 ---
 

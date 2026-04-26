@@ -233,6 +233,15 @@ function Activities() {
                 >
                   {t("admin-panel-activities:table.column3")}
                 </SortableHeader>
+                <SortableHeader
+                  column="auditorReward"
+                  orderBy={orderBy}
+                  order={order}
+                  onSort={handleRequestSort}
+                  className="w-[120px]"
+                >
+                  {t("admin-panel-activities:table.columnAuditorReward")}
+                </SortableHeader>
                 <th className="h-10 w-[120px] px-3 text-left align-middle font-medium text-muted-foreground">
                   {t("admin-panel-activities:table.column4")}
                 </th>
@@ -259,6 +268,7 @@ function Activities() {
               </td>
               <td className="p-3">{activity?.title}</td>
               <td className="p-3 w-[120px]">{activity?.fixedReward} XP</td>
+              <td className="p-3 w-[120px]">{activity?.auditorReward} XP</td>
               <td className="p-3 w-[120px]">
                 {activity?.requiresProof
                   ? t("admin-panel-activities:table.yes")

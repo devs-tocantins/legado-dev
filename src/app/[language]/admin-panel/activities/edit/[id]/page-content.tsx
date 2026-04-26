@@ -27,6 +27,7 @@ type EditFormData = {
   title: string;
   description: string;
   fixedReward: number;
+  auditorReward: number;
   requiresProof: boolean;
   requiresDescription: boolean;
   cooldownHours: number;
@@ -56,6 +57,21 @@ const useValidationSchema = () => {
       )
       .required(
         t("admin-panel-activities-edit:inputs.fixedReward.validation.required")
+      ),
+    auditorReward: yup
+      .number()
+      .transform(toInteger)
+      .integer(
+        t("admin-panel-activities-edit:inputs.auditorReward.validation.integer")
+      )
+      .min(
+        0,
+        t("admin-panel-activities-edit:inputs.auditorReward.validation.min")
+      )
+      .required(
+        t(
+          "admin-panel-activities-edit:inputs.auditorReward.validation.required"
+        )
       ),
     requiresProof: yup.boolean().default(false),
     requiresDescription: yup.boolean().default(false),
@@ -96,6 +112,7 @@ function FormEditActivity() {
       title: "",
       description: "",
       fixedReward: 0,
+      auditorReward: 0,
       requiresProof: false,
       requiresDescription: false,
       cooldownHours: 0,
@@ -111,6 +128,7 @@ function FormEditActivity() {
         title: formData.title,
         description: formData.description,
         fixedReward: formData.fixedReward,
+        auditorReward: formData.auditorReward,
         requiresProof: formData.requiresProof,
         requiresDescription: formData.requiresDescription,
         cooldownHours: formData.cooldownHours,
@@ -144,6 +162,7 @@ function FormEditActivity() {
           title: activity?.title ?? "",
           description: activity?.description ?? "",
           fixedReward: activity?.fixedReward ?? 0,
+          auditorReward: activity?.auditorReward ?? 0,
           requiresProof: activity?.requiresProof ?? false,
           requiresDescription: activity?.requiresDescription ?? false,
           cooldownHours: activity?.cooldownHours ?? 0,
@@ -199,6 +218,14 @@ function FormEditActivity() {
                 type="number"
                 label={t(
                   "admin-panel-activities-edit:inputs.fixedReward.label"
+                )}
+              />
+              <FormTextInput<EditFormData>
+                name="auditorReward"
+                testId="auditorReward"
+                type="number"
+                label={t(
+                  "admin-panel-activities-edit:inputs.auditorReward.label"
                 )}
               />
               <FormTextInput<EditFormData>

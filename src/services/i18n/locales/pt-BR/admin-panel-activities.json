@@ -4,6 +4,7 @@
     "column1": "ID",
     "column2": "Titulo",
     "column3": "Recompensa",
+    "columnAuditorReward": "Auditor",
     "column4": "Requer Prova",
     "column5": "Cooldown",
     "yes": "Sim",

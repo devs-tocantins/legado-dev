@@ -80,6 +80,7 @@ URL base local: `http://localhost:3000/api/v1`
   "currentLevel": "Contribuidor"
 }
 ```
+> Nota: `gratitudeTokens` são renovados diariamente para o valor padrão (ex: 5).
 
 ---
 
@@ -97,7 +98,8 @@ URL base local: `http://localhost:3000/api/v1`
 **Campos de uma Activity:**
 - `title` — Nome da atividade (ex: "Artigo Publicado")
 - `description` — Descrição em markdown
-- `fixedReward` — XP concedido ao aprovar
+- `fixedReward` — XP concedido ao aprovado
+- `auditorReward` — XP concedido ao auditor (moderador) ao revisar
 - `requiresProof` — Se exige envio de comprovante (URL ou arquivo)
 - `isHidden` — Se não aparece no catálogo público (apenas via secretCode)
 - `secretCode` — Slug para acesso oculto (eventos/QR Code)

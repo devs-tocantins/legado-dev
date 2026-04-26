@@ -22,6 +22,7 @@
   },
   "features": {
     "badge": "Como funciona",
+    "rules_link": "Conheça nossas regras",
     "title": "Onde o esforço se torna {{reconhecimento}}",
     "description": "Cada mentoria dada, cada artigo escrito e cada linha de código aberto agora tem um lugar permanente. Sua contribuição molda o ecossistema.",
     "xp": {

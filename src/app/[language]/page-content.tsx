@@ -282,9 +282,18 @@ export default function HomePageContent() {
                   {t("features.title", { reconhecimento: "" })}
                   <span className="text-primary italic">reconhecimento</span>
                 </h2>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8">
                   {t("features.description")}
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full font-bold h-10 px-6 border-primary/20 hover:border-primary/50 text-primary"
+                  render={<Link href="/rules" />}
+                >
+                  {t("features.rules_link")}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               </m.div>
 
               <div className="grid gap-8 md:grid-cols-3">
