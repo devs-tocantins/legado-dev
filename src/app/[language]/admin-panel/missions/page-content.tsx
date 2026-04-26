@@ -796,11 +796,13 @@ function AdminMissionsPageContent() {
       )}
 
       {/* Create dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-        >
+      <Dialog
+        open={showCreate}
+        onOpenChange={(o) => {
+          if (o) setShowCreate(true);
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Missão</DialogTitle>
           </DialogHeader>
@@ -815,12 +817,11 @@ function AdminMissionsPageContent() {
       {/* Edit dialog */}
       <Dialog
         open={!!editingMission}
-        onOpenChange={(o) => !o && setEditingMission(null)}
+        onOpenChange={(o) => {
+          if (o) setEditingMission(editingMission);
+        }}
       >
-        <DialogContent
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-        >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Missão</DialogTitle>
           </DialogHeader>
