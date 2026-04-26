@@ -64,6 +64,7 @@ export type CreateMissionRequest = {
   requirements?: string | null;
   xpReward: number;
   auditorReward: number;
+  participantReward: number;
   isSecret?: boolean;
   requiresProof?: boolean;
   requiresDescription?: boolean;

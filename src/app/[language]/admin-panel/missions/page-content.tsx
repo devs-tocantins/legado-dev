@@ -57,10 +57,12 @@ type ViewMode = "card" | "list";
 function MissionForm({
   initial,
   onSubmit,
+  onCancel,
   loading,
 }: {
   initial?: Partial<CreateMissionRequest>;
   onSubmit: (data: CreateMissionRequest) => void;
+  onCancel: () => void;
   loading: boolean;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -69,6 +71,9 @@ function MissionForm({
   const [xpReward, setXpReward] = useState(String(initial?.xpReward ?? 100));
   const [auditorReward, setAuditorReward] = useState(
     String(initial?.auditorReward ?? 10)
+  );
+  const [participantReward, setParticipantReward] = useState(
+    String(initial?.participantReward ?? 0)
   );
   const [isSecret, setIsSecret] = useState(initial?.isSecret ?? false);
   const [requiresProof, setRequiresProof] = useState(
@@ -86,6 +91,7 @@ function MissionForm({
       requirements: requirements.trim() || null,
       xpReward: Math.floor(Number(xpReward)),
       auditorReward: Math.floor(Number(auditorReward)),
+      participantReward: Math.floor(Number(participantReward)),
       isSecret,
       requiresProof,
       requiresDescription,
@@ -121,9 +127,9 @@ function MissionForm({
         placeholder="Critérios que serão usados para avaliar as submissões. Suporta **markdown**."
       />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1">
-          <label className="text-sm font-medium">Recompensa em XP *</label>
+          <label className="text-sm font-medium">Vencedor (XP) *</label>
           <input
             type="number"
             min={1}
@@ -135,9 +141,19 @@ function MissionForm({
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Recompensa Auditor (XP) *
-          </label>
+          <label className="text-sm font-medium">Participante (XP) *</label>
+          <input
+            type="number"
+            min={0}
+            value={participantReward}
+            onChange={(e) => setParticipantReward(e.target.value)}
+            required
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Auditor (XP) *</label>
           <input
             type="number"
             min={0}
@@ -211,9 +227,19 @@ function MissionForm({
         </label>
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Salvando..." : "Salvar Missão"}
-      </Button>
+      <div className="grid grid-cols-2 gap-4 pt-2">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          className="w-full"
+        >
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "Salvando..." : "Salvar Missão"}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -436,7 +462,8 @@ function MissionCardAdmin({
               {mission.status === "OPEN" ? (
                 <>
                   <Zap className="h-3 w-3" />
-                  {mission.xpReward} + {mission.auditorReward} XP
+                  {mission.xpReward} (V) + {mission.participantReward} (P) +{" "}
+                  {mission.auditorReward} (A) XP
                 </>
               ) : (
                 <>
@@ -521,7 +548,7 @@ function MissionRowAdmin({
             className="text-xs"
           >
             {mission.status === "OPEN"
-              ? `${mission.xpReward} + ${mission.auditorReward} XP`
+              ? `${mission.xpReward} (V) + ${mission.participantReward} (P) + ${mission.auditorReward} (A) XP`
               : "Encerrada"}
           </Badge>
           {mission.status === "OPEN" && (
@@ -770,11 +797,18 @@ function AdminMissionsPageContent() {
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Nova Missão</DialogTitle>
           </DialogHeader>
-          <MissionForm onSubmit={doCreate} loading={creating} />
+          <MissionForm
+            onSubmit={doCreate}
+            onCancel={() => setShowCreate(false)}
+            loading={creating}
+          />
         </DialogContent>
       </Dialog>
 
@@ -783,7 +817,10 @@ function AdminMissionsPageContent() {
         open={!!editingMission}
         onOpenChange={(o) => !o && setEditingMission(null)}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Editar Missão</DialogTitle>
           </DialogHeader>
@@ -791,6 +828,7 @@ function AdminMissionsPageContent() {
             <MissionForm
               initial={editingMission}
               onSubmit={doUpdate}
+              onCancel={() => setEditingMission(null)}
               loading={updating}
             />
           )}

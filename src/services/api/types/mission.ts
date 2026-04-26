@@ -8,6 +8,7 @@ export type Mission = {
   requirements: string | null;
   xpReward: number;
   auditorReward: number;
+  participantReward: number;
   status: MissionStatus;
   winnerId: string | null;
   isSecret: boolean;
