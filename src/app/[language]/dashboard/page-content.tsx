@@ -503,6 +503,14 @@ function DashboardPageContent() {
             <Send className="h-4 w-4" />
             Reconhecer alguém
           </Button>
+          <Button
+            variant="ghost"
+            render={<Link href="/rules" />}
+            className="gap-2 text-primary"
+          >
+            <BookOpen className="h-4 w-4" />
+            Nossas Regras
+          </Button>
         </div>
       </div>
 

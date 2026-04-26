@@ -24,6 +24,7 @@ import {
   Upload,
   X,
   Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -202,6 +203,29 @@ function NewSubmissionPageContent() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+      <Card className="border-primary/20 bg-primary/5 overflow-hidden">
+        <CardContent className="p-4 flex gap-4 items-start">
+          <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
+            <Zap className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold leading-tight text-primary">
+              O que vale ponto no Legado?
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Para ser aprovado, sua atividade deve ser voluntária e ter impacto
+              no Tocantins. Não aceitamos ações remuneradas.
+            </p>
+            <Link
+              href="/rules"
+              className="inline-flex items-center text-xs font-bold text-primary hover:underline gap-1 pt-1"
+            >
+              Conheça todas as regras <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Nova Submissão</h1>
         <p className="text-sm text-muted-foreground">
