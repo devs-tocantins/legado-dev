@@ -72,8 +72,8 @@ function MissionForm({
   const [auditorReward, setAuditorReward] = useState(
     String(initial?.auditorReward ?? 10)
   );
-  const [participantReward, setParticipantReward] = useState(
-    String(initial?.participantReward ?? 0)
+  const [participationReward, setParticipationReward] = useState(
+    String(initial?.participationReward ?? 0)
   );
   const [isSecret, setIsSecret] = useState(initial?.isSecret ?? false);
   const [requiresProof, setRequiresProof] = useState(
@@ -91,7 +91,7 @@ function MissionForm({
       requirements: requirements.trim() || null,
       xpReward: Math.floor(Number(xpReward)),
       auditorReward: Math.floor(Number(auditorReward)),
-      participantReward: Math.floor(Number(participantReward)),
+      participationReward: Math.floor(Number(participationReward)),
       isSecret,
       requiresProof,
       requiresDescription,
@@ -145,8 +145,8 @@ function MissionForm({
           <input
             type="number"
             min={0}
-            value={participantReward}
-            onChange={(e) => setParticipantReward(e.target.value)}
+            value={participationReward}
+            onChange={(e) => setParticipationReward(e.target.value)}
             required
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -462,7 +462,7 @@ function MissionCardAdmin({
               {mission.status === "OPEN" ? (
                 <>
                   <Zap className="h-3 w-3" />
-                  {mission.xpReward} (V) + {mission.participantReward} (P) +{" "}
+                  {mission.xpReward} (V) + {mission.participationReward} (P) +{" "}
                   {mission.auditorReward} (A) XP
                 </>
               ) : (
@@ -548,7 +548,7 @@ function MissionRowAdmin({
             className="text-xs"
           >
             {mission.status === "OPEN"
-              ? `${mission.xpReward} (V) + ${mission.participantReward} (P) + ${mission.auditorReward} (A) XP`
+              ? `${mission.xpReward} (V) + ${mission.participationReward} (P) + ${mission.auditorReward} (A) XP`
               : "Encerrada"}
           </Badge>
           {mission.status === "OPEN" && (
