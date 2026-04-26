@@ -8,6 +8,7 @@ import { SortEnum } from "@/services/api/types/sort-type";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { getLevel, formatXp } from "@/lib/gamification";
 import { cn } from "@/lib/utils";
+import Link from "@/components/link";
 
 export function LiveRankingCard() {
   const { t } = useTranslation("home");
@@ -57,7 +58,7 @@ export function LiveRankingCard() {
                   className="h-12 w-full animate-pulse rounded-xl bg-muted/20"
                 />
               ))
-            : profiles?.map((profile, i) => {
+            : profiles?.slice(0, 5).map((profile, i) => {
                 const level = getLevel(profile.totalXp);
                 return (
                   <div
@@ -108,6 +109,18 @@ export function LiveRankingCard() {
                 );
               })}
         </div>
+
+        {profiles && profiles.length >= 5 && (
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <Link
+              href="/leaderboard"
+              className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+            >
+              {t("ranking_card.see_all")}
+              <div className="h-1 w-1 rounded-full bg-primary" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

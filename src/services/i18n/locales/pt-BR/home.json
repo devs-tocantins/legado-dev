@@ -51,6 +51,7 @@
   "ranking_card": {
     "title": "Top Talentos",
     "live": "LIVE",
-    "xp": "XP"
+    "xp": "XP",
+    "see_all": "Ver ranking completo"
   }
 }
