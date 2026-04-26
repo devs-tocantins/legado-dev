@@ -1,0 +1,31 @@
+{
+  "title": "Edit Submission",
+  "inputs": {
+    "status": {
+      "label": "Status",
+      "validation": {
+        "required": "Status is required"
+      },
+      "options": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      }
+    },
+    "feedback": {
+      "label": "Feedback"
+    },
+    "proofUrl": {
+      "label": "Proof URL"
+    }
+  },
+  "actions": {
+    "submit": "Save",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "submission": {
+      "success": "Submission updated successfully"
+    }
+  }
+}

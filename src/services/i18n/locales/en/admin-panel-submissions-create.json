@@ -1,0 +1,29 @@
+{
+  "title": "New Submission",
+  "inputs": {
+    "profileId": {
+      "label": "Profile ID",
+      "validation": {
+        "required": "Profile is required"
+      }
+    },
+    "activityId": {
+      "label": "Activity ID",
+      "validation": {
+        "required": "Activity is required"
+      }
+    },
+    "proofUrl": {
+      "label": "Proof URL"
+    }
+  },
+  "actions": {
+    "submit": "Submit",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "submission": {
+      "success": "Submission created successfully"
+    }
+  }
+}

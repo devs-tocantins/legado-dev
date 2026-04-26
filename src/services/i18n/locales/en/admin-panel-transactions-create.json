@@ -1,0 +1,43 @@
+{
+  "title": "New Transaction",
+  "inputs": {
+    "profileId": {
+      "label": "Profile ID",
+      "validation": {
+        "required": "Profile is required"
+      }
+    },
+    "amount": {
+      "label": "Amount",
+      "validation": {
+        "required": "Amount is required",
+        "min": "Amount must be at least 1",
+        "integer": "Amount must be an integer"
+      }
+    },
+    "category": {
+      "label": "Category",
+      "validation": {
+        "required": "Category is required"
+      },
+      "options": {
+        "XP_REWARD": "XP Reward",
+        "TOKEN_REWARD": "Token Reward",
+        "STORE_PURCHASE": "Store Purchase",
+        "MANUAL_ADJUSTMENT": "Manual Adjustment"
+      }
+    },
+    "description": {
+      "label": "Description"
+    }
+  },
+  "actions": {
+    "submit": "Save",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "transaction": {
+      "success": "Transaction created successfully"
+    }
+  }
+}

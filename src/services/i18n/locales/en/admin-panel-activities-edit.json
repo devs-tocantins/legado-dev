@@ -1,0 +1,51 @@
+{
+  "title": "Edit Activity",
+  "inputs": {
+    "title": {
+      "label": "Title",
+      "validation": {
+        "required": "Title is required"
+      }
+    },
+    "description": {
+      "label": "Description"
+    },
+    "fixedReward": {
+      "label": "Reward (XP)",
+      "validation": {
+        "required": "Reward is required",
+        "min": "Reward must be at least 1",
+        "integer": "Reward must be an integer"
+      }
+    },
+    "auditorReward": {
+      "label": "Auditor Reward (XP)",
+      "validation": {
+        "required": "Auditor reward is required",
+        "min": "Auditor reward must be at least 0",
+        "integer": "Auditor reward must be an integer"
+      }
+    },
+    "cooldownHours": {
+      "label": "Cooldown (hours)",
+      "validation": {
+        "integer": "Cooldown must be an integer"
+      }
+    },
+    "requiresProof": {
+      "label": "Requires Proof"
+    },
+    "requiresDescription": {
+      "label": "Requires Description"
+    }
+  },
+  "actions": {
+    "submit": "Save",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "activity": {
+      "success": "Activity updated successfully"
+    }
+  }
+}

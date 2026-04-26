@@ -1,0 +1,26 @@
+{
+  "title": "New Gamification Profile",
+  "inputs": {
+    "userId": {
+      "label": "User ID",
+      "validation": {
+        "required": "User is required"
+      }
+    },
+    "username": {
+      "label": "Username",
+      "validation": {
+        "required": "Username is required"
+      }
+    }
+  },
+  "actions": {
+    "submit": "Save",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "profile": {
+      "success": "Gamification profile created successfully"
+    }
+  }
+}

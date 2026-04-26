@@ -1,0 +1,32 @@
+{
+  "title": "Edit Gamification Profile",
+  "inputs": {
+    "username": {
+      "label": "Username",
+      "validation": {
+        "required": "Username is required"
+      }
+    },
+    "totalXp": {
+      "label": "Total XP",
+      "validation": {
+        "required": "Total XP is required"
+      }
+    },
+    "gratitudeTokens": {
+      "label": "Gratitude Tokens",
+      "validation": {
+        "required": "Tokens are required"
+      }
+    }
+  },
+  "actions": {
+    "submit": "Save",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "profile": {
+      "success": "Gamification profile updated successfully"
+    }
+  }
+}
