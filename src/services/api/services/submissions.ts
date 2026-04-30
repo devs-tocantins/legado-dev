@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
-import { Submission } from "../types/submission";
+import { Submission, PublicSubmissionDetail } from "../types/submission";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { SortEnum } from "../types/sort-type";
 import { RequestConfigType } from "./types/request-config";
@@ -65,10 +65,31 @@ export function useGetSubmissionService() {
   );
 }
 
+export type PublicSubmissionDetailRequest = { id: string };
+export type PublicSubmissionDetailResponse = PublicSubmissionDetail;
+
+export function useGetPublicSubmissionDetailService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: PublicSubmissionDetailRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      return fetch(`${API_URL}/api/v1/submissions/${data.id}/public`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<PublicSubmissionDetailResponse>);
+    },
+    [fetch]
+  );
+}
+
 export type SubmissionPostRequest = {
   activityId: string;
   proofUrl?: string | null;
   description?: string | null;
+  activityDate?: string | null;
 };
 
 export type SubmissionPostResponse = Submission;

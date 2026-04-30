@@ -25,6 +25,7 @@ import {
   X,
   Loader2,
   ArrowRight,
+  CalendarDays,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -54,8 +55,10 @@ function NewSubmissionPageContent() {
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [activityDate, setActivityDate] = useState("");
   const [proofError, setProofError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
+  const [activityDateError, setActivityDateError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -142,12 +145,20 @@ function NewSubmissionPageContent() {
       return;
     }
     setDescriptionError("");
+    if (selectedActivity.requiresActivityDate && !activityDate) {
+      setActivityDateError(
+        "A data de realização é obrigatória para esta atividade."
+      );
+      return;
+    }
+    setActivityDateError("");
     setSubmitting(true);
     try {
       const { status, data } = await postSubmission({
         activityId: selectedActivity.id,
         proofUrl: proofUploadedUrl ?? undefined,
         description: description.trim() || undefined,
+        activityDate: activityDate || undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
         setSubmitted(true);
@@ -167,9 +178,11 @@ function NewSubmissionPageContent() {
     setProofFile(null);
     setProofUploadedUrl(null);
     setDescription("");
+    setActivityDate("");
     setSearch("");
     setProofError("");
     setDescriptionError("");
+    setActivityDateError("");
   };
 
   // Success state
@@ -284,6 +297,12 @@ function NewSubmissionPageContent() {
                       Requer descrição
                     </span>
                   )}
+                  {selectedActivity.requiresActivityDate && (
+                    <span className="flex items-center gap-1 text-violet-500">
+                      <CalendarDays className="h-3 w-3" />
+                      Requer data
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -335,6 +354,11 @@ function NewSubmissionPageContent() {
                             {activity.requiresDescription && (
                               <span className="text-blue-500">
                                 Requer descrição
+                              </span>
+                            )}
+                            {activity.requiresActivityDate && (
+                              <span className="text-violet-500">
+                                Requer data
                               </span>
                             )}
                             {activity.cooldownHours > 0 && (
@@ -414,6 +438,51 @@ function NewSubmissionPageContent() {
             {proofError && (
               <p className="text-xs text-destructive">{proofError}</p>
             )}
+          </div>
+        )}
+
+        {/* Activity date (required) */}
+        {selectedActivity?.requiresActivityDate && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4 text-violet-500" />
+              Quando realizou esta atividade?{" "}
+              <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="date"
+              value={activityDate}
+              onChange={(e) => {
+                setActivityDate(e.target.value);
+                setActivityDateError("");
+              }}
+              max={new Date().toISOString().split("T")[0]}
+              className={cn(
+                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+                activityDateError && "border-destructive"
+              )}
+            />
+            {activityDateError && (
+              <p className="text-xs text-destructive">{activityDateError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Activity date (optional) */}
+        {selectedActivity && !selectedActivity.requiresActivityDate && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              Quando realizou esta atividade?{" "}
+              <span className="text-xs font-normal">(opcional)</span>
+            </label>
+            <input
+              type="date"
+              value={activityDate}
+              onChange={(e) => setActivityDate(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
         )}
 

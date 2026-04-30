@@ -70,6 +70,7 @@ export type ActivityPostRequest = {
   auditorReward: number;
   requiresProof: boolean;
   requiresDescription?: boolean;
+  requiresActivityDate?: boolean;
   cooldownHours: number;
   isHidden?: boolean;
   secretCode?: string;
@@ -101,6 +102,7 @@ export type ActivityPatchRequest = {
     auditorReward: number;
     requiresProof: boolean;
     requiresDescription: boolean;
+    requiresActivityDate: boolean;
     cooldownHours: number;
     isHidden: boolean;
     secretCode: string;

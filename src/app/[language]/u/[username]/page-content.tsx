@@ -20,6 +20,8 @@ import {
   GamificationProfileBadge,
 } from "@/services/api/services/badges";
 import { useGetActivitiesService } from "@/services/api/services/activities";
+import { useGetPublicSubmissionDetailService } from "@/services/api/services/submissions";
+import { PublicSubmissionDetail } from "@/services/api/types/submission";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SortEnum } from "@/services/api/types/sort-type";
 import {
@@ -43,6 +45,9 @@ import {
   Medal,
   ArrowDownLeft,
   ArrowUpRight,
+  ChevronDown,
+  FileText,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
@@ -50,6 +55,7 @@ import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { getApiError } from "@/lib/utils";
 import { useCreateContributionReportService } from "@/services/api/services/notifications";
+import { MarkdownContent } from "@/components/markdown-editor";
 import {
   Dialog,
   DialogContent,
@@ -452,6 +458,123 @@ function TokenActivitySection({ profileId }: { profileId: string }) {
   );
 }
 
+function SubmissionDetailModal({
+  submissionId,
+  activityTitle,
+  awardedXp,
+  open,
+  onClose,
+}: {
+  submissionId: string;
+  activityTitle: string;
+  awardedXp: number;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const fetchDetail = useGetPublicSubmissionDetailService();
+
+  const { data, isLoading } = useQuery<PublicSubmissionDetail | null>({
+    queryKey: ["submission-public-detail", submissionId],
+    queryFn: async () => {
+      const { status, data } = await fetchDetail({ id: submissionId });
+      if (status === HTTP_CODES_ENUM.OK) return data as PublicSubmissionDetail;
+      return null;
+    },
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base leading-snug">
+            <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
+            {activityTitle}
+          </DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-3 animate-pulse py-2">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-full" />
+            <div className="h-4 bg-muted rounded w-2/3" />
+          </div>
+        ) : !data ? (
+          <p className="text-sm text-muted-foreground py-2">
+            Não foi possível carregar os detalhes.
+          </p>
+        ) : (
+          <div className="space-y-4 text-sm">
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="flex items-center gap-1 font-semibold font-mono text-emerald-500">
+                <Zap className="h-3.5 w-3.5" />+{awardedXp} XP
+              </span>
+              {data.activityDate && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {new Date(data.activityDate).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+              {data.hasProof && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Paperclip className="h-3.5 w-3.5" />
+                  Arquivo enviado
+                </span>
+              )}
+            </div>
+
+            {data.description && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Relato da pessoa
+                </p>
+                <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-48 overflow-y-auto">
+                  <MarkdownContent
+                    content={data.description}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Sobre esta atividade
+              </p>
+              <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-36 overflow-y-auto">
+                <MarkdownContent
+                  content={data.activityDescription}
+                  className="text-xs text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Aprovado em{" "}
+              {data.reviewedAt
+                ? new Date(data.reviewedAt).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : new Date(data.createdAt).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+            </p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PublicProfilePageContent() {
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
@@ -459,6 +582,11 @@ function PublicProfilePageContent() {
   const [reportingSubmissionId, setReportingSubmissionId] = useState<
     string | null
   >(null);
+  const [detailSubmission, setDetailSubmission] = useState<{
+    id: string;
+    activityTitle: string;
+    awardedXp: number;
+  } | null>(null);
   const { user } = useAuth();
 
   const fetchByUsername = useGetGamificationProfileByUsernameService();
@@ -800,51 +928,64 @@ function PublicProfilePageContent() {
               <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
 
               <div className="space-y-0">
-                {submissions.map((sub, i) => (
-                  <div key={sub.id} className="relative flex gap-4 pb-4">
-                    {/* Timeline dot */}
-                    <div
-                      className={cn(
-                        "absolute left-[-3px] top-[5px] h-3 w-3 rounded-full border-2 border-background",
-                        "bg-emerald-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "pl-6 flex items-baseline justify-between w-full gap-2",
-                        i === submissions.length - 1 && "pb-0"
-                      )}
-                    >
-                      <p className="text-sm font-medium leading-snug">
-                        {activityMap.get(sub.activityId) ?? (
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {sub.activityId.substring(0, 8)}…
+                {submissions.map((sub, i) => {
+                  const activityTitle =
+                    activityMap.get(sub.activityId) ??
+                    sub.activityId.substring(0, 8) + "…";
+                  return (
+                    <div key={sub.id} className="relative flex gap-4 pb-4">
+                      {/* Timeline dot */}
+                      <div
+                        className={cn(
+                          "absolute left-[-3px] top-[5px] h-3 w-3 rounded-full border-2 border-background",
+                          "bg-emerald-500"
+                        )}
+                      />
+                      <div
+                        className={cn(
+                          "pl-6 flex items-start justify-between w-full gap-2",
+                          i === submissions.length - 1 && "pb-0"
+                        )}
+                      >
+                        <button
+                          onClick={() =>
+                            setDetailSubmission({
+                              id: sub.id,
+                              activityTitle,
+                              awardedXp: sub.awardedXp,
+                            })
+                          }
+                          className="text-left group flex items-baseline gap-1 hover:text-primary transition-colors"
+                        >
+                          <p className="text-sm font-medium leading-snug group-hover:underline underline-offset-2">
+                            {activityTitle}
+                          </p>
+                          <ChevronDown className="h-3 w-3 text-muted-foreground/50 shrink-0 -rotate-90" />
+                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-semibold font-mono text-emerald-500">
+                            +{sub.awardedXp} XP
                           </span>
-                        )}
-                      </p>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-semibold font-mono text-emerald-500">
-                          +{sub.awardedXp} XP
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(sub.createdAt).toLocaleDateString("pt-BR", {
-                            day: "2-digit",
-                            month: "short",
-                          })}
-                        </span>
-                        {user && (
-                          <button
-                            onClick={() => setReportingSubmissionId(sub.id)}
-                            title="Reportar contribuição inválida"
-                            className="text-muted-foreground/40 hover:text-destructive transition-colors"
-                          >
-                            <Flag className="h-3 w-3" />
-                          </button>
-                        )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(sub.createdAt).toLocaleDateString(
+                              "pt-BR",
+                              { day: "2-digit", month: "short" }
+                            )}
+                          </span>
+                          {user && (
+                            <button
+                              onClick={() => setReportingSubmissionId(sub.id)}
+                              title="Reportar contribuição inválida"
+                              className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                            >
+                              <Flag className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -856,6 +997,16 @@ function PublicProfilePageContent() {
           submissionId={reportingSubmissionId}
           open={!!reportingSubmissionId}
           onClose={() => setReportingSubmissionId(null)}
+        />
+      )}
+
+      {detailSubmission && (
+        <SubmissionDetailModal
+          submissionId={detailSubmission.id}
+          activityTitle={detailSubmission.activityTitle}
+          awardedXp={detailSubmission.awardedXp}
+          open={!!detailSubmission}
+          onClose={() => setDetailSubmission(null)}
         />
       )}
     </div>

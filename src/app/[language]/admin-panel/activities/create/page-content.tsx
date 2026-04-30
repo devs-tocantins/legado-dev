@@ -26,6 +26,7 @@ type CreateFormData = {
   auditorReward: number;
   requiresProof: boolean;
   requiresDescription: boolean;
+  requiresActivityDate: boolean;
   cooldownHours: number;
 };
 
@@ -75,6 +76,7 @@ const useValidationSchema = () => {
       ),
     requiresProof: yup.boolean().default(false),
     requiresDescription: yup.boolean().default(false),
+    requiresActivityDate: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -115,6 +117,7 @@ function FormCreateActivity() {
       auditorReward: 10,
       requiresProof: false,
       requiresDescription: false,
+      requiresActivityDate: false,
       cooldownHours: 0,
     },
   });
@@ -129,6 +132,7 @@ function FormCreateActivity() {
       auditorReward: formData.auditorReward,
       requiresProof: formData.requiresProof,
       requiresDescription: formData.requiresDescription,
+      requiresActivityDate: formData.requiresActivityDate,
       cooldownHours: formData.cooldownHours,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
@@ -230,6 +234,11 @@ function FormCreateActivity() {
                 label={t(
                   "admin-panel-activities-create:inputs.requiresDescription.label"
                 )}
+              />
+              <FormCheckboxInput<CreateFormData>
+                name="requiresActivityDate"
+                testId="requiresActivityDate"
+                label="Requer data de realização"
               />
               <div className="flex gap-2 pt-2">
                 <CreateActivityFormActions />

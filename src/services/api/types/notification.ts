@@ -3,7 +3,8 @@ export type NotificationType =
   | "MISSION_WON"
   | "SUBMISSION_REJECTED"
   | "CONTRIBUTION_REPORT_UPHELD"
-  | "CONTRIBUTION_REPORT_RECEIVED";
+  | "CONTRIBUTION_REPORT_RECEIVED"
+  | "NEW_SUBMISSION_PENDING";
 
 export type Notification = {
   id: string;

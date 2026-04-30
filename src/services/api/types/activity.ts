@@ -8,6 +8,7 @@ export type Activity = {
   secretCode?: string | null;
   requiresProof: boolean;
   requiresDescription: boolean;
+  requiresActivityDate: boolean;
   cooldownHours: number;
   createdAt: string;
   updatedAt: string;

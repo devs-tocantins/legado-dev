@@ -30,6 +30,7 @@ type EditFormData = {
   auditorReward: number;
   requiresProof: boolean;
   requiresDescription: boolean;
+  requiresActivityDate: boolean;
   cooldownHours: number;
 };
 
@@ -75,6 +76,7 @@ const useValidationSchema = () => {
       ),
     requiresProof: yup.boolean().default(false),
     requiresDescription: yup.boolean().default(false),
+    requiresActivityDate: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -115,6 +117,7 @@ function FormEditActivity() {
       auditorReward: 0,
       requiresProof: false,
       requiresDescription: false,
+      requiresActivityDate: false,
       cooldownHours: 0,
     },
   });
@@ -131,6 +134,7 @@ function FormEditActivity() {
         auditorReward: formData.auditorReward,
         requiresProof: formData.requiresProof,
         requiresDescription: formData.requiresDescription,
+        requiresActivityDate: formData.requiresActivityDate,
         cooldownHours: formData.cooldownHours,
       },
     });
@@ -165,6 +169,7 @@ function FormEditActivity() {
           auditorReward: activity?.auditorReward ?? 0,
           requiresProof: activity?.requiresProof ?? false,
           requiresDescription: activity?.requiresDescription ?? false,
+          requiresActivityDate: activity?.requiresActivityDate ?? false,
           cooldownHours: activity?.cooldownHours ?? 0,
         });
       }
@@ -249,6 +254,11 @@ function FormEditActivity() {
                 label={t(
                   "admin-panel-activities-edit:inputs.requiresDescription.label"
                 )}
+              />
+              <FormCheckboxInput<EditFormData>
+                name="requiresActivityDate"
+                testId="requiresActivityDate"
+                label="Requer data de realização"
               />
               <div className="flex gap-2 pt-2">
                 <EditActivityFormActions />
