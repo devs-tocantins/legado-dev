@@ -30,6 +30,7 @@ import {
   Target,
   Trophy,
   History,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -336,6 +337,12 @@ function AdminDashboardPageContent() {
             icon={Target}
             label="Missoes"
             description="Criar missoes unicas e revisar participacoes"
+          />
+          <NavCard
+            href="/admin-panel/events"
+            icon={CalendarDays}
+            label="Eventos"
+            description="Moderar eventos divulgados pela comunidade"
           />
           <NavCard
             href="/admin-panel/badges"
