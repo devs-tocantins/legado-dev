@@ -81,6 +81,40 @@ function useProfile(profileId: string) {
   });
 }
 
+function ProofPreview({ proofUrl }: { proofUrl: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      {!imageFailed && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={proofUrl}
+          alt="Prova enviada"
+          className="max-h-64 w-auto rounded-md border object-contain"
+          onError={() => setImageFailed(true)}
+        />
+      )}
+      <a
+        href={proofUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
+      >
+        <Link2 className="h-3.5 w-3.5 shrink-0" />
+        {proofUrl}
+        <ExternalLink className="h-3 w-3 shrink-0" />
+      </a>
+      {imageFailed && (
+        <p className="text-xs text-muted-foreground italic">
+          Não foi possível carregar uma prévia da imagem — verifique se o link é
+          acessível publicamente.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Atividades: Detail modal ─────────────────────────────────────────────────
 
 function DetailModal({
@@ -148,7 +182,7 @@ function DetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -206,33 +240,20 @@ function DetailModal({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> O que foi enviado
             </p>
-            {!submission.description && !submission.proofUrl ? (
-              <p className="text-xs text-muted-foreground italic">
-                Nenhum detalhe enviado.
-              </p>
+            {submission.description ? (
+              <div className="bg-muted rounded-md px-3 py-2">
+                <MarkdownContent
+                  content={submission.description}
+                  className="text-sm"
+                />
+              </div>
             ) : (
-              <>
-                {submission.description && (
-                  <div className="bg-muted rounded-md px-3 py-2">
-                    <MarkdownContent
-                      content={submission.description}
-                      className="text-sm"
-                    />
-                  </div>
-                )}
-                {submission.proofUrl && (
-                  <a
-                    href={submission.proofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
-                  >
-                    <Link2 className="h-3.5 w-3.5 shrink-0" />
-                    {submission.proofUrl}
-                    <ExternalLink className="h-3 w-3 shrink-0" />
-                  </a>
-                )}
-              </>
+              <p className="text-xs text-muted-foreground italic">
+                Sem descrição enviada.
+              </p>
+            )}
+            {submission.proofUrl && (
+              <ProofPreview proofUrl={submission.proofUrl} />
             )}
           </div>
 
@@ -471,28 +492,16 @@ function MissionSubmissionCard({
         </Button>
       </div>
 
-      {sub.description && (
+      {sub.description ? (
         <div className="bg-muted rounded-md px-3 py-2">
           <MarkdownContent content={sub.description} className="text-sm" />
         </div>
-      )}
-      {sub.proofUrl && (
-        <a
-          href={sub.proofUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
-        >
-          <Link2 className="h-3.5 w-3.5 shrink-0" />
-          {sub.proofUrl}
-          <ExternalLink className="h-3 w-3 shrink-0" />
-        </a>
-      )}
-      {!sub.description && !sub.proofUrl && (
+      ) : (
         <p className="text-xs text-muted-foreground italic">
-          Nenhum detalhe enviado.
+          Sem descrição enviada.
         </p>
       )}
+      {sub.proofUrl && <ProofPreview proofUrl={sub.proofUrl} />}
     </div>
   );
 }

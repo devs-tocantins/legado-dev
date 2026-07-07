@@ -117,6 +117,7 @@ import {
   useUpdateMyGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
 import { useFileUploadService } from "@/services/api/services/files";
+import { ImageCropDialog } from "@/components/image-crop-dialog";
 
 // --- Form: Photo Upload ---
 function FormPhotoUpload() {
@@ -127,8 +128,9 @@ function FormPhotoUpload() {
   const { setUser } = useAuthActions();
 
   const [saving, setSaving] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
-  const handleFileChange = async (_e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
     const file = _e.target.files?.[0];
     if (!file) return;
 
@@ -143,6 +145,25 @@ function FormPhotoUpload() {
       enqueueSnackbar("A imagem deve ter no máximo 5MB.", { variant: "error" });
       return;
     }
+
+    setCropImageSrc(URL.createObjectURL(file));
+  };
+
+  const closeCropDialog = () => {
+    if (cropImageSrc) URL.revokeObjectURL(cropImageSrc);
+    setCropImageSrc(null);
+    const input = document.getElementById(
+      "photo-upload-input"
+    ) as HTMLInputElement | null;
+    if (input) input.value = "";
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    closeCropDialog();
+
+    const file = new File([blob], "profile-photo.jpg", {
+      type: "image/jpeg",
+    });
 
     setSaving(true);
     try {
@@ -174,10 +195,6 @@ function FormPhotoUpload() {
       enqueueSnackbar("Erro de rede ao salvar foto.", { variant: "error" });
     } finally {
       setSaving(false);
-      // Reset input value so the same file can be selected again if needed
-      if (_e.target) {
-        (_e.target as any).value = "";
-      }
     }
   };
 
@@ -231,16 +248,23 @@ function FormPhotoUpload() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Recomendado: 256x256px, máximo de 5MB (JPG, PNG, WEBP).
+                Envie uma imagem de até 5MB — você poderá recortá-la no formato
+                quadrado a seguir.
               </p>
             </div>
           </div>
         </div>
       </CardContent>
+      <ImageCropDialog
+        open={!!cropImageSrc}
+        imageSrc={cropImageSrc}
+        onCancel={closeCropDialog}
+        onConfirm={handleCropConfirm}
+      />
     </Card>
   );
 }
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -713,6 +737,7 @@ function FormBanner() {
   const fetchMyProfile = useGetMyGamificationProfileService();
   const updateMyProfile = useUpdateMyGamificationProfileService();
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["my-profile-banner"],
@@ -739,6 +764,13 @@ function FormBanner() {
         bannerPreset: selected,
       });
       if (status === HTTP_CODES_ENUM.OK) {
+        await queryClient.invalidateQueries({
+          queryKey: ["my-profile-banner"],
+        });
+        await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["public-profile", profile.username],
+        });
         enqueueSnackbar("Banner atualizado!", { variant: "success" });
       } else {
         enqueueSnackbar("Erro ao salvar.", { variant: "error" });
