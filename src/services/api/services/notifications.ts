@@ -76,7 +76,11 @@ export function useUpdateNotificationPreferencesService() {
       data: Partial<
         Pick<
           NotificationPreference,
-          "emailOnSubmissionApproved" | "emailOnMissionWon"
+          | "emailOnSubmissionApproved"
+          | "emailOnMissionWon"
+          | "whatsappOnSubmissionApproved"
+          | "whatsappOnMissionWon"
+          | "whatsappOnEventChanges"
         >
       >,
       requestConfig?: RequestConfigType

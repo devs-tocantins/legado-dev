@@ -198,6 +198,7 @@ export type UpdateMyGamificationProfileRequest = {
   username: string;
   githubUsername?: string | null;
   bannerPreset?: string;
+  whatsappNumber?: string | null;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;

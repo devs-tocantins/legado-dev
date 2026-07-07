@@ -22,6 +22,9 @@ export type NotificationPreference = {
   userId: number;
   emailOnSubmissionApproved: boolean;
   emailOnMissionWon: boolean;
+  whatsappOnSubmissionApproved: boolean;
+  whatsappOnMissionWon: boolean;
+  whatsappOnEventChanges: boolean;
 };
 
 export type ContributionReportStatus = "PENDING" | "DISMISSED" | "UPHELD";
