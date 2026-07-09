@@ -118,6 +118,160 @@ import {
 } from "@/services/api/services/gamification-profiles";
 import { useFileUploadService } from "@/services/api/services/files";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { AvatarEditor, AvatarRenderer } from "@/components/avatar";
+import { Wand2, Trash2 } from "lucide-react";
+
+// --- Form: Custom Avatar ---
+function FormAvatar() {
+  const fetchMyProfile = useGetMyGamificationProfileService();
+  const updateMyProfile = useUpdateMyGamificationProfileService();
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+  });
+
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<{
+    svg: string;
+    config: string;
+  } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const invalidateProfile = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    if (profile?.username) {
+      await queryClient.invalidateQueries({
+        queryKey: ["public-profile", profile.username],
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!profile || !pending) return;
+    setSaving(true);
+    try {
+      const { status } = await updateMyProfile({
+        username: profile.username,
+        avatarConfig: pending.config,
+        avatarSvg: pending.svg,
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        await invalidateProfile();
+        enqueueSnackbar("Avatar salvo!", { variant: "success" });
+        setOpen(false);
+      } else {
+        enqueueSnackbar("Erro ao salvar avatar.", { variant: "error" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const { status } = await updateMyProfile({
+        username: profile.username,
+        avatarConfig: null,
+        avatarSvg: null,
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        await invalidateProfile();
+        enqueueSnackbar("Avatar removido.", { variant: "success" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Avatar Personalizado</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Prefere montar um personagem em vez de usar uma foto? Crie seu
+            avatar com estilos, cores e acessórios.
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="shrink-0">
+              {profile?.avatarSvg ? (
+                <AvatarRenderer
+                  svg={profile.avatarSvg}
+                  size="md"
+                  rounded="full"
+                  className="border-2 border-primary/30"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground">
+                  <Wand2 className="h-5 w-5" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(true)}
+              >
+                {profile?.avatarSvg ? "Editar avatar" : "Criar avatar"}
+              </Button>
+              {profile?.avatarSvg && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleRemove}
+                  disabled={saving}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remover
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Monte seu avatar</DialogTitle>
+          </DialogHeader>
+          <AvatarEditor
+            initialConfig={profile?.avatarConfig ?? undefined}
+            onChange={setPending}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving || !pending}>
+              {saving ? "Salvando..." : "Salvar avatar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
 
 // --- Form: Photo Upload ---
 function FormPhotoUpload() {
@@ -971,6 +1125,7 @@ function EditProfile() {
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
       <FormPhotoUpload />
+      <FormAvatar />
       <FormBanner />
       <FormUsername />
       <ChangeEmailWrapper />
