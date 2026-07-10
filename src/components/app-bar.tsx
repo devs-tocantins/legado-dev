@@ -87,33 +87,16 @@ function UserMenuHeader({
 
   return (
     <div className="border-b px-4 py-3.5 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
-          {profile?.photo?.path ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.photo.path}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <>
-              {user.firstName?.[0]}
-              {user.lastName?.[0]}
-            </>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold font-heading">
-            {user.firstName} {user.lastName}
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold font-heading">
+          {user.firstName} {user.lastName}
+        </p>
+        {profile?.username && (
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            @{profile.username}
           </p>
-          {profile?.username && (
-            <p className="truncate font-mono text-xs text-muted-foreground">
-              @{profile.username}
-            </p>
-          )}
-          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-        </div>
+        )}
+        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
       </div>
 
       {profile && (
