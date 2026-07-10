@@ -68,6 +68,44 @@ export function getDefaultOptions(
   return result;
 }
 
+export function svgToPngFile(
+  svg: string,
+  fileName: string = "avatar.png",
+  size: number = 512
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Canvas 2D context unavailable"));
+        return;
+      }
+      ctx.drawImage(image, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Falha ao gerar PNG do avatar"));
+          return;
+        }
+        resolve(new File([blob], fileName, { type: "image/png" }));
+      }, "image/png");
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Falha ao carregar o SVG do avatar"));
+    };
+    image.src = url;
+  });
+}
+
 export interface Combination {
   avatar: string;
   options: SelectedStyleOptions;

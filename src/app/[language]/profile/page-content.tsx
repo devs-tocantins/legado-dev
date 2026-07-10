@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { getLevel, getLevelProgress, formatXp } from "@/lib/gamification";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AvatarRenderer } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "@/components/link";
@@ -36,25 +35,16 @@ function Profile() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
-            {profile?.avatarSvg ? (
-              <AvatarRenderer
-                svg={profile.avatarSvg}
-                size="lg"
-                rounded="full"
-                className="h-20 w-20 shrink-0 border border-border"
+            <Avatar className="h-20 w-20 shrink-0">
+              <AvatarImage
+                src={user?.photo?.path}
+                alt={`${user?.firstName} ${user?.lastName}`}
               />
-            ) : (
-              <Avatar className="h-20 w-20 shrink-0">
-                <AvatarImage
-                  src={user?.photo?.path}
-                  alt={`${user?.firstName} ${user?.lastName}`}
-                />
-                <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                  {user?.firstName?.[0]}
-                  {user?.lastName?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            )}
+              <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
 
             <div className="flex-1 min-w-0 space-y-2">
               <h1

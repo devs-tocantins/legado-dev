@@ -200,7 +200,6 @@ export type UpdateMyGamificationProfileRequest = {
   bannerPreset?: string;
   whatsappNumber?: string | null;
   avatarConfig?: string | null;
-  avatarSvg?: string | null;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;

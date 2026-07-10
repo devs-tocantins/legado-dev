@@ -12,7 +12,6 @@ export type GamificationProfile = {
   whatsappNumber?: string | null;
   bannerPreset?: string;
   avatarConfig?: string | null;
-  avatarSvg?: string | null;
   isBanned?: boolean;
   firstName?: string;
   lastName?: string;

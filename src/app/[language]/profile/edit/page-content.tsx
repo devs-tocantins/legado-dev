@@ -125,11 +125,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AvatarEditor, AvatarRenderer } from "@/components/avatar";
-import { Wand2, Trash2 } from "lucide-react";
+import { AvatarEditor } from "@/components/avatar";
+import { svgToPngFile } from "@/components/avatar/utils/avatar-utils";
+import { Trash2 } from "lucide-react";
 
-// --- Form: Custom Avatar ---
-function FormAvatar() {
+// --- Form: Profile Picture (foto ou avatar, num único card com abas) ---
+function FormProfilePicture() {
+  const { user } = useAuth();
+  const { setUser } = useAuthActions();
+  const fetchAuthPatchMe = useAuthPatchMeService();
+  const fileUploadService = useFileUploadService();
   const fetchMyProfile = useGetMyGamificationProfileService();
   const updateMyProfile = useUpdateMyGamificationProfileService();
   const { enqueueSnackbar } = useSnackbar();
@@ -144,12 +149,16 @@ function FormAvatar() {
     },
   });
 
-  const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState<{
+  const [tab, setTab] = useState<"photo" | "avatar">("photo");
+  const [saving, setSaving] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState<{
     svg: string;
     config: string;
   } | null>(null);
-  const [saving, setSaving] = useState(false);
+
+  const previewUrl = user?.photo?.path ?? null;
 
   const invalidateProfile = async () => {
     await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
@@ -160,130 +169,50 @@ function FormAvatar() {
     }
   };
 
-  const handleSave = async () => {
-    if (!profile || !pending) return;
+  const uploadErrorMessage = (data: unknown) => {
+    const serverError = (data as any)?.errors?.file;
+    if (serverError === "cantUploadFileType") {
+      return "Formato de arquivo não suportado. Envie apenas JPG ou PNG.";
+    }
+    return serverError || "Erro ao fazer upload da imagem.";
+  };
+
+  const savePhotoFile = async (file: File) => {
+    const uploadResult = await fileUploadService(file);
+    if (uploadResult.status !== HTTP_CODES_ENUM.CREATED) {
+      enqueueSnackbar(uploadErrorMessage(uploadResult.data), {
+        variant: "error",
+      });
+      return false;
+    }
+
+    const photoEntity = uploadResult.data.file;
+    const patchResult = await fetchAuthPatchMe({ photo: photoEntity });
+    if (patchResult.status !== HTTP_CODES_ENUM.OK) {
+      enqueueSnackbar("Erro ao salvar foto de perfil no perfil.", {
+        variant: "error",
+      });
+      return false;
+    }
+
+    setUser(patchResult.data);
+    return true;
+  };
+
+  const handleRemovePhoto = async () => {
     setSaving(true);
     try {
-      const { status } = await updateMyProfile({
-        username: profile.username,
-        avatarConfig: pending.config,
-        avatarSvg: pending.svg,
-      });
-      if (status === HTTP_CODES_ENUM.OK) {
-        await invalidateProfile();
-        enqueueSnackbar("Avatar salvo!", { variant: "success" });
-        setOpen(false);
-      } else {
-        enqueueSnackbar("Erro ao salvar avatar.", { variant: "error" });
+      const patchResult = await fetchAuthPatchMe({ photo: null });
+      if (patchResult.status === HTTP_CODES_ENUM.OK) {
+        setUser(patchResult.data);
+        enqueueSnackbar("Foto removida.", { variant: "success" });
       }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleRemove = async () => {
-    if (!profile) return;
-    setSaving(true);
-    try {
-      const { status } = await updateMyProfile({
-        username: profile.username,
-        avatarConfig: null,
-        avatarSvg: null,
-      });
-      if (status === HTTP_CODES_ENUM.OK) {
-        await invalidateProfile();
-        enqueueSnackbar("Avatar removido.", { variant: "success" });
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Avatar Personalizado</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Prefere montar um personagem em vez de usar uma foto? Crie seu
-            avatar com estilos, cores e acessórios.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="shrink-0">
-              {profile?.avatarSvg ? (
-                <AvatarRenderer
-                  svg={profile.avatarSvg}
-                  size="md"
-                  rounded="full"
-                  className="border-2 border-primary/30"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground">
-                  <Wand2 className="h-5 w-5" />
-                </div>
-              )}
-            </div>
-            <div className="flex-1 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(true)}
-              >
-                {profile?.avatarSvg ? "Editar avatar" : "Criar avatar"}
-              </Button>
-              {profile?.avatarSvg && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={handleRemove}
-                  disabled={saving}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remover
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Monte seu avatar</DialogTitle>
-          </DialogHeader>
-          <AvatarEditor
-            initialConfig={profile?.avatarConfig ?? undefined}
-            onChange={setPending}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving || !pending}>
-              {saving ? "Salvando..." : "Salvar avatar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-}
-
-// --- Form: Photo Upload ---
-function FormPhotoUpload() {
-  const { user } = useAuth();
-  const fetchAuthPatchMe = useAuthPatchMeService();
-  const fileUploadService = useFileUploadService();
-  const { enqueueSnackbar } = useSnackbar();
-  const { setUser } = useAuthActions();
-
-  const [saving, setSaving] = useState(false);
-  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-
+  // --- Aba "Foto" ---
   const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
     const file = _e.target.files?.[0];
     if (!file) return;
@@ -321,29 +250,9 @@ function FormPhotoUpload() {
 
     setSaving(true);
     try {
-      const uploadResult = await fileUploadService(file);
-      if (uploadResult.status === HTTP_CODES_ENUM.CREATED) {
-        const photoEntity = uploadResult.data.file;
-        const patchResult = await fetchAuthPatchMe({ photo: photoEntity });
-
-        if (patchResult.status === HTTP_CODES_ENUM.OK) {
-          setUser(patchResult.data);
-          enqueueSnackbar("Foto de perfil atualizada!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Erro ao salvar foto de perfil no perfil.", {
-            variant: "error",
-          });
-        }
-      } else {
-        let errorMsg = "Erro ao fazer upload da imagem.";
-        const serverError = (uploadResult.data as any)?.errors?.file;
-        if (serverError === "cantUploadFileType") {
-          errorMsg =
-            "Formato de arquivo não suportado. Envie apenas JPG ou PNG.";
-        } else if (serverError) {
-          errorMsg = serverError;
-        }
-        enqueueSnackbar(errorMsg, { variant: "error" });
+      const ok = await savePhotoFile(file);
+      if (ok) {
+        enqueueSnackbar("Foto de perfil atualizada!", { variant: "success" });
       }
     } catch {
       enqueueSnackbar("Erro de rede ao salvar foto.", { variant: "error" });
@@ -352,7 +261,30 @@ function FormPhotoUpload() {
     }
   };
 
-  const previewUrl = user?.photo?.path ?? null;
+  // --- Aba "Avatar" ---
+  const handleSaveAvatar = async () => {
+    if (!pendingAvatar) return;
+    setSaving(true);
+    try {
+      const pngFile = await svgToPngFile(pendingAvatar.svg);
+      const ok = await savePhotoFile(pngFile);
+      if (ok) {
+        if (profile) {
+          await updateMyProfile({
+            username: profile.username,
+            avatarConfig: pendingAvatar.config,
+          });
+          await invalidateProfile();
+        }
+        enqueueSnackbar("Avatar salvo!", { variant: "success" });
+        setAvatarDialogOpen(false);
+      }
+    } catch {
+      enqueueSnackbar("Erro ao salvar avatar.", { variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Card className="border-primary/40 bg-primary/5">
@@ -361,12 +293,8 @@ function FormPhotoUpload() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Escolha uma foto para o seu perfil. Ela aparecerá no ranking, no seu
-            perfil público e no menu principal.
-          </p>
           <div className="flex items-center gap-4">
-            <div className="shrink-0 relative group">
+            <div className="shrink-0">
               {previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -381,8 +309,58 @@ function FormPhotoUpload() {
                 </div>
               )}
             </div>
-            <div className="flex-1 space-y-1.5">
-              <div className="flex gap-2">
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={handleRemovePhoto}
+                disabled={saving}
+              >
+                <Trash2 className="h-4 w-4" />
+                Remover foto
+              </Button>
+            )}
+          </div>
+
+          <div role="tablist" className="flex gap-1 border-b border-border">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "photo"}
+              onClick={() => setTab("photo")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                tab === "photo"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Enviar foto
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "avatar"}
+              onClick={() => setTab("avatar")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                tab === "avatar"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Criar avatar
+            </button>
+          </div>
+
+          {tab === "photo" ? (
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground">
+                Escolha uma foto para o seu perfil. Ela aparecerá no ranking, no
+                seu perfil público e no menu principal.
+              </p>
+              <div className="flex gap-2 pt-1">
                 <Button
                   type="button"
                   disabled={saving}
@@ -391,7 +369,7 @@ function FormPhotoUpload() {
                   }
                   variant="outline"
                 >
-                  {saving ? "Salvando..." : "Trocar foto"}
+                  {saving ? "Salvando..." : "Escolher imagem"}
                 </Button>
                 <input
                   id="photo-upload-input"
@@ -406,15 +384,58 @@ function FormPhotoUpload() {
                 quadrado a seguir.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground">
+                Prefere montar um personagem em vez de usar uma foto? Crie seu
+                avatar com estilos, cores e acessórios.
+              </p>
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAvatarDialogOpen(true)}
+                >
+                  {profile?.avatarConfig ? "Editar avatar" : "Criar avatar"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
+
       <ImageCropDialog
         open={!!cropImageSrc}
         imageSrc={cropImageSrc}
         onCancel={closeCropDialog}
         onConfirm={handleCropConfirm}
       />
+
+      <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Monte seu avatar</DialogTitle>
+          </DialogHeader>
+          <AvatarEditor
+            initialConfig={profile?.avatarConfig ?? undefined}
+            onChange={setPendingAvatar}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAvatarDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveAvatar}
+              disabled={saving || !pendingAvatar}
+            >
+              {saving ? "Salvando..." : "Salvar avatar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -1124,8 +1145,7 @@ function EditProfile() {
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
       <FormBasicInfo />
-      <FormPhotoUpload />
-      <FormAvatar />
+      <FormProfilePicture />
       <FormBanner />
       <FormUsername />
       <ChangeEmailWrapper />

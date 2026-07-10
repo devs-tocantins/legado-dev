@@ -31,7 +31,6 @@ import {
   formatXp,
 } from "@/lib/gamification";
 import { Card, CardContent } from "@/components/ui/card";
-import { AvatarRenderer } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Zap,
@@ -150,27 +149,14 @@ function avatarColor(username: string): string {
 function ProfileAvatar({
   username,
   photoPath,
-  avatarSvg,
   size = 64,
 }: {
   username: string;
   photoPath?: string | null;
-  avatarSvg?: string | null;
   size?: number;
 }) {
   const color = avatarColor(username);
   const initials = username.substring(0, 2).toUpperCase();
-
-  if (avatarSvg) {
-    return (
-      <AvatarRenderer
-        svg={avatarSvg}
-        rounded="full"
-        className="shrink-0 border-4 border-background relative z-10"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
 
   if (photoPath) {
     return (
@@ -808,7 +794,6 @@ function PublicProfilePageContent() {
           <ProfileAvatar
             username={profile.username}
             photoPath={profile.photo?.path}
-            avatarSvg={profile.avatarSvg}
             size={72}
           />
         </div>
