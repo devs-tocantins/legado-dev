@@ -37,7 +37,6 @@ import {
   Eye,
   User,
   FileText,
-  Link2,
   CheckCircle2,
   XCircle,
   Info,
@@ -84,34 +83,46 @@ function useProfile(profileId: string) {
 function ProofPreview({ proofUrl }: { proofUrl: string }) {
   const [imageFailed, setImageFailed] = useState(false);
 
-  return (
-    <div className="space-y-2">
-      {!imageFailed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={proofUrl}
-          alt="Prova enviada"
-          className="max-h-64 w-auto rounded-md border object-contain"
-          onError={() => setImageFailed(true)}
-        />
-      )}
-      <a
-        href={proofUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
-      >
-        <Link2 className="h-3.5 w-3.5 shrink-0" />
-        {proofUrl}
-        <ExternalLink className="h-3 w-3 shrink-0" />
-      </a>
-      {imageFailed && (
+  if (imageFailed) {
+    return (
+      <div className="space-y-2">
+        <a
+          href={proofUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+          Abrir comprovante
+        </a>
         <p className="text-xs text-muted-foreground italic">
-          Não foi possível carregar uma prévia da imagem — verifique se o link é
-          acessível publicamente.
+          Não foi possível carregar uma prévia da imagem — abra o comprovante em
+          uma nova aba.
         </p>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={proofUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Abrir comprovante em tamanho real"
+      className="group relative inline-block"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={proofUrl}
+        alt="Prova enviada"
+        className="max-h-64 w-auto rounded-md border object-contain transition-opacity group-hover:opacity-90"
+        onError={() => setImageFailed(true)}
+      />
+      <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/85 px-2 py-1 text-[10px] font-medium text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+        <ExternalLink className="h-3 w-3" />
+        Ampliar
+      </span>
+    </a>
   );
 }
 

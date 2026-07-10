@@ -32,7 +32,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,12 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Notification } from "@/services/api/types/notification";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
-import { getLevel, LEVELS } from "@/lib/gamification";
+import {
+  getLevel,
+  getLevelProgress,
+  formatXp,
+  LEVELS,
+} from "@/lib/gamification";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { formatDistanceToNow } from "date-fns";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
@@ -67,21 +71,69 @@ function LogoMark() {
   );
 }
 
-// ─── Level badge ──────────────────────────────────────────────────────────────
+// ─── User menu header (identidade + progressão) ──────────────────────────────
 
-function LevelBadge({ totalXp }: { totalXp: number }) {
+function UserMenuHeader({
+  user,
+  profile,
+}: {
+  user: { firstName?: string; lastName?: string; email?: string };
+  profile: GamificationProfile | null | undefined;
+}) {
+  const totalXp = profile?.totalXp ?? 0;
   const level = getLevel(totalXp);
   const levelValue = LEVELS.findIndex((l) => l.name === level.name) + 1;
+  const progress = getLevelProgress(totalXp);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border",
-        level.color,
-        "bg-current/10 border-current/20"
+    <div className="border-b px-4 py-3.5 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+          {profile?.photo?.path ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photo.path}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <>
+              {user.firstName?.[0]}
+              {user.lastName?.[0]}
+            </>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold font-heading">
+            {user.firstName} {user.lastName}
+          </p>
+          {profile?.username && (
+            <p className="truncate font-mono text-xs text-muted-foreground">
+              @{profile.username}
+            </p>
+          )}
+          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+        </div>
+      </div>
+
+      {profile && (
+        <div className="space-y-1.5 rounded-lg border bg-muted/40 px-3 py-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className={cn("font-semibold", level.color)}>
+              {level.name}
+            </span>
+            <span className="text-muted-foreground">
+              Lvl {levelValue} · {formatXp(totalXp)} XP
+            </span>
+          </div>
+          <div className="h-1 rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       )}
-    >
-      Lvl {levelValue}
     </div>
   );
 }
@@ -379,11 +431,11 @@ function ResponsiveAppBar() {
                 render={
                   <button
                     aria-label="Abrir menu do usuário"
-                    className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none"
+                    className="rounded-full outline-none transition-shadow hover:ring-2 hover:ring-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   />
                 }
               >
-                <div className="h-7 w-7 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                <div className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                   {profile?.photo?.path ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -396,60 +448,50 @@ function ResponsiveAppBar() {
                   )}
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                {/* User info header */}
-                <div className="px-3 py-2.5 space-y-0.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold font-heading truncate">
-                      {user.firstName} {user.lastName}
-                    </p>
-                    {profile && <LevelBadge totalXp={profile.totalXp ?? 0} />}
-                  </div>
-                  {profile?.username && (
-                    <p className="text-xs font-mono text-muted-foreground">
-                      @{profile.username}
-                    </p>
-                  )}
+              <DropdownMenuContent
+                align="end"
+                className="w-72 overflow-hidden p-0"
+              >
+                <UserMenuHeader user={user} profile={profile} />
+
+                <div className="p-1.5">
+                  <DropdownMenuItem render={<Link href="/profile" />}>
+                    <User className="mr-2 h-4 w-4" />
+                    Minha conta
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    render={
+                      <Link
+                        href={
+                          profile?.username
+                            ? `/u/${profile.username}`
+                            : "/profile"
+                        }
+                      />
+                    }
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Ver perfil público
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    render={<Link href="/settings/notifications" />}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Preferências de notificação
+                  </DropdownMenuItem>
                 </div>
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  render={
-                    <Link
-                      href={
-                        profile?.username
-                          ? `/u/${profile.username}`
-                          : "/profile"
-                      }
-                    />
-                  }
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Ver perfil público
-                </DropdownMenuItem>
-
-                <DropdownMenuItem render={<Link href="/profile" />}>
-                  <User className="mr-2 h-4 w-4" />
-                  Minha conta
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  render={<Link href="/settings/notifications" />}
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notificações
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={logOut}
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
+                <div className="border-t p-1.5">
+                  <DropdownMenuItem
+                    onClick={logOut}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

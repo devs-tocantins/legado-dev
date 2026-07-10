@@ -412,15 +412,18 @@ function FormProfilePicture() {
       />
 
       <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex h-[min(85svh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="shrink-0 border-b px-5 py-3.5">
             <DialogTitle>Monte seu avatar</DialogTitle>
           </DialogHeader>
-          <AvatarEditor
-            initialConfig={profile?.avatarConfig ?? undefined}
-            onChange={setPendingAvatar}
-          />
-          <DialogFooter>
+          <div className="min-h-0 flex-1 px-5 py-4">
+            <AvatarEditor
+              initialConfig={profile?.avatarConfig ?? undefined}
+              onChange={setPendingAvatar}
+              className="h-full"
+            />
+          </div>
+          <DialogFooter className="shrink-0 border-t px-5 py-3.5">
             <Button
               variant="outline"
               onClick={() => setAvatarDialogOpen(false)}

@@ -1,9 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   Palette,
   User,
   Glasses,
@@ -195,18 +193,6 @@ export function AvatarEditor({
     setOptions((prev) => ({ ...prev, [key]: value }));
   };
 
-  const tabsListRef = useRef<HTMLDivElement>(null);
-
-  const scrollTabs = (direction: "left" | "right") => {
-    if (tabsListRef.current) {
-      const scrollAmount = 150;
-      tabsListRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
   const stylePreviews = useMemo(() => {
     return Object.keys(availableStyles).map((styleName) => ({
       name: styleName,
@@ -219,29 +205,33 @@ export function AvatarEditor({
 
   return (
     <div
-      className={cn("flex flex-col gap-8 w-full max-w-4xl mx-auto", className)}
+      className={cn(
+        "flex h-full min-h-0 w-full flex-col gap-4 md:flex-row md:gap-6",
+        className
+      )}
     >
-      {/* Preview */}
-      <div className="flex flex-col items-center">
-        <div className="relative">
+      {/* Painel esquerdo: preview fixo (sem scroll) */}
+      <div className="flex shrink-0 flex-row items-center justify-center gap-4 md:w-48 md:flex-col md:justify-start md:pt-1">
+        <div className="relative shrink-0">
           <AvatarRenderer
             svg={currentSvg}
             size="lg"
             rounded="full"
-            className="relative z-10 border border-border"
+            className="relative z-10 h-24 w-24 border border-border md:h-40 md:w-40"
           />
           <Button
             type="button"
             size="icon"
             onClick={handleRandomize}
-            className="absolute bottom-0 right-0 rounded-full z-20 hover:rotate-180 transition-transform duration-500 w-8 h-8"
+            aria-label="Gerar avatar aleatório"
+            className="absolute bottom-0 right-0 z-20 h-8 w-8 rounded-full transition-transform duration-500 hover:rotate-180"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="mt-4 flex items-center gap-3 bg-muted px-4 py-2 rounded-full">
-          <span className="text-[10px] font-medium text-muted-foreground tracking-widest">
+        <div className="flex w-full max-w-[200px] items-center gap-2 rounded-full bg-muted px-3 py-2 md:max-w-none">
+          <span className="text-[10px] font-medium tracking-widest text-muted-foreground">
             ZOOM
           </span>
           <input
@@ -251,60 +241,38 @@ export function AvatarEditor({
             step="1"
             value={scale}
             onChange={(e) => setScale(parseInt(e.target.value, 10))}
-            className="w-32 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+            className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-lg bg-border accent-primary"
           />
-          <span className="text-[10px] font-medium text-muted-foreground min-w-[30px]">
+          <span className="min-w-[32px] text-right text-[10px] font-medium text-muted-foreground">
             {scale}%
           </span>
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div>
-        <div className="relative flex items-center">
-          <button
-            onClick={() => scrollTabs("left")}
-            type="button"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-background border border-border shadow-sm text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <div
-            ref={tabsListRef}
-            className="flex gap-2 py-4 overflow-x-auto no-scrollbar bg-transparent scroll-smooth px-8 w-full"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {categories.map((cat) => (
-              <button
-                type="button"
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border-none outline-none cursor-pointer select-none flex items-center gap-2",
-                  activeCategory === cat.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/70"
-                )}
-              >
-                {CATEGORY_ICONS[cat.id]}
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => scrollTabs("right")}
-            type="button"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-background border border-border shadow-sm text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+      {/* Painel direito: categorias (wrap, sem scroll) + grade (única área com scroll) */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {categories.map((cat) => (
+            <button
+              type="button"
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={cn(
+                "flex cursor-pointer select-none items-center gap-1.5 rounded-full border-none px-2.5 py-1 text-xs font-medium outline-none transition-all",
+                activeCategory === cat.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              )}
+            >
+              {CATEGORY_ICONS[cat.id]}
+              {cat.label}
+            </button>
+          ))}
         </div>
 
-        <div className="h-[300px] overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-muted/20 p-3">
           {activeCategory === "style" && (
-            <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2">
               {stylePreviews.map((style) => {
                 const isActive = selectedStyle === style.name;
 
@@ -314,14 +282,14 @@ export function AvatarEditor({
                     key={style.name}
                     onClick={() => handleStyleChange(style.name)}
                     className={cn(
-                      "group relative w-12 h-12 rounded-xl transition-all overflow-hidden",
+                      "group relative aspect-square w-full overflow-hidden rounded-xl transition-all",
                       isActive ? "ring-2 ring-primary" : "hover:scale-105"
                     )}
                   >
                     <AvatarRenderer
                       svg={style.svg}
                       size="sm"
-                      className="w-full h-full"
+                      className="h-full w-full"
                     />
                   </button>
                 );
@@ -334,14 +302,14 @@ export function AvatarEditor({
             .map((cat) => (
               <div
                 key={cat.id}
-                className="grid grid-cols-4 sm:grid-cols-8 gap-4"
+                className="grid grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2"
               >
                 {cat.id.toLowerCase().includes("color") && (
-                  <div className="relative w-12 h-12">
+                  <div className="relative aspect-square w-full">
                     <input
                       type="color"
                       id={`color-picker-${cat.id}`}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
+                      className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0"
                       onChange={(e) =>
                         handleOptionChange(
                           cat.id,
@@ -351,11 +319,11 @@ export function AvatarEditor({
                     />
                     <label
                       htmlFor={`color-picker-${cat.id}`}
-                      className="flex items-center justify-center w-full h-full rounded-xl border-2 border-border bg-background cursor-pointer hover:border-primary/40 transition-all overflow-hidden relative"
+                      className="relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-border bg-background transition-all hover:border-primary/40"
                     >
-                      <div className="w-full h-full bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)] opacity-80" />
+                      <div className="h-full w-full bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)] opacity-80" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-full bg-white/80 shadow-sm" />
+                        <div className="h-4 w-4 rounded-full bg-white/80 shadow-sm" />
                       </div>
                     </label>
                   </div>
@@ -372,19 +340,19 @@ export function AvatarEditor({
                         handleOptionChange(cat.id, combo.options[cat.id])
                       }
                       className={cn(
-                        "relative w-12 h-12 rounded-xl transition-all overflow-hidden",
+                        "relative aspect-square w-full overflow-hidden rounded-xl transition-all",
                         combo.active ? "ring-2 ring-primary" : "hover:scale-105"
                       )}
                     >
                       <AvatarRenderer
                         svg={combo.avatar}
                         size="sm"
-                        className="w-full h-full"
+                        className="h-full w-full"
                       />
 
                       {isColor && (
                         <div
-                          className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full border border-white"
+                          className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full border border-white"
                           style={{
                             backgroundColor: `#${combo.options[cat.id]}`,
                           }}
