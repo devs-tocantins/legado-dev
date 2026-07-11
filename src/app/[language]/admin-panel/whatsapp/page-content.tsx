@@ -8,13 +8,24 @@ import {
   useGetWhatsappStatusService,
   useGetWhatsappQrService,
   useLogoutWhatsappService,
+  useSendTestWhatsappMessageService,
   WhatsappStatus,
 } from "@/services/api/services/whatsapp-admin";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, CheckCircle2, LogOut, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  MessageCircle,
+  CheckCircle2,
+  LogOut,
+  Loader2,
+  Send,
+} from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
+import { getApiError } from "@/lib/utils";
 
 const STATUS_LABELS: Record<WhatsappStatus, string> = {
   disabled: "Integração desabilitada (WHATSAPP_ENABLED=false)",
@@ -30,7 +41,12 @@ function AdminWhatsappPageContent() {
   const getStatus = useGetWhatsappStatusService();
   const getQr = useGetWhatsappQrService();
   const logoutWhatsapp = useLogoutWhatsappService();
+  const sendTestMessage = useSendTestWhatsappMessageService();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState(
+    "Teste de integração do legado.dev 👋"
+  );
 
   const { data: statusData } = useQuery({
     queryKey: ["whatsapp-status"],
@@ -68,6 +84,24 @@ function AdminWhatsappPageContent() {
     },
     onError: () =>
       enqueueSnackbar("Erro ao desconectar.", { variant: "error" }),
+  });
+
+  const { mutate: doSendTest, isPending: isSendingTest } = useMutation({
+    mutationFn: () =>
+      sendTestMessage({ phone: testPhone, message: testMessage }),
+    onSuccess: ({ status, data }) => {
+      if (status === HTTP_CODES_ENUM.NO_CONTENT) {
+        enqueueSnackbar("Mensagem de teste enviada!", { variant: "success" });
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao enviar mensagem."), {
+          variant: "error",
+        });
+      }
+    },
+    onError: () =>
+      enqueueSnackbar("Erro de rede ao enviar mensagem.", {
+        variant: "error",
+      }),
   });
 
   return (
@@ -166,6 +200,54 @@ function AdminWhatsappPageContent() {
           </div>
         )}
       </div>
+
+      {isConnected && (
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div>
+            <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
+              <Send className="h-4 w-4 text-primary" />
+              Enviar mensagem de teste
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Confirma que o número está enviando mensagens de verdade, sem
+              precisar aprovar uma submissão real.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="test-phone">Número (DDD + telefone)</Label>
+            <Input
+              id="test-phone"
+              placeholder="63984403559"
+              value={testPhone}
+              onChange={(e) =>
+                setTestPhone(e.target.value.replace(/[^\d]/g, ""))
+              }
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="test-message">Mensagem</Label>
+            <Textarea
+              id="test-message"
+              rows={3}
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+            />
+          </div>
+
+          <Button
+            className="gap-1.5"
+            onClick={() => doSendTest()}
+            disabled={
+              isSendingTest || testPhone.length < 10 || !testMessage.trim()
+            }
+          >
+            <Send className="h-4 w-4" />
+            {isSendingTest ? "Enviando..." : "Enviar teste"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

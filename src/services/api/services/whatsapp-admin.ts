@@ -46,3 +46,21 @@ export function useLogoutWhatsappService() {
     [fetch]
   );
 }
+
+export type SendTestMessageRequest = {
+  phone: string;
+  message: string;
+};
+
+export function useSendTestWhatsappMessageService() {
+  const fetch = useFetch();
+  return useCallback(
+    (data: SendTestMessageRequest, requestConfig?: RequestConfigType) =>
+      fetch(`${API_URL}/api/v1/whatsapp/admin/send-test`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>),
+    [fetch]
+  );
+}
