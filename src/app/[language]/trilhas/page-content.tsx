@@ -1,143 +1,421 @@
 "use client";
 
 import { useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
-import { useGetLearningTracksService } from "@/services/api/services/learning-tracks";
+import {
+  useGetLearningTracksService,
+  useGetLearningTrackOverviewService,
+  useGetLearningTrackProgressService,
+} from "@/services/api/services/learning-tracks";
+import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import {
   LearningTrack,
+  LearningTrackOverview,
+  LearningTrackProgress,
   LearningTrackStatus,
-  LearningTrackTier,
 } from "@/services/api/types/learning-track";
 import {
-  LEARNING_TRACK_TIER_DESCRIPTIONS,
-  LEARNING_TRACK_TIER_LABELS,
-} from "@/lib/learning-track-labels";
-import { Badge } from "@/components/ui/badge";
+  getTrackColor,
+  getTrackAbbreviation,
+  TIER_SEAL_LABEL,
+} from "@/lib/track-colors";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Map, ArrowRight } from "lucide-react";
+import {
+  Map as MapIcon,
+  ArrowRight,
+  Lock,
+  Compass,
+  Trophy,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const TIER_ORDER: LearningTrackTier[] = [
-  LearningTrackTier.ALICERCE,
-  LearningTrackTier.PILAR,
-  LearningTrackTier.ARCO,
-];
+type TrackData = {
+  track: LearningTrack;
+  overview: LearningTrackOverview | null;
+  progress: LearningTrackProgress | null;
+};
 
-function TrackCard({ track }: { track: LearningTrack }) {
+function useTracksWithProgress() {
+  const fetchTracks = useGetLearningTracksService();
+  const fetchOverview = useGetLearningTrackOverviewService();
+  const fetchProgress = useGetLearningTrackProgressService();
+
+  return useQuery({
+    queryKey: ["learning-tracks-hub"],
+    queryFn: async (): Promise<TrackData[]> => {
+      const { status, data } = await fetchTracks({ page: 1, limit: 50 });
+      if (status !== HTTP_CODES_ENUM.OK) return [];
+
+      const published = data.data.filter(
+        (track) => track.status === LearningTrackStatus.PUBLISHED
+      );
+
+      return Promise.all(
+        published.map(async (track) => {
+          const [overviewRes, progressRes] = await Promise.all([
+            fetchOverview({ id: track.id }),
+            fetchProgress({ id: track.id }),
+          ]);
+          return {
+            track,
+            overview:
+              overviewRes.status === HTTP_CODES_ENUM.OK
+                ? overviewRes.data
+                : null,
+            progress:
+              progressRes.status === HTTP_CODES_ENUM.OK
+                ? progressRes.data
+                : null,
+          };
+        })
+      );
+    },
+    gcTime: 0,
+  });
+}
+
+function TrackArt({
+  trackId,
+  abbr,
+  seal,
+}: {
+  trackId: string;
+  abbr: string;
+  seal: string;
+}) {
+  const color = getTrackColor(trackId);
   return (
-    <Link
-      href={`/trilhas/${track.id}`}
-      className="group flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+    <div
+      className="relative h-24 overflow-hidden p-3.5"
+      style={{ background: color.bg }}
     >
-      <div className="flex items-center justify-between gap-2">
-        <Badge variant="secondary" className="uppercase tracking-wide">
-          {track.area}
-        </Badge>
+      <span
+        className="relative z-[1] inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold shadow-sm"
+        style={{ color: color.sealText }}
+      >
+        ◆ {seal}
+      </span>
+      <span
+        className="pointer-events-none absolute -bottom-8 -right-1.5 select-none font-mono text-[92px] font-bold leading-none tracking-tighter text-white/15"
+        aria-hidden
+      >
+        {abbr}
+      </span>
+    </div>
+  );
+}
+
+function TrackCard({
+  data,
+  locked,
+  requiredTrackTitle,
+}: {
+  data: TrackData;
+  locked: boolean;
+  requiredTrackTitle?: string;
+}) {
+  const { track, overview, progress } = data;
+  const color = getTrackColor(track.id);
+  const abbr = getTrackAbbreviation(track.title);
+  const seal = TIER_SEAL_LABEL[track.tier];
+  const itemCount = overview?.sections.flatMap((s) => s.items).length ?? 0;
+  const sectionCount = overview?.sections.length ?? 0;
+
+  const cardBody = (
+    <>
+      <TrackArt trackId={track.id} abbr={abbr} seal={seal} />
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="text-[19px] font-bold leading-snug tracking-tight">
+          {track.title}
+        </h3>
+        {track.description && (
+          <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-muted-foreground line-clamp-3">
+            {track.description}
+          </p>
+        )}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {sectionCount} etapas · {itemCount} marcos
+          </span>
+          {locked ? (
+            <span
+              className="flex items-center gap-1.5 rounded-xl bg-muted px-4 py-2 text-[13px] font-bold text-muted-foreground"
+              title={
+                requiredTrackTitle
+                  ? `Conclua ${requiredTrackTitle} para desbloquear`
+                  : undefined
+              }
+            >
+              <Lock className="h-3.5 w-3.5" />
+              Bloqueada
+            </span>
+          ) : (
+            <span
+              className="rounded-xl px-5 py-2.5 text-[14px] font-bold text-white shadow-[0_4px_0_var(--track-shadow)] transition-transform active:translate-y-[2px] active:shadow-[0_2px_0_var(--track-shadow)]"
+              style={
+                {
+                  background: color.bg,
+                  "--track-shadow": color.shadow,
+                } as React.CSSProperties
+              }
+            >
+              {progress?.enrollment ? "Continuar" : "Começar"}
+            </span>
+          )}
+        </div>
       </div>
-      <h3 className="font-heading text-lg font-semibold leading-snug">
-        {track.title}
-      </h3>
-      {track.description && (
-        <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-          {track.description}
-        </p>
-      )}
-      <div className="mt-auto flex items-center gap-1.5 pt-2 text-sm font-semibold text-primary">
-        Ver trilha
-        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+    </>
+  );
+
+  const className = cn(
+    "flex flex-col overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_6px_0_var(--card-shadow)] transition-all",
+    locked
+      ? "opacity-70"
+      : "hover:-translate-y-[3px] hover:shadow-[0_9px_0_var(--card-shadow)]"
+  );
+  const style = { "--card-shadow": "var(--border)" } as React.CSSProperties;
+
+  if (locked) {
+    return (
+      <div className={className} style={style}>
+        {cardBody}
       </div>
+    );
+  }
+
+  return (
+    <Link href={`/trilhas/${track.id}`} className={className} style={style}>
+      {cardBody}
     </Link>
   );
 }
 
 function TrilhasPageContent() {
-  const fetchTracks = useGetLearningTracksService();
+  const { data: tracksData, isLoading } = useTracksWithProgress();
+  const fetchMyProfile = useGetMyGamificationProfileService();
 
-  const { data, isLoading } = useInfiniteQuery({
-    queryKey: ["learning-tracks"],
-    initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
-      const { status, data } = await fetchTracks(
-        { page: pageParam, limit: 50 },
-        { signal }
-      );
-      if (status === HTTP_CODES_ENUM.OK) {
-        return {
-          data: data.data,
-          nextPage: data.hasNextPage ? pageParam + 1 : undefined,
-        };
-      }
-      return { data: [], nextPage: undefined };
+  const { data: profile } = useQuery({
+    queryKey: ["my-gamification-profile", "trilhas-hub"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      return status === HTTP_CODES_ENUM.OK ? data : null;
     },
-    getNextPageParam: (lastPage) => lastPage?.nextPage,
-    gcTime: 0,
   });
 
-  const publishedTracks = useMemo<LearningTrack[]>(
-    () =>
-      (data?.pages.flatMap((p) => p?.data ?? []) ?? []).filter(
-        (track) => track.status === LearningTrackStatus.PUBLISHED
-      ),
-    [data]
-  );
+  const tracks = useMemo(() => tracksData ?? [], [tracksData]);
 
-  const tierGroups = useMemo(() => {
-    return TIER_ORDER.map((tier) => ({
-      tier,
-      tracks: publishedTracks.filter((track) => track.tier === tier),
-    })).filter((group) => group.tracks.length > 0);
-  }, [publishedTracks]);
+  const lockInfoByTrackId = useMemo(() => {
+    const map = new Map<string, { locked: boolean; requiredTitle?: string }>();
+    for (const { track } of tracks) {
+      if (!track.requiresTrackId) {
+        map.set(track.id, { locked: false });
+        continue;
+      }
+      const required = tracks.find((t) => t.track.id === track.requiresTrackId);
+      map.set(track.id, {
+        locked: !required?.progress?.isCompleted,
+        requiredTitle: required?.track.title,
+      });
+    }
+    return map;
+  }, [tracks]);
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-10 pb-20">
-      <div className="mb-9">
-        <p className="mb-2 font-heading text-xs font-semibold uppercase tracking-wider text-primary">
-          Comunidade legado.dev
-        </p>
-        <h1 className="font-heading text-[34px] font-bold tracking-tight">
-          Trilhas de aprendizado
-        </h1>
-        <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-          Percorra marcos guiados, comprove seu conhecimento na prática e
-          desbloqueie reconhecimento na comunidade — no seu ritmo.
-        </p>
-      </div>
+  const featured = useMemo(() => {
+    const inProgress = tracks.find(
+      (t) => t.progress?.enrollment && !t.progress.isCompleted
+    );
+    return inProgress ?? tracks[0] ?? null;
+  }, [tracks]);
 
-      {isLoading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  const heroSectionBricks = useMemo(() => {
+    if (!featured?.overview) return [];
+    const sections = featured.overview.sections;
+    const currentSectionIndex = featured.progress?.currentSectionId
+      ? sections.findIndex(
+          (s) => s.section.id === featured.progress?.currentSectionId
+        )
+      : featured.progress?.isCompleted
+        ? sections.length
+        : -1;
+    return sections.map((s, i) => ({
+      id: s.section.id,
+      state:
+        currentSectionIndex < 0
+          ? "todo"
+          : i < currentSectionIndex
+            ? "done"
+            : i === currentSectionIndex
+              ? "cur"
+              : "todo",
+    }));
+  }, [featured]);
+
+  const doneCount = heroSectionBricks.filter((b) => b.state === "done").length;
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 pb-20">
+        <div className="h-64 animate-pulse rounded-[28px] bg-muted" />
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
-      ) : tierGroups.length === 0 ? (
+      </div>
+    );
+  }
+
+  if (tracks.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-10">
         <EmptyState
-          icon={Map}
+          icon={MapIcon}
           title="Nenhuma trilha disponível ainda"
           description="Novas trilhas de aprendizado aparecerão aqui em breve."
         />
-      ) : (
-        <div className="flex flex-col gap-10">
-          {tierGroups.map((group) => (
-            <div key={group.tier}>
-              <div className="mb-4 flex items-baseline gap-3 border-b border-border pb-3">
-                <h2 className="font-heading text-lg font-bold">
-                  {LEARNING_TRACK_TIER_LABELS[group.tier]}
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  {LEARNING_TRACK_TIER_DESCRIPTIONS[group.tier]}
-                </span>
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {group.tracks.map((track) => (
-                  <TrackCard key={track.id} track={track} />
-                ))}
-              </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8 pb-20">
+      {featured && (
+        <div
+          className="grid grid-cols-1 gap-9 rounded-[28px] bg-primary p-9 text-primary-foreground shadow-[0_11px_0_var(--hero-shadow)] sm:grid-cols-[196px_1fr]"
+          style={
+            {
+              "--hero-shadow": "color-mix(in oklch, var(--primary) 75%, black)",
+            } as React.CSSProperties
+          }
+        >
+          <div className="hidden h-[196px] w-[196px] items-center justify-center rounded-3xl bg-white/15 sm:flex">
+            <Compass className="h-20 w-20 text-white/90" />
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-white/75">
+              {featured.progress?.enrollment
+                ? "// continuar sua trilha"
+                : "// comece por aqui"}
+            </p>
+            <h1 className="mt-1.5 text-4xl font-bold tracking-tight">
+              {featured.track.title}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-1.5 text-sm font-semibold">
+                ◆ {TIER_SEAL_LABEL[featured.track.tier]}
+              </span>
+              <span className="text-sm text-white/85">
+                {featured.progress?.isCompleted
+                  ? "trilha concluída"
+                  : "construindo seu selo"}
+              </span>
             </div>
-          ))}
+            {heroSectionBricks.length > 0 && (
+              <>
+                <div className="mt-5 flex gap-1.5">
+                  {heroSectionBricks.map((b) => (
+                    <span
+                      key={b.id}
+                      className={cn(
+                        "h-4 flex-1 rounded-md",
+                        b.state === "done" && "bg-white",
+                        b.state === "cur" && "bg-white/55 ring-2 ring-white",
+                        b.state === "todo" && "bg-white/25"
+                      )}
+                    />
+                  ))}
+                </div>
+                <p className="mt-3 font-mono text-xs text-white/85">
+                  {doneCount} de {heroSectionBricks.length} etapas concluídas
+                </p>
+              </>
+            )}
+            <Link
+              href={`/trilhas/${featured.track.id}`}
+              className="mt-5 inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-6 py-3 text-[15px] font-bold text-primary shadow-[0_5px_0_rgba(20,20,20,0.25)] transition-transform active:translate-y-[3px] active:shadow-[0_2px_0_rgba(20,20,20,0.25)]"
+            >
+              {featured.progress?.enrollment ? "Continuar" : "Começar"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       )}
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
+        <div>
+          <div className="mb-5 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">
+                Explorar trilhas
+              </h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Cada marco cumprido vira prova verificada no seu perfil público.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {tracks.map((data) => {
+              const lockInfo = lockInfoByTrackId.get(data.track.id);
+              return (
+                <TrackCard
+                  key={data.track.id}
+                  data={data}
+                  locked={lockInfo?.locked ?? false}
+                  requiredTrackTitle={lockInfo?.requiredTitle}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {profile && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Sua reputação
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-accent" />
+                <span className="text-[26px] font-bold">{profile.totalXp}</span>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                Pontos de reputação construídos com contribuição para a
+                comunidade.
+              </p>
+            </div>
+            {featured && (
+              <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
+                <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Próximo selo
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-center text-[11px] font-bold leading-tight text-primary">
+                    ◆<br />
+                    {TIER_SEAL_LABEL[featured.track.tier]}
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold">
+                      {heroSectionBricks.length
+                        ? Math.round(
+                            (doneCount / heroSectionBricks.length) * 100
+                          )
+                        : 0}
+                      % construído
+                    </p>
+                    <p className="text-[13px] text-muted-foreground">
+                      Faltam {heroSectionBricks.length - doneCount} etapas para
+                      o selo.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

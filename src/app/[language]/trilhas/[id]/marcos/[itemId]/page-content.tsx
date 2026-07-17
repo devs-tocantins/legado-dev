@@ -11,20 +11,20 @@ import {
 } from "@/services/api/services/learning-tracks";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { TrackItemType } from "@/services/api/types/learning-track";
-import { TRACK_ITEM_TYPE_LABELS } from "@/lib/learning-track-labels";
-import { Badge } from "@/components/ui/badge";
+import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
 import { Button } from "@/components/ui/button";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   Circle,
   Map,
   ShieldCheck,
   Sparkles,
-  Zap,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,14 +77,13 @@ function Quiz({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {questions.map((question, qIndex) => (
-        <div key={qIndex} className="rounded-xl border border-border p-4">
-          <p className="mb-3 text-sm font-semibold">{question.question}</p>
-          <div className="flex flex-col gap-2">
+        <div key={qIndex}>
+          <p className="text-[15px] font-semibold">{question.question}</p>
+          <div className="mt-2.5 flex flex-col gap-2">
             {question.options.map((option, oIndex) => {
               const selected = answers[qIndex] === oIndex;
-              const revealed = answers[qIndex] !== undefined;
               const isCorrectOption = oIndex === question.correctIndex;
               return (
                 <button
@@ -92,26 +91,24 @@ function Quiz({
                   type="button"
                   onClick={() => handleSelect(qIndex, oIndex)}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-left text-sm transition-colors",
+                    "flex items-center gap-3 rounded-[13px] border-2 px-4 py-3 text-left text-sm font-semibold transition-colors",
                     selected && isCorrectOption
-                      ? "border-accent bg-accent/10"
+                      ? "border-primary bg-primary/5 text-primary"
                       : selected
-                        ? "border-destructive/50 bg-destructive/5"
-                        : revealed && isCorrectOption
-                          ? "border-accent/50"
-                          : "border-border hover:bg-secondary/40"
+                        ? "border-destructive/50 bg-destructive/5 text-destructive"
+                        : "border-border text-foreground/80 hover:bg-secondary/40"
                   )}
                 >
-                  {selected ? (
-                    <CheckCircle2
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        isCorrectOption ? "text-accent" : "text-destructive"
-                      )}
-                    />
-                  ) : (
-                    <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
+                  <span
+                    className={cn(
+                      "h-5 w-5 shrink-0 rounded-full border-2",
+                      selected && isCorrectOption
+                        ? "border-primary bg-primary"
+                        : selected
+                          ? "border-destructive"
+                          : "border-border"
+                    )}
+                  />
                   {option}
                 </button>
               );
@@ -166,6 +163,10 @@ function CompleteMilestonePageContent() {
     () => items.find((i) => i.id === itemId) ?? null,
     [items, itemId]
   );
+  const section = useMemo(
+    () => overview?.sections.find((s) => s.section.id === item?.sectionId),
+    [overview, item]
+  );
 
   const itemIndex = item ? items.findIndex((i) => i.id === item.id) : -1;
   const currentIndex = useMemo(() => {
@@ -178,6 +179,19 @@ function CompleteMilestonePageContent() {
   const isDone = itemIndex >= 0 && itemIndex < currentIndex;
   const isLocked = itemIndex >= 0 && itemIndex > currentIndex;
   const isLoading = isLoadingOverview || isLoadingProgress;
+
+  const nextItem =
+    itemIndex >= 0 && itemIndex + 1 < items.length
+      ? items[itemIndex + 1]
+      : null;
+  const isTrackFinished = itemIndex >= 0 && itemIndex === items.length - 1;
+
+  // Section-scoped progress for the sidebar brick strip.
+  const sectionItems = section?.items ?? [];
+  const sectionDone = sectionItems.filter((sItem) => {
+    const idx = items.findIndex((i) => i.id === sItem.id);
+    return idx >= 0 && idx < currentIndex;
+  }).length;
 
   const handleComplete = async () => {
     if (!item) return;
@@ -203,9 +217,9 @@ function CompleteMilestonePageContent() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8 space-y-4">
+      <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
         <div className="h-8 w-2/3 animate-pulse rounded bg-muted" />
-        <div className="h-40 animate-pulse rounded-lg bg-muted" />
+        <div className="h-52 animate-pulse rounded-[22px] bg-muted" />
       </div>
     );
   }
@@ -244,100 +258,202 @@ function CompleteMilestonePageContent() {
 
   const isAutoCompletable = AUTO_COMPLETABLE_TYPES.has(item.type);
   const alreadyDone = isDone || justCompleted !== null;
+  const badge = TRACK_ITEM_TYPE_BADGE[item.type];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 pb-20">
+    <div className="mx-auto max-w-4xl px-4 py-8 pb-20">
       <Link
         href={`/trilhas/${trackId}`}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Voltar para a trilha
+        {overview.track.title}
+        {section && (
+          <>
+            <span>/</span>
+            <span className="font-semibold text-foreground">
+              {section.section.title}
+            </span>
+          </>
+        )}
       </Link>
 
-      <div className="mb-3.5 flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{TRACK_ITEM_TYPE_LABELS[item.type]}</Badge>
-        {item.journeyXp > 0 && (
-          <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-            <Zap className="h-3 w-3" />+{item.journeyXp} XP de Jornada
-          </span>
-        )}
-      </div>
-      <h1 className="mb-5 font-heading text-[26px] font-bold leading-tight tracking-tight sm:text-[30px]">
-        {item.title}
-      </h1>
-
-      {item.body && (
-        <p className="mb-7 text-[15px] leading-relaxed whitespace-pre-line text-muted-foreground">
-          {item.body}
-        </p>
-      )}
-
-      {alreadyDone ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-5">
-          <Sparkles className="h-6 w-6 shrink-0 text-accent" />
-          <div>
-            <p className="font-semibold">Marco concluído</p>
-            <p className="text-sm text-muted-foreground">
-              {justCompleted !== null && justCompleted > 0
-                ? `Você ganhou ${justCompleted} XP de Jornada.`
-                : "Este marco já faz parte da sua caminhada nesta trilha."}
-            </p>
-          </div>
-        </div>
-      ) : item.type === TrackItemType.CHECKPOINT &&
-        isCheckpointConfig(item.config) ? (
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="flex flex-col gap-5">
-          <Quiz
-            questions={item.config.questions}
-            onAllCorrect={setQuizPassed}
-          />
-          <Button
-            onClick={handleComplete}
-            disabled={!quizPassed || completing}
-            className="gap-2 self-start"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            {completing ? "Concluindo..." : "Concluir marco"}
-          </Button>
-        </div>
-      ) : isAutoCompletable ? (
-        <Button
-          onClick={handleComplete}
-          disabled={completing}
-          className="gap-2"
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          {completing ? "Concluindo..." : "Marcar como concluído"}
-        </Button>
-      ) : (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-3 flex items-center gap-2.5 text-sm font-semibold">
-            <ShieldCheck className="h-4.5 w-4.5 text-primary" />
-            Este marco exige comprovação
-          </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            {item.type === TrackItemType.PROOF
-              ? "Marcos de prova prática são validados por um moderador da comunidade. O envio de comprovantes para esta trilha ainda está sendo integrado — em breve você poderá enviar sua prova por aqui."
-              : "Este marco depende de uma comprovação vinculada a outro recurso da comunidade (curso, evento ou missão), que ainda está sendo integrada nesta trilha."}
-          </p>
-          {isCriteriaConfig(item.config) && (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                O que será avaliado
-              </p>
-              <ul className="flex flex-col gap-1.5 text-sm">
-                {item.config.criteria.map((criterion, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-                    {criterion}
-                  </li>
-                ))}
-              </ul>
+          {alreadyDone ? (
+            <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+                  <Sparkles className="h-7 w-7" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">Marco concluído</p>
+                  <p className="text-sm text-muted-foreground">
+                    {justCompleted !== null && justCompleted > 0
+                      ? `Você ganhou ${justCompleted} XP de Jornada.`
+                      : "Este marco já faz parte da sua caminhada nesta trilha."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-border pt-5">
+                {nextItem ? (
+                  <Button
+                    className="w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold"
+                    render={
+                      <Link
+                        href={`/trilhas/${trackId}/marcos/${nextItem.id}`}
+                      />
+                    }
+                  >
+                    <span className="flex flex-col items-start text-left">
+                      <span className="font-mono text-[11px] font-normal uppercase tracking-wide text-primary-foreground/70">
+                        próximo marco
+                      </span>
+                      {nextItem.title}
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  </Button>
+                ) : isTrackFinished ? (
+                  <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-4">
+                    <Trophy className="h-6 w-6 shrink-0 text-accent" />
+                    <div>
+                      <p className="font-bold">Trilha concluída!</p>
+                      <p className="text-sm text-muted-foreground">
+                        Você percorreu todos os marcos desta trilha.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+                <Link
+                  href={`/trilhas/${trackId}`}
+                  className="mt-3 inline-block text-sm font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  Voltar para a trilha
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
+              <span
+                className="inline-block rounded-md px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-white"
+                style={{ background: badge.color.bg }}
+              >
+                {badge.abbr}
+              </span>
+              <h1 className="mt-3 text-[24px] font-bold leading-tight tracking-tight">
+                {item.title}
+              </h1>
+              {item.body && (
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {item.body}
+                </p>
+              )}
+
+              {item.type === TrackItemType.CHECKPOINT &&
+              isCheckpointConfig(item.config) ? (
+                <div className="mt-6 flex flex-col gap-5 border-t border-border pt-6">
+                  <Quiz
+                    questions={item.config.questions}
+                    onAllCorrect={setQuizPassed}
+                  />
+                  <Button
+                    onClick={handleComplete}
+                    disabled={!quizPassed || completing}
+                    className="w-full rounded-2xl py-6 text-[15px] font-bold"
+                  >
+                    {completing ? "Concluindo..." : "Concluir marco"}
+                  </Button>
+                </div>
+              ) : isAutoCompletable ? (
+                <div className="mt-6 flex items-center gap-4 rounded-2xl border-2 border-border p-4">
+                  <Circle className="h-6 w-6 shrink-0 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold">
+                      Já estudei este conteúdo
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Marque quando concluir para seguir na trilha.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleComplete}
+                    disabled={completing}
+                    className="shrink-0 gap-1.5 rounded-xl"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {completing ? "..." : "Concluir"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
+                  <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
+                    <ShieldCheck className="h-4.5 w-4.5" />
+                    Este marco exige comprovação
+                  </div>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    {item.type === TrackItemType.PROOF
+                      ? "Marcos de prova prática são validados por um moderador da comunidade. O envio de comprovantes para esta trilha ainda está sendo integrado."
+                      : "Este marco depende de uma comprovação vinculada a outro recurso da comunidade (curso, evento ou missão), que ainda está sendo integrada nesta trilha."}
+                  </p>
+                  {isCriteriaConfig(item.config) && (
+                    <div>
+                      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        O que será avaliado
+                      </p>
+                      <ul className="flex flex-col gap-2 text-sm">
+                        {item.config.criteria.map((criterion, i) => (
+                          <li key={i} className="flex items-start gap-2.5">
+                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
+                              {i + 1}
+                            </span>
+                            {criterion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+
+        <div className="flex flex-col gap-4">
+          {section && (
+            <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {section.section.title} · progresso
+              </p>
+              <div className="mt-3.5 flex gap-1.5">
+                {sectionItems.map((sItem) => {
+                  const idx = items.findIndex((i) => i.id === sItem.id);
+                  const st =
+                    idx < currentIndex
+                      ? "done"
+                      : idx === currentIndex
+                        ? "cur"
+                        : "todo";
+                  return (
+                    <span
+                      key={sItem.id}
+                      className={cn(
+                        "h-3.5 flex-1 rounded-md",
+                        st === "done" && "bg-primary",
+                        st === "cur" && "bg-primary/40 ring-2 ring-primary",
+                        st === "todo" && "bg-muted"
+                      )}
+                    />
+                  );
+                })}
+              </div>
+              <p className="mt-2.5 font-mono text-[11px] text-muted-foreground">
+                {sectionDone} de {sectionItems.length} marcos concluídos
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
