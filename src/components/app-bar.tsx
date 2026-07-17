@@ -27,6 +27,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   CalendarDays,
+  Map,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -303,6 +304,7 @@ function ResponsiveAppBar() {
   const navLinks = user
     ? [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/trilhas", label: "Trilhas", icon: Map },
         { href: "/activities", label: "Atividades", icon: BookOpen },
         { href: "/missions", label: "Missões", icon: Target },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },
