@@ -28,6 +28,7 @@ import {
   ClipboardList,
   CalendarDays,
   Map,
+  GraduationCap,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -305,6 +306,7 @@ function ResponsiveAppBar() {
     ? [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/trilhas", label: "Trilhas", icon: Map },
+        { href: "/cursos", label: "Cursos", icon: GraduationCap },
         { href: "/activities", label: "Atividades", icon: BookOpen },
         { href: "/missions", label: "Missões", icon: Target },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },

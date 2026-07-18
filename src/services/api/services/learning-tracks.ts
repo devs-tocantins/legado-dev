@@ -7,6 +7,7 @@ import {
   LearningTrackOverview,
   LearningTrackProgress,
   TrackEnrollment,
+  TrackItem,
   TrackItemCompletion,
 } from "../types/learning-track";
 import { InfinityPaginationType } from "../types/infinity-pagination";
@@ -128,6 +129,50 @@ export function useCompleteTrackItemService() {
         method: "POST",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<CompleteTrackItemResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type TrackItemRequest = {
+  id: string;
+};
+
+export function useGetTrackItemService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: TrackItemRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/track-items/${data.id}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TrackItem>);
+    },
+    [fetch]
+  );
+}
+
+export type ProofPortfolioItem = {
+  itemId: string;
+  itemTitle: string;
+  trackId: string;
+  trackTitle: string;
+  trackTier: LearningTrack["tier"];
+  sectionId: string;
+  sectionTitle: string;
+  isTestOut: boolean;
+  completedAt: string;
+};
+
+export function useGetProofPortfolioService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (profileId: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/profile-portfolio/${profileId}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProofPortfolioItem[]>);
     },
     [fetch]
   );

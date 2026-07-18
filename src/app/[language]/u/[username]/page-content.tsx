@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   useGetGamificationProfileByUsernameService,
@@ -22,6 +22,17 @@ import {
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import { useGetPublicSubmissionDetailService } from "@/services/api/services/submissions";
 import { PublicSubmissionDetail } from "@/services/api/types/submission";
+import {
+  useGetLearningTracksService,
+  useGetLearningTrackOverviewService,
+  useGetProofPortfolioService,
+  ProofPortfolioItem,
+} from "@/services/api/services/learning-tracks";
+import {
+  LearningTrackOverview,
+  LearningTrackStatus,
+} from "@/services/api/types/learning-track";
+import { getTrackColor, getTrackAbbreviation } from "@/lib/track-colors";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SortEnum } from "@/services/api/types/sort-type";
 import {
@@ -43,11 +54,14 @@ import {
   Ban,
   Flag,
   Medal,
+  Lock,
   ArrowDownLeft,
   ArrowUpRight,
   ChevronDown,
   FileText,
   Paperclip,
+  ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
@@ -268,6 +282,198 @@ function ReportModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Selos de trilha (conquistado / em progresso / bloqueado) ─────────────────
+
+type SealState = "conquistado" | "em-progresso" | "bloqueado";
+
+type TrilhaSeal = {
+  sectionId: string;
+  sectionTitle: string;
+  trackId: string;
+  trackTitle: string;
+  state: SealState;
+};
+
+function useTrilhaSeals(
+  ownedBadgeIds: Set<string>,
+  activeTrackIds: Set<string>
+): TrilhaSeal[] {
+  const fetchTracks = useGetLearningTracksService();
+  const fetchOverview = useGetLearningTrackOverviewService();
+
+  const { data: tracks } = useQuery({
+    queryKey: ["public-profile-tracks"],
+    queryFn: async () => {
+      const { status, data } = await fetchTracks({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK)
+        return data.data.filter(
+          (t) => t.status === LearningTrackStatus.PUBLISHED
+        );
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const overviewQueries = useQueries({
+    queries: (tracks ?? []).map((track) => ({
+      queryKey: ["learning-track-overview", track.id],
+      queryFn: async () => {
+        const { status, data } = await fetchOverview({ id: track.id });
+        if (status === HTTP_CODES_ENUM.OK) return data as LearningTrackOverview;
+        return null;
+      },
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  return useMemo(() => {
+    const seals: TrilhaSeal[] = [];
+    for (const query of overviewQueries) {
+      const overview = query.data;
+      if (!overview) continue;
+      for (const { section } of overview.sections) {
+        if (!section.badgeId) continue;
+        const state: SealState = ownedBadgeIds.has(section.badgeId)
+          ? "conquistado"
+          : activeTrackIds.has(overview.track.id)
+            ? "em-progresso"
+            : "bloqueado";
+        seals.push({
+          sectionId: section.id,
+          sectionTitle: section.title,
+          trackId: overview.track.id,
+          trackTitle: overview.track.title,
+          state,
+        });
+      }
+    }
+    return seals;
+  }, [overviewQueries, ownedBadgeIds, activeTrackIds]);
+}
+
+const SEAL_STATE_LABEL: Record<SealState, string> = {
+  conquistado: "Conquistado",
+  "em-progresso": "Em progresso",
+  bloqueado: "Bloqueado",
+};
+
+function TrilhaSealsRow({ seals }: { seals: TrilhaSeal[] }) {
+  if (seals.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+        Selos de trilha
+      </h2>
+      <div className="flex flex-wrap gap-3">
+        {seals.map((seal) => {
+          const color = getTrackColor(seal.trackId);
+          const locked = seal.state === "bloqueado";
+          const inProgress = seal.state === "em-progresso";
+          return (
+            <div
+              key={seal.sectionId}
+              className="group relative flex flex-col items-center gap-1.5 text-center w-16"
+            >
+              <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 hidden group-hover:block w-48">
+                <div className="rounded-md bg-popover border border-border shadow-md px-3 py-2 text-left">
+                  <p className="text-xs font-semibold leading-tight mb-0.5">
+                    {seal.sectionTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    {seal.trackTitle} · {SEAL_STATE_LABEL[seal.state]}
+                  </p>
+                </div>
+                <div className="mx-auto w-2 h-2 bg-popover border-r border-b border-border rotate-45 -mt-1" />
+              </div>
+
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-full border",
+                  locked
+                    ? "bg-muted border-border"
+                    : "border-transparent text-white"
+                )}
+                style={!locked ? { background: color.bg } : undefined}
+              >
+                {locked ? (
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ShieldCheck
+                    className={cn("h-5 w-5", inProgress && "opacity-60")}
+                  />
+                )}
+              </div>
+              <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+                {seal.sectionTitle}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Portfólio de provas ───────────────────────────────────────────────────────
+
+function PortfolioCard({ item }: { item: ProofPortfolioItem }) {
+  const color = getTrackColor(item.trackId);
+  const abbr = getTrackAbbreviation(item.trackTitle);
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
+          style={{ background: color.bg }}
+        >
+          {abbr}
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground truncate">
+            {item.trackTitle}
+          </p>
+          <p className="text-xs text-muted-foreground/70 truncate">
+            {item.sectionTitle}
+          </p>
+        </div>
+      </div>
+      <p className="text-sm font-semibold leading-snug">{item.itemTitle}</p>
+      <div className="flex items-center justify-between pt-1">
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-500 font-medium">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {item.isTestOut ? "Validada (test-out)" : "Prova validada"}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {new Date(item.completedAt).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioSection({ portfolio }: { portfolio: ProofPortfolioItem[] }) {
+  if (portfolio.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+        Portfólio de provas
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {portfolio.map((item) => (
+          <PortfolioCard key={item.itemId} item={item} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -594,6 +800,7 @@ function PublicProfilePageContent() {
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchActivities = useGetActivitiesService();
   const fetchProfileBadges = useGetProfileBadgesService();
+  const fetchProofPortfolio = useGetProofPortfolioService();
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["public-profile", username],
@@ -651,6 +858,27 @@ function PublicProfilePageContent() {
     },
     enabled: !!profile?.id,
   });
+
+  const { data: proofPortfolio } = useQuery({
+    queryKey: ["public-profile-portfolio", profile?.id],
+    queryFn: async () => {
+      const { status, data } = await fetchProofPortfolio(profile!.id);
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return [];
+    },
+    enabled: !!profile?.id,
+  });
+  const portfolio = useMemo(() => proofPortfolio ?? [], [proofPortfolio]);
+
+  const ownedBadgeIds = useMemo(
+    () => new Set((badgesData ?? []).map((pb) => pb.badgeId)),
+    [badgesData]
+  );
+  const activeTrackIds = useMemo(
+    () => new Set(portfolio.map((p) => p.trackId)),
+    [portfolio]
+  );
+  const trilhaSeals = useTrilhaSeals(ownedBadgeIds, activeTrackIds);
 
   const activityMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -780,6 +1008,11 @@ function PublicProfilePageContent() {
       value: rank ? `#${rank}` : "—",
       icon: Trophy,
     },
+    {
+      label: "Provas concluídas",
+      value: portfolio.length,
+      icon: ShieldCheck,
+    },
   ];
 
   return (
@@ -895,6 +1128,12 @@ function PublicProfilePageContent() {
             </p>
           )}
         </div>
+
+        {/* Selos de trilha */}
+        <TrilhaSealsRow seals={trilhaSeals} />
+
+        {/* Portfólio de provas */}
+        <PortfolioSection portfolio={portfolio} />
 
         {/* Badges / Conquistas */}
         {badgesData && badgesData.length > 0 && (

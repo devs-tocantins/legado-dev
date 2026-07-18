@@ -8,6 +8,8 @@ export type Submission = {
   id: string;
   profileId: string;
   activityId: string;
+  trackItemId?: string | null;
+  isTestOut?: boolean;
   proofUrl?: string | null;
   description?: string | null;
   activityDate?: string | null;

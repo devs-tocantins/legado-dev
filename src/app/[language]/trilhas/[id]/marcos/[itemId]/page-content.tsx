@@ -193,6 +193,11 @@ function CompleteMilestonePageContent() {
     return idx >= 0 && idx < currentIndex;
   }).length;
 
+  const sectionJustFinished =
+    !!section?.section.badgeId &&
+    sectionItems.length > 0 &&
+    sectionDone === sectionItems.length;
+
   const handleComplete = async () => {
     if (!item) return;
     setCompleting(true);
@@ -297,6 +302,23 @@ function CompleteMilestonePageContent() {
               </div>
 
               <div className="mt-6 border-t border-border pt-5">
+                {sectionJustFinished && section && (
+                  <Button
+                    variant="outline"
+                    className="mb-3 w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold border-accent/40 text-accent hover:bg-accent/5"
+                    render={
+                      <Link
+                        href={`/trilhas/${trackId}/conquista/${section.section.id}`}
+                      />
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 shrink-0" />
+                      Ver selo conquistado
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  </Button>
+                )}
                 {nextItem ? (
                   <Button
                     className="w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold"
