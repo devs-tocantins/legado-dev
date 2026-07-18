@@ -69,10 +69,19 @@ function MarcoRow({
         )}
       </div>
       {isDone ? (
-        <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs font-bold text-accent">
-          <Check className="h-3.5 w-3.5" />
-          concluído
-        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="flex items-center gap-1.5 font-mono text-xs font-bold text-accent">
+            <Check className="h-3.5 w-3.5" />
+            concluído
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            render={<Link href={`/trilhas/${trackId}/marcos/${item.id}`} />}
+          >
+            Ver
+          </Button>
+        </div>
       ) : isCurrent ? (
         <Button
           size="sm"
@@ -356,10 +365,6 @@ function TrackDetailPageContent() {
                   <p className="flex items-center gap-1.5 px-5 pb-4 font-mono text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />
                     conclua a etapa anterior para desbloquear
-                  </p>
-                ) : state === "done" ? (
-                  <p className="px-5 pb-4 font-mono text-xs text-muted-foreground">
-                    {sectionItems.length} marcos concluídos
                   </p>
                 ) : (
                   <div className="border-t border-border/70">

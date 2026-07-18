@@ -68,6 +68,7 @@ export type TrackItem = {
   allowsTestOut: boolean;
   journeyXp: number;
   grantsCommunityXp: boolean;
+  communityXpReward?: number;
   activityId?: string | null;
   missionId?: string | null;
   courseId?: string | null;
