@@ -9,6 +9,7 @@ import { RequestConfigType } from "./types/request-config";
 export type CoursesRequest = {
   page: number;
   limit: number;
+  trackItemId?: string;
 };
 
 export type CoursesResponse = InfinityPaginationType<Course>;
@@ -21,11 +22,47 @@ export function useGetCoursesService() {
       const requestUrl = new URL(`${API_URL}/api/v1/courses`);
       requestUrl.searchParams.append("page", data.page.toString());
       requestUrl.searchParams.append("limit", data.limit.toString());
+      if (data.trackItemId) {
+        requestUrl.searchParams.append("trackItemId", data.trackItemId);
+      }
 
       return fetch(requestUrl, {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<CoursesResponse>);
+    },
+    [fetch]
+  );
+}
+
+export function useGetCoursesByTrackItemService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (trackItemId: string, requestConfig?: RequestConfigType) => {
+      const requestUrl = new URL(`${API_URL}/api/v1/courses`);
+      requestUrl.searchParams.append("page", "1");
+      requestUrl.searchParams.append("limit", "50");
+      requestUrl.searchParams.append("trackItemId", trackItemId);
+
+      return fetch(requestUrl, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CoursesResponse>);
+    },
+    [fetch]
+  );
+}
+
+export function useGetCourseReviewsByCourseService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (courseId: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/course-reviews/by-course/${courseId}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CourseReview[]>);
     },
     [fetch]
   );
@@ -39,6 +76,7 @@ export type CreateCourseRequest = {
   price?: number | null;
   language?: string | null;
   submittedByProfileId?: string | null;
+  trackItemId?: string;
 };
 
 export function useCreateCourseService() {

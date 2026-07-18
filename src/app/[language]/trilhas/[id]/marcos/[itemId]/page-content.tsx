@@ -14,13 +14,27 @@ import {
   useGetMySubmissionsService,
 } from "@/services/api/services/submissions";
 import { useFileUploadService } from "@/services/api/services/files";
+import {
+  useGetCoursesByTrackItemService,
+  useCreateCourseService,
+  useCreateCourseReviewService,
+  useGetCourseReviewsByCourseService,
+} from "@/services/api/services/courses";
+import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { TrackItem, TrackItemType } from "@/services/api/types/learning-track";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
+import { Course, CourseReview } from "@/services/api/types/course";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
 import { Button } from "@/components/ui/button";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import {
   ArrowLeft,
@@ -28,10 +42,16 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Coins,
+  ExternalLink,
+  Gift,
+  GraduationCap,
   Loader2,
   Map,
+  Plus,
   ShieldCheck,
   Sparkles,
+  Star,
   Trophy,
   Upload,
   X,
@@ -322,6 +342,473 @@ function ProofSubmissionForm({
       >
         {submitting ? "Enviando..." : "Enviar prova"}
       </Button>
+    </div>
+  );
+}
+
+function StarPicker({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          className="p-0.5"
+        >
+          <Star
+            className={cn(
+              "h-6 w-6 transition-colors",
+              n <= value
+                ? "fill-amber-400 text-amber-400"
+                : "text-muted-foreground"
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StarsDisplay({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={cn(
+            "h-3.5 w-3.5",
+            n <= Math.round(rating)
+              ? "fill-amber-400 text-amber-400"
+              : "text-muted-foreground/30"
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RateMaterialDialog({
+  course,
+  open,
+  onClose,
+  onRated,
+}: {
+  course: Course;
+  open: boolean;
+  onClose: () => void;
+  onRated: () => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const createReview = useCreateCourseReviewService();
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const { status, data } = await createReview({
+        courseId: course.id,
+        rating,
+        comment: comment.trim() || null,
+      });
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        enqueueSnackbar("Avaliação enviada! Você ganhou XP de comunidade.", {
+          variant: "success",
+        });
+        setRating(0);
+        setComment("");
+        onRated();
+        onClose();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao enviar avaliação."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-400" />
+            Avaliar &quot;{course.title}&quot;
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <StarPicker value={rating} onChange={setRating} />
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={3}
+            maxLength={1000}
+            placeholder="O que achou deste material? (opcional)"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button variant="outline" className="flex-1" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={rating === 0 || submitting}
+            onClick={handleSubmit}
+          >
+            {submitting ? "Enviando..." : "Enviar avaliação"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SuggestMaterialDialog({
+  trackItemId,
+  profileId,
+  open,
+  onClose,
+  onCreated,
+}: {
+  trackItemId: string;
+  profileId: string | null;
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [provider, setProvider] = useState("");
+  const [url, setUrl] = useState("");
+  const [isFree, setIsFree] = useState(true);
+  const [price, setPrice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const createCourse = useCreateCourseService();
+
+  const canSubmit = title.trim().length > 0 && url.trim().length > 0;
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const { status, data } = await createCourse({
+        title: title.trim(),
+        provider: provider.trim() || null,
+        url: url.trim(),
+        isFree,
+        price: isFree ? null : Number(price) || null,
+        submittedByProfileId: profileId,
+        trackItemId,
+      });
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        enqueueSnackbar(
+          "Sugestão enviada! Vai aparecer aqui após passar pela moderação.",
+          { variant: "success" }
+        );
+        setTitle("");
+        setProvider("");
+        setUrl("");
+        setIsFree(true);
+        setPrice("");
+        onCreated();
+        onClose();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao cadastrar material."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-4 w-4 text-primary" />
+            Sugerir curso ou vídeo
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Sugira um material sobre este assunto. Ele entra como pendente e só
+          aparece aqui depois de verificado pela moderação.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium">Título *</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium">Instituição/Autor</label>
+            <input
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium">Link *</label>
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://..."
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isFreeMaterial"
+              checked={isFree}
+              onChange={(e) => setIsFree(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <label htmlFor="isFreeMaterial" className="text-sm">
+              Gratuito
+            </label>
+          </div>
+          {!isFree && (
+            <div>
+              <label className="text-xs font-medium">Preço (R$)</label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                min={0}
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button variant="outline" className="flex-1" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={!canSubmit || submitting}
+            onClick={handleSubmit}
+          >
+            {submitting ? "Enviando..." : "Sugerir"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CourseTopicSection({ item }: { item: TrackItem }) {
+  const fetchCourses = useGetCoursesByTrackItemService();
+  const fetchCourseReviews = useGetCourseReviewsByCourseService();
+  const fetchMyProfile = useGetMyGamificationProfileService();
+  const queryClient = useQueryClient();
+
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [ratingCourse, setRatingCourse] = useState<Course | null>(null);
+
+  const coursesQueryKey = ["trilha-marco-courses", item.id];
+
+  const { data: courses } = useQuery({
+    queryKey: coursesQueryKey,
+    queryFn: async () => {
+      const { status, data } = await fetchCourses(item.id);
+      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      return [] as Course[];
+    },
+  });
+
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-gamification-profile"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      return status === HTTP_CODES_ENUM.OK ? data : null;
+    },
+  });
+
+  const courseIds = (courses ?? []).map((c) => c.id);
+  const reviewsQueryKey = ["trilha-marco-course-reviews", item.id, courseIds];
+
+  const { data: reviewsByCourse } = useQuery({
+    queryKey: reviewsQueryKey,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        courseIds.map(async (courseId) => {
+          const { status, data } = await fetchCourseReviews(courseId);
+          return [courseId, status === HTTP_CODES_ENUM.OK ? data : []] as [
+            string,
+            CourseReview[],
+          ];
+        })
+      );
+      return Object.fromEntries(entries) as Record<string, CourseReview[]>;
+    },
+    enabled: courseIds.length > 0,
+  });
+
+  const hasRatedAny = (courses ?? []).some((c) =>
+    (reviewsByCourse?.[c.id] ?? []).some((r) => r.profileId === myProfile?.id)
+  );
+
+  return (
+    <div className="mt-6 rounded-[22px] border border-border bg-card p-6 shadow-[0_6px_0_var(--border)]">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[16px] font-bold">
+            Cursos e vídeos sobre este assunto
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Materiais sugeridos pela comunidade e verificados pela moderação.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="shrink-0 gap-1.5"
+          onClick={() => setSuggestOpen(true)}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Sugerir
+        </Button>
+      </div>
+
+      {!courses || courses.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState
+            icon={GraduationCap}
+            title="Nenhum material verificado ainda"
+            description="Sugira um curso ou vídeo sobre este assunto para a comunidade avaliar."
+          />
+        </div>
+      ) : (
+        <>
+          {!hasRatedAny && (
+            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-4">
+              <Star className="h-4 w-4 shrink-0 text-primary" />
+              <p className="text-sm">
+                Avalie pelo menos um curso ou vídeo sobre este assunto e ganhe
+                XP de comunidade.
+              </p>
+            </div>
+          )}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {courses.map((course) => {
+              const reviews = reviewsByCourse?.[course.id] ?? [];
+              const avg =
+                reviews.length > 0
+                  ? reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    reviews.length
+                  : 0;
+              return (
+                <div
+                  key={course.id}
+                  className="flex flex-col gap-2.5 rounded-2xl border border-border bg-background p-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-bold leading-snug">
+                      {course.title}
+                    </h3>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                        course.isFree
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      )}
+                    >
+                      {course.isFree ? (
+                        <>
+                          <Gift className="h-3 w-3" /> Gratuito
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="h-3 w-3" />
+                          {course.price ? `R$ ${course.price}` : "Pago"}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {course.provider && (
+                    <p className="text-xs text-muted-foreground">
+                      {course.provider}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <StarsDisplay rating={avg} />
+                    <span className="text-xs text-muted-foreground">
+                      {reviews.length > 0
+                        ? `${avg.toFixed(1)} (${reviews.length})`
+                        : "Sem avaliações"}
+                    </span>
+                  </div>
+                  <div className="mt-auto flex items-center gap-2 pt-1">
+                    <a
+                      href={course.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-1.5"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Acessar
+                      </Button>
+                    </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setRatingCourse(course)}
+                    >
+                      <Star className="h-3.5 w-3.5" />
+                      Avaliar
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <SuggestMaterialDialog
+        trackItemId={item.id}
+        profileId={myProfile?.id ?? null}
+        open={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        onCreated={() =>
+          queryClient.invalidateQueries({ queryKey: coursesQueryKey })
+        }
+      />
+
+      {ratingCourse && (
+        <RateMaterialDialog
+          course={ratingCourse}
+          open={!!ratingCourse}
+          onClose={() => setRatingCourse(null)}
+          onRated={() =>
+            queryClient.invalidateQueries({ queryKey: reviewsQueryKey })
+          }
+        />
+      )}
     </div>
   );
 }
@@ -759,6 +1246,8 @@ function CompleteMilestonePageContent() {
           )}
         </div>
       </div>
+
+      <CourseTopicSection item={item} />
     </div>
   );
 }
