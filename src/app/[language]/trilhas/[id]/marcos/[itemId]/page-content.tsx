@@ -9,8 +9,14 @@ import {
   useGetLearningTrackOverviewService,
   useGetLearningTrackProgressService,
 } from "@/services/api/services/learning-tracks";
+import {
+  usePostSubmissionService,
+  useGetMySubmissionsService,
+} from "@/services/api/services/submissions";
+import { useFileUploadService } from "@/services/api/services/files";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { TrackItemType } from "@/services/api/types/learning-track";
+import { TrackItem, TrackItemType } from "@/services/api/types/learning-track";
+import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
 import { Button } from "@/components/ui/button";
 import Link from "@/components/link";
@@ -21,12 +27,17 @@ import {
   ArrowRight,
   CheckCircle2,
   Circle,
+  Clock,
+  Loader2,
   Map,
   ShieldCheck,
   Sparkles,
   Trophy,
+  Upload,
+  X,
+  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getApiError } from "@/lib/utils";
 
 const AUTO_COMPLETABLE_TYPES = new Set<TrackItemType>([
   TrackItemType.RESOURCE,
@@ -120,6 +131,201 @@ function Quiz({
   );
 }
 
+const MAX_PROOF_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+function ProofSubmissionForm({
+  item,
+  rejectionFeedback,
+  onSubmitted,
+}: {
+  item: TrackItem;
+  rejectionFeedback?: string | null;
+  onSubmitted: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const postSubmission = usePostSubmissionService();
+  const uploadFile = useFileUploadService();
+
+  const [proofUrl, setProofUrl] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [description, setDescription] = useState("");
+  const [isTestOut, setIsTestOut] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_PROOF_FILE_SIZE) {
+      setError("O arquivo deve ter no máximo 5 MB.");
+      return;
+    }
+    setError("");
+    setProofFile(file);
+    setUploading(true);
+    try {
+      const { status, data } = await uploadFile(file);
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        setUploadedUrl(data.file.path);
+      } else {
+        setProofFile(null);
+        setError("Erro ao enviar o arquivo. Tente novamente.");
+      }
+    } catch {
+      setProofFile(null);
+      setError("Erro ao enviar o arquivo. Tente novamente.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setProofFile(null);
+    setUploadedUrl(null);
+  };
+
+  const effectiveProofUrl = uploadedUrl ?? proofUrl.trim();
+
+  const handleSubmit = async () => {
+    if (!effectiveProofUrl) {
+      setError("Cole o link do repositório/comprovante ou anexe um print.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      const { status, data } = await postSubmission({
+        trackItemId: item.id,
+        isTestOut,
+        proofUrl: effectiveProofUrl,
+        description: description.trim() || undefined,
+      });
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        enqueueSnackbar("Prova enviada! Aguarde a revisão da moderação.", {
+          variant: "success",
+        });
+        onSubmitted();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao enviar a prova."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 space-y-4">
+      {rejectionFeedback && (
+        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-destructive/30 bg-destructive/[0.03] p-4">
+          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div>
+            <p className="text-sm font-bold text-destructive">
+              Ajuste solicitado pela moderação
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {rejectionFeedback}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-bold">
+          Link do repositório/comprovante
+        </label>
+        <input
+          value={proofUrl}
+          onChange={(e) => {
+            setProofUrl(e.target.value);
+            setError("");
+          }}
+          placeholder="https://github.com/seu-usuario/seu-repo"
+          disabled={!!uploadedUrl}
+          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-muted-foreground">
+          ou anexe um print (opcional)
+        </label>
+        {proofFile ? (
+          <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
+            {uploading ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+            ) : (
+              <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
+            )}
+            <span className="flex-1 truncate text-sm">{proofFile.name}</span>
+            {!uploading && (
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              JPG, PNG ou GIF · Máx. 5 MB
+            </span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif"
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+          </label>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-muted-foreground">
+          Notas para o moderador (opcional)
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          maxLength={2000}
+          placeholder="Algo que ajude na avaliação..."
+          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+        />
+      </div>
+
+      {item.allowsTestOut && (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isTestOut}
+            onChange={(e) => setIsTestOut(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Já domino este conteúdo e estou pulando direto para a prova (test-out)
+        </label>
+      )}
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      <Button
+        onClick={handleSubmit}
+        disabled={submitting || uploading}
+        className="w-full rounded-2xl py-6 text-[15px] font-bold"
+      >
+        {submitting ? "Enviando..." : "Enviar prova"}
+      </Button>
+    </div>
+  );
+}
+
 function CompleteMilestonePageContent() {
   const params = useParams();
   const trackId = params.id as string;
@@ -130,10 +336,23 @@ function CompleteMilestonePageContent() {
   const fetchOverview = useGetLearningTrackOverviewService();
   const fetchProgress = useGetLearningTrackProgressService();
   const completeItem = useCompleteTrackItemService();
+  const fetchMySubmissions = useGetMySubmissionsService();
 
   const [quizPassed, setQuizPassed] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [justCompleted, setJustCompleted] = useState<number | null>(null);
+
+  const { data: mySubmissions, refetch: refetchMySubmissions } = useQuery({
+    queryKey: ["my-submissions", "trilhas"],
+    queryFn: async () => {
+      const { status, data } = await fetchMySubmissions({
+        page: 1,
+        limit: 100,
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      return [];
+    },
+  });
 
   const { data: overview, isLoading: isLoadingOverview } = useQuery({
     queryKey: ["learning-track-overview", trackId],
@@ -197,6 +416,17 @@ function CompleteMilestonePageContent() {
     !!section?.section.badgeId &&
     sectionItems.length > 0 &&
     sectionDone === sectionItems.length;
+
+  const myItemSubmission = useMemo(() => {
+    if (!item) return null;
+    const matches = (mySubmissions ?? []).filter(
+      (s) => s.trackItemId === item.id
+    );
+    if (matches.length === 0) return null;
+    return matches.reduce((latest, s) =>
+      new Date(s.createdAt) > new Date(latest.createdAt) ? s : latest
+    );
+  }, [mySubmissions, item]);
 
   const handleComplete = async () => {
     if (!item) return;
@@ -407,6 +637,59 @@ function CompleteMilestonePageContent() {
                     {completing ? "..." : "Concluir"}
                   </Button>
                 </div>
+              ) : item.type === TrackItemType.PROOF ? (
+                <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
+                  <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
+                    <ShieldCheck className="h-4.5 w-4.5" />
+                    Este marco exige comprovação
+                  </div>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Marcos de prova prática são validados por um moderador da
+                    comunidade.
+                  </p>
+                  {isCriteriaConfig(item.config) && (
+                    <div>
+                      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        O que será avaliado
+                      </p>
+                      <ul className="flex flex-col gap-2 text-sm">
+                        {item.config.criteria.map((criterion, i) => (
+                          <li key={i} className="flex items-start gap-2.5">
+                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
+                              {i + 1}
+                            </span>
+                            {criterion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {myItemSubmission?.status === SubmissionStatusEnum.PENDING ? (
+                    <div className="mt-4 flex items-center gap-2.5 rounded-2xl border-2 border-border bg-muted/40 p-4">
+                      <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-bold">
+                          Prova enviada, aguardando revisão
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Um moderador vai avaliar seu envio em breve.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ProofSubmissionForm
+                      item={item}
+                      rejectionFeedback={
+                        myItemSubmission?.status ===
+                        SubmissionStatusEnum.REJECTED
+                          ? myItemSubmission.feedback
+                          : null
+                      }
+                      onSubmitted={() => refetchMySubmissions()}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
                   <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
@@ -414,9 +697,9 @@ function CompleteMilestonePageContent() {
                     Este marco exige comprovação
                   </div>
                   <p className="mb-4 text-sm text-muted-foreground">
-                    {item.type === TrackItemType.PROOF
-                      ? "Marcos de prova prática são validados por um moderador da comunidade. O envio de comprovantes para esta trilha ainda está sendo integrado."
-                      : "Este marco depende de uma comprovação vinculada a outro recurso da comunidade (curso, evento ou missão), que ainda está sendo integrada nesta trilha."}
+                    Este marco depende de uma comprovação vinculada a outro
+                    recurso da comunidade (curso, evento ou missão), que ainda
+                    está sendo integrada nesta trilha.
                   </p>
                   {isCriteriaConfig(item.config) && (
                     <div>

@@ -86,7 +86,9 @@ export function useGetPublicSubmissionDetailService() {
 }
 
 export type SubmissionPostRequest = {
-  activityId: string;
+  activityId?: string;
+  trackItemId?: string;
+  isTestOut?: boolean;
   proofUrl?: string | null;
   description?: string | null;
   activityDate?: string | null;
