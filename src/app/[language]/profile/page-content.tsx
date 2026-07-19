@@ -23,10 +23,10 @@ import {
   getNextLevelXp,
   formatXp,
 } from "@/lib/gamification";
+import { getTrackColor } from "@/lib/track-colors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,31 @@ import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
 
+// ─── Cartão hard-shadow (mesma linguagem visual da Trilhas) ────────────────
+
+function HardShadowSection({
+  className,
+  refProp,
+  children,
+}: {
+  className?: string;
+  refProp?: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      ref={refProp}
+      className={cn(
+        "overflow-hidden rounded-[20px] border border-border bg-card text-card-foreground shadow-[0_5px_0_var(--card-shadow)]",
+        className
+      )}
+      style={{ "--card-shadow": "var(--border)" } as React.CSSProperties}
+    >
+      {children}
+    </section>
+  );
+}
+
 function StatTile({
   icon,
   value,
@@ -72,11 +97,18 @@ function StatTile({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
-      {icon}
+    <div
+      className="flex items-center gap-3 rounded-[18px] border border-border bg-card p-4 shadow-[0_4px_0_var(--card-shadow)]"
+      style={{ "--card-shadow": "var(--border)" } as React.CSSProperties}
+    >
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted">
+        {icon}
+      </div>
       <div className="min-w-0">
-        <p className="text-lg font-bold leading-none">{value}</p>
-        <p className="mt-1 truncate text-xs text-muted-foreground">{label}</p>
+        <p className="font-mono text-lg font-bold leading-none">{value}</p>
+        <p className="mt-1.5 truncate font-mono text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -90,18 +122,30 @@ function StatusIcon({ status }: { status: SubmissionStatusEnum }) {
   return <Clock className="h-4 w-4 text-amber-500 shrink-0" />;
 }
 
-function StatusBadge({ status }: { status: SubmissionStatusEnum }) {
-  if (status === SubmissionStatusEnum.APPROVED) return <Badge>Aprovado</Badge>;
-  if (status === SubmissionStatusEnum.REJECTED)
-    return <Badge variant="destructive">Rejeitado</Badge>;
-  return <Badge variant="secondary">Pendente</Badge>;
+function StatusPill({ status }: { status: SubmissionStatusEnum }) {
+  const style =
+    status === SubmissionStatusEnum.APPROVED
+      ? "bg-accent/15 text-accent"
+      : status === SubmissionStatusEnum.REJECTED
+        ? "bg-destructive/10 text-destructive"
+        : "bg-amber-500/10 text-amber-600";
+  const label =
+    status === SubmissionStatusEnum.APPROVED
+      ? "Aprovado"
+      : status === SubmissionStatusEnum.REJECTED
+        ? "Rejeitado"
+        : "Pendente";
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold",
+        style
+      )}
+    >
+      {label}
+    </span>
+  );
 }
-
-const SUBMISSION_BORDER: Record<SubmissionStatusEnum, string> = {
-  [SubmissionStatusEnum.APPROVED]: "border-l-emerald-500",
-  [SubmissionStatusEnum.REJECTED]: "border-l-destructive",
-  [SubmissionStatusEnum.PENDING]: "border-l-amber-500",
-};
 
 function Profile() {
   const { user } = useAuth();
@@ -262,9 +306,9 @@ function Profile() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-2xl space-y-5 px-4 py-8">
       {/* Identidade */}
-      <section className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
+      <HardShadowSection className="rounded-[24px]">
         <div className={cn("h-28 w-full", banner.className)} />
         <div className="px-5 pb-5">
           <div className="-mt-10 flex items-end justify-between gap-3">
@@ -284,7 +328,7 @@ function Profile() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-1.5 rounded-xl font-bold"
                   render={<Link href={`/u/${profile.username}`} />}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -293,7 +337,7 @@ function Profile() {
               )}
               <Button
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 rounded-xl font-bold"
                 data-testid="edit-profile"
                 render={<Link href="/profile/edit" />}
               >
@@ -326,7 +370,7 @@ function Profile() {
             </p>
           </div>
         </div>
-      </section>
+      </HardShadowSection>
 
       {/* Stats */}
       {!profileLoading && profile && (
@@ -356,13 +400,10 @@ function Profile() {
 
       {/* Progressão de nível */}
       {!profileLoading && profile && (
-        <section
-          ref={levelRef}
-          className="space-y-3 rounded-xl border bg-card p-5 text-card-foreground shadow-sm"
-        >
+        <HardShadowSection refProp={levelRef} className="space-y-3 p-5">
           <div className="flex items-baseline justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Nível atual
               </p>
               <p className={cn("text-lg font-bold", level.color)}>
@@ -375,7 +416,7 @@ function Profile() {
                 : `Faltam ${formatXp(xpToNext)} XP para o próximo nível`}
             </p>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-2.5 rounded-full bg-muted overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-primary"
               initial={{ width: 0 }}
@@ -388,80 +429,85 @@ function Profile() {
             <span>{progress}%</span>
             <span>{isMaxLevel ? "∞" : `${formatXp(level.maxXp + 1)} XP`}</span>
           </div>
-        </section>
+        </HardShadowSection>
       )}
 
       {/* Submissões Recentes */}
-      <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+      <HardShadowSection>
+        <div className="flex flex-row items-center justify-between px-5 pt-4 pb-1">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             Submissões Recentes
-          </CardTitle>
+          </p>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs gap-1"
+            className="h-7 gap-1 rounded-lg text-xs font-bold"
             render={<Link href="/submissions" />}
           >
             Ver todas
             <ArrowRight className="h-3 w-3" />
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-3 pt-2">
           {recentSubmissions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Nenhuma submissão ainda.
             </p>
           ) : (
-            <div className="space-y-1">
-              {recentSubmissions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className={cn(
-                    "flex items-center gap-3 py-2.5 px-3 rounded-md border-l-2",
-                    SUBMISSION_BORDER[sub.status]
-                  )}
-                >
-                  <StatusIcon status={sub.status} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
-                      {activityMap.get(sub.activityId) ?? (
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {sub.activityId.substring(0, 8)}…
+            <div className="space-y-1.5">
+              {recentSubmissions.map((sub) => {
+                const color = getTrackColor(sub.activityId);
+                return (
+                  <div
+                    key={sub.id}
+                    className="flex items-center gap-3 rounded-2xl bg-muted/40 py-2.5 px-3"
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: color.bg }}
+                    >
+                      <StatusIcon status={sub.status} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">
+                        {activityMap.get(sub.activityId) ?? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {sub.activityId.substring(0, 8)}…
+                          </span>
+                        )}
+                      </p>
+                      <p className="font-mono text-[11px] text-muted-foreground">
+                        {new Date(sub.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {sub.status === SubmissionStatusEnum.APPROVED && (
+                        <span className="font-mono text-xs font-bold text-accent">
+                          +{sub.awardedXp}
                         </span>
                       )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(sub.createdAt).toLocaleDateString("pt-BR")}
-                    </p>
+                      <StatusPill status={sub.status} />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {sub.status === SubmissionStatusEnum.APPROVED && (
-                      <span className="text-xs font-semibold font-mono text-emerald-500">
-                        +{sub.awardedXp}
-                      </span>
-                    )}
-                    <StatusBadge status={sub.status} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </HardShadowSection>
 
       {/* Conquistas */}
       {myBadges && myBadges.length > 0 && (
-        <div>
+        <HardShadowSection className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
               Conquistas
-            </h2>
+            </p>
             {profile && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-xs px-2 gap-1"
+                className="h-6 gap-1 rounded-lg px-2 text-xs font-bold"
                 render={<Link href={`/u/${profile.username}`} />}
               >
                 Ver perfil público
@@ -494,23 +540,26 @@ function Profile() {
               </div>
             ))}
           </div>
-        </div>
+        </HardShadowSection>
       )}
 
       {/* Ações rápidas */}
       <div ref={actionsRef}>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">
+        <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
           Ações Rápidas
-        </h2>
+        </p>
         <div className="flex flex-wrap gap-2">
-          <Button render={<Link href="/submissions/new" />} className="gap-2">
+          <Button
+            render={<Link href="/submissions/new" />}
+            className="gap-2 rounded-xl font-bold shadow-[0_3px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+          >
             <ClipboardList className="h-4 w-4" />
             Submeter Atividade
           </Button>
           <Button
             variant="outline"
             render={<Link href="/voluntariado" />}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold"
           >
             <BookOpen className="h-4 w-4" />
             Ver Atividades
@@ -518,7 +567,7 @@ function Profile() {
           <Button
             variant="outline"
             render={<Link href="/leaderboard" />}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold"
           >
             <Trophy className="h-4 w-4" />
             Ver Ranking
@@ -526,7 +575,7 @@ function Profile() {
           <Button
             variant="outline"
             render={<Link href="/transactions" />}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold"
           >
             <Receipt className="h-4 w-4" />
             Histórico de Tokens
@@ -534,14 +583,14 @@ function Profile() {
           <Button
             variant="outline"
             render={<Link href="/secret" />}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold"
           >
             <KeyRound className="h-4 w-4" />
             Resgatar Código
           </Button>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold"
             onClick={() => setTokenDialog(true)}
           >
             <Send className="h-4 w-4" />
@@ -550,7 +599,7 @@ function Profile() {
           <Button
             variant="ghost"
             render={<Link href="/rules" />}
-            className="gap-2 text-primary"
+            className="gap-2 rounded-xl font-bold text-primary"
           >
             <BookOpen className="h-4 w-4" />
             Nossas Regras
@@ -599,7 +648,7 @@ function Profile() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Destinatário</label>
               {recipientId ? (
-                <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm">
+                <div className="flex items-center gap-2 rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm">
                   <span className="flex-1 truncate">{recipientLabel}</span>
                   <button
                     type="button"
@@ -625,14 +674,14 @@ function Profile() {
                       }}
                       onFocus={() => setShowDropdown(true)}
                       placeholder="Buscar por nome ou @username..."
-                      className="w-full rounded-lg border border-input bg-background pl-9 pr-9 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full rounded-xl border border-input bg-background pl-9 pr-9 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     {searching && (
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
                   {showDropdown && debouncedSearch.trim() && (
-                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
+                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
                       {searchResults && searchResults.length > 0
                         ? searchResults.map((p) => (
                             <button
@@ -684,7 +733,7 @@ function Profile() {
                 max={Math.min(5, profile?.gratitudeTokens ?? 0)}
                 value={tokenAmount}
                 onChange={(e) => setTokenAmount(Number(e.target.value))}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="space-y-1.5">
@@ -694,15 +743,20 @@ function Profile() {
                 onChange={(e) => setTokenMessage(e.target.value)}
                 placeholder="Obrigado pela ajuda..."
                 rows={3}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
               />
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setTokenDialog(false)}>
+            <Button
+              variant="outline"
+              className="rounded-xl font-bold"
+              onClick={() => setTokenDialog(false)}
+            >
               Cancelar
             </Button>
             <Button
+              className="rounded-xl font-bold"
               onClick={handleTransfer}
               disabled={transferring || !recipientId.trim()}
             >
