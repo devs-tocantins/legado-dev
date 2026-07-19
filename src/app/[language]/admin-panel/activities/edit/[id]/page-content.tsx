@@ -4,7 +4,7 @@ import { useForm, FormProvider, useFormState } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
@@ -13,6 +13,8 @@ import {
   useGetActivityService,
   usePatchActivityService,
 } from "@/services/api/services/activities";
+import { EffortTier } from "@/services/api/types/activity";
+import { EffortTiersFields } from "@/components/activity/effort-tiers-fields";
 import { useParams } from "next/navigation";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
@@ -32,6 +34,7 @@ type EditFormData = {
   requiresDescription: boolean;
   requiresActivityDate: boolean;
   cooldownHours: number;
+  isFreeform: boolean;
 };
 
 const toInteger = (value: number, originalValue: unknown) =>
@@ -77,6 +80,7 @@ const useValidationSchema = () => {
     requiresProof: yup.boolean().default(false),
     requiresDescription: yup.boolean().default(false),
     requiresActivityDate: yup.boolean().default(false),
+    isFreeform: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -107,6 +111,8 @@ function FormEditActivity() {
   const { t } = useTranslation("admin-panel-activities-edit");
   const validationSchema = useValidationSchema();
   const { enqueueSnackbar } = useSnackbar();
+  const [usesEffortTiers, setUsesEffortTiers] = useState(false);
+  const [effortTiers, setEffortTiers] = useState<EffortTier[]>([]);
 
   const methods = useForm<EditFormData>({
     resolver: yupResolver(validationSchema),
@@ -118,6 +124,7 @@ function FormEditActivity() {
       requiresProof: false,
       requiresDescription: false,
       requiresActivityDate: false,
+      isFreeform: false,
       cooldownHours: 0,
     },
   });
@@ -136,6 +143,8 @@ function FormEditActivity() {
         requiresDescription: formData.requiresDescription,
         requiresActivityDate: formData.requiresActivityDate,
         cooldownHours: formData.cooldownHours,
+        isFreeform: formData.isFreeform,
+        effortTiers: usesEffortTiers ? effortTiers : null,
       },
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
@@ -170,8 +179,13 @@ function FormEditActivity() {
           requiresProof: activity?.requiresProof ?? false,
           requiresDescription: activity?.requiresDescription ?? false,
           requiresActivityDate: activity?.requiresActivityDate ?? false,
+          isFreeform: activity?.isFreeform ?? false,
           cooldownHours: activity?.cooldownHours ?? 0,
         });
+        if (activity?.effortTiers && activity.effortTiers.length > 0) {
+          setUsesEffortTiers(true);
+          setEffortTiers(activity.effortTiers);
+        }
       }
     };
     getInitialData();
@@ -260,6 +274,28 @@ function FormEditActivity() {
                 testId="requiresActivityDate"
                 label="Requer data de realização"
               />
+              <FormCheckboxInput<EditFormData>
+                name="isFreeform"
+                testId="isFreeform"
+                label="Atividade livre (usuário digita o título ao submeter)"
+              />
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={usesEffortTiers}
+                  onChange={(e) => setUsesEffortTiers(e.target.checked)}
+                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                />
+                Usar faixas de esforço (P/M/G/Épico) em vez de XP fixo
+              </label>
+              {usesEffortTiers && (
+                <EffortTiersFields
+                  tiers={effortTiers}
+                  onChange={setEffortTiers}
+                />
+              )}
+
               <div className="flex gap-2 pt-2">
                 <EditActivityFormActions />
                 <Button

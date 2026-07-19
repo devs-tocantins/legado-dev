@@ -6,9 +6,15 @@ import {
   LearningTrack,
   LearningTrackOverview,
   LearningTrackProgress,
+  LearningTrackStatus,
+  LearningTrackTier,
   TrackEnrollment,
   TrackItem,
   TrackItemCompletion,
+  TrackItemStatus,
+  TrackItemType,
+  TrackSection,
+  TrackSectionStatus,
 } from "../types/learning-track";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { RequestConfigType } from "./types/request-config";
@@ -173,6 +179,190 @@ export function useGetProofPortfolioService() {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<ProofPortfolioItem[]>);
+    },
+    [fetch]
+  );
+}
+
+// ─── Admin: Learning Track CRUD ────────────────────────────────────────────
+
+export type CreateLearningTrackRequest = {
+  slug: string;
+  title: string;
+  description?: string | null;
+  area: string;
+  tier: LearningTrackTier;
+  status?: LearningTrackStatus;
+  requiresTrackId?: string | null;
+};
+
+export type UpdateLearningTrackRequest = Partial<CreateLearningTrackRequest>;
+
+export function useCreateLearningTrackService() {
+  const fetch = useFetch();
+  return useCallback(
+    (data: CreateLearningTrackRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/learning-tracks`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<LearningTrack>);
+    },
+    [fetch]
+  );
+}
+
+export function useUpdateLearningTrackService() {
+  const fetch = useFetch();
+  return useCallback(
+    (
+      id: string,
+      data: UpdateLearningTrackRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      return fetch(`${API_URL}/api/v1/learning-tracks/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<LearningTrack>);
+    },
+    [fetch]
+  );
+}
+
+export function useDeleteLearningTrackService() {
+  const fetch = useFetch();
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/learning-tracks/${id}`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<undefined>);
+    },
+    [fetch]
+  );
+}
+
+// ─── Admin: Track Section CRUD ─────────────────────────────────────────────
+
+export type CreateTrackSectionRequest = {
+  trackId: string;
+  title: string;
+  description?: string | null;
+  position: number;
+  status?: TrackSectionStatus;
+  badgeId?: string | null;
+};
+
+export type UpdateTrackSectionRequest = Partial<CreateTrackSectionRequest>;
+
+export function useCreateTrackSectionService() {
+  const fetch = useFetch();
+  return useCallback(
+    (data: CreateTrackSectionRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/track-sections`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TrackSection>);
+    },
+    [fetch]
+  );
+}
+
+export function useUpdateTrackSectionService() {
+  const fetch = useFetch();
+  return useCallback(
+    (
+      id: string,
+      data: UpdateTrackSectionRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      return fetch(`${API_URL}/api/v1/track-sections/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TrackSection>);
+    },
+    [fetch]
+  );
+}
+
+export function useDeleteTrackSectionService() {
+  const fetch = useFetch();
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/track-sections/${id}`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<undefined>);
+    },
+    [fetch]
+  );
+}
+
+// ─── Admin: Track Item CRUD ────────────────────────────────────────────────
+
+export type CreateTrackItemRequest = {
+  trackId: string;
+  sectionId: string;
+  type: TrackItemType;
+  title: string;
+  body?: string | null;
+  position: number;
+  status?: TrackItemStatus;
+  isOptional?: boolean;
+  allowsTestOut?: boolean;
+  journeyXp?: number;
+  grantsCommunityXp?: boolean;
+  communityXpReward?: number;
+  activityId?: string | null;
+  missionId?: string | null;
+  courseId?: string | null;
+};
+
+export type UpdateTrackItemRequest = Partial<CreateTrackItemRequest>;
+
+export function useCreateTrackItemService() {
+  const fetch = useFetch();
+  return useCallback(
+    (data: CreateTrackItemRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/track-items`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TrackItem>);
+    },
+    [fetch]
+  );
+}
+
+export function useUpdateTrackItemService() {
+  const fetch = useFetch();
+  return useCallback(
+    (
+      id: string,
+      data: UpdateTrackItemRequest,
+      requestConfig?: RequestConfigType
+    ) => {
+      return fetch(`${API_URL}/api/v1/track-items/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<TrackItem>);
+    },
+    [fetch]
+  );
+}
+
+export function useDeleteTrackItemService() {
+  const fetch = useFetch();
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/track-items/${id}`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<undefined>);
     },
     [fetch]
   );

@@ -32,6 +32,7 @@ import {
   History,
   CalendarDays,
   MessageCircle,
+  Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -315,6 +316,12 @@ function AdminDashboardPageContent() {
           Gestao de Conteudo
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <NavCard
+            href="/admin-panel/learning-tracks"
+            icon={Map}
+            label="Trilhas"
+            description="Criar e montar trilhas: seções, marcos e vínculos"
+          />
           <NavCard
             href="/admin-panel/activities"
             icon={Activity}
