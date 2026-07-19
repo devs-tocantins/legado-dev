@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import { usePostSubmissionService } from "@/services/api/services/submissions";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { Activity } from "@/services/api/types/activity";
+import { Activity, EffortLevelEnum } from "@/services/api/types/activity";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,21 @@ import { useFileUploadService } from "@/services/api/services/files";
 import { MarkdownContent, MarkdownEditor } from "@/components/markdown-editor";
 import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
 
+function formatRewardLabel(activity: Activity): string {
+  if (activity.effortTiers && activity.effortTiers.length > 0) {
+    const xps = activity.effortTiers.map((t) => t.xp);
+    return `${Math.min(...xps)}–${Math.max(...xps)} XP`;
+  }
+  return `${activity.fixedReward} XP`;
+}
+
+const EFFORT_LEVEL_ORDER: EffortLevelEnum[] = [
+  EffortLevelEnum.P,
+  EffortLevelEnum.M,
+  EffortLevelEnum.G,
+  EffortLevelEnum.EPICO,
+];
+
 function NewSubmissionPageContent() {
   const searchParams = useSearchParams();
   const _language = useLanguage();
@@ -59,6 +74,10 @@ function NewSubmissionPageContent() {
   const [proofError, setProofError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
   const [activityDateError, setActivityDateError] = useState("");
+  const [customTitle, setCustomTitle] = useState("");
+  const [customTitleError, setCustomTitleError] = useState("");
+  const [effortLevel, setEffortLevel] = useState<EffortLevelEnum | null>(null);
+  const [effortLevelError, setEffortLevelError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -152,6 +171,16 @@ function NewSubmissionPageContent() {
       return;
     }
     setActivityDateError("");
+    if (selectedActivity.isFreeform && !customTitle.trim()) {
+      setCustomTitleError("Conte o que você fez.");
+      return;
+    }
+    setCustomTitleError("");
+    if (selectedActivity.effortTiers?.length && !effortLevel) {
+      setEffortLevelError("Escolha a faixa de esforço.");
+      return;
+    }
+    setEffortLevelError("");
     setSubmitting(true);
     try {
       const { status, data } = await postSubmission({
@@ -159,6 +188,10 @@ function NewSubmissionPageContent() {
         proofUrl: proofUploadedUrl ?? undefined,
         description: description.trim() || undefined,
         activityDate: activityDate || undefined,
+        customTitle: selectedActivity.isFreeform
+          ? customTitle.trim()
+          : undefined,
+        effortLevel: effortLevel ?? undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
         setSubmitted(true);
@@ -183,6 +216,10 @@ function NewSubmissionPageContent() {
     setProofError("");
     setDescriptionError("");
     setActivityDateError("");
+    setCustomTitle("");
+    setCustomTitleError("");
+    setEffortLevel(null);
+    setEffortLevelError("");
   };
 
   // Success state
@@ -275,7 +312,7 @@ function NewSubmissionPageContent() {
                   </div>
                   <Badge className="shrink-0">
                     <Zap className="h-3 w-3 mr-1" />
-                    {selectedActivity.fixedReward} XP
+                    {formatRewardLabel(selectedActivity)}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -367,7 +404,7 @@ function NewSubmissionPageContent() {
                           </div>
                         </div>
                         <Badge variant="outline" className="shrink-0 text-xs">
-                          {activity.fixedReward} XP
+                          {formatRewardLabel(activity)}
                         </Badge>
                       </button>
                     ))}
@@ -382,6 +419,88 @@ function NewSubmissionPageContent() {
             )}
           </CardContent>
         </Card>
+
+        {/* Título livre (atividade freeform) */}
+        {selectedActivity?.isFreeform && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              O que você fez? <span className="text-destructive">*</span>
+            </label>
+            <input
+              value={customTitle}
+              onChange={(e) => {
+                setCustomTitle(e.target.value);
+                setCustomTitleError("");
+              }}
+              maxLength={200}
+              placeholder="Ex: Ajudei a organizar a lista de presença do meetup"
+              className={cn(
+                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+                customTitleError && "border-destructive"
+              )}
+            />
+            {customTitleError && (
+              <p className="text-xs text-destructive">{customTitleError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Faixa de esforço (atividades com effortTiers) */}
+        {selectedActivity?.effortTiers &&
+          selectedActivity.effortTiers.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Quanto esforço isso deu?{" "}
+                <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {EFFORT_LEVEL_ORDER.filter((level) =>
+                  selectedActivity.effortTiers?.some((t) => t.level === level)
+                ).map((level) => {
+                  const tier = selectedActivity.effortTiers?.find(
+                    (t) => t.level === level
+                  );
+                  if (!tier) return null;
+                  const selected = effortLevel === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => {
+                        setEffortLevel(level);
+                        setEffortLevelError("");
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 rounded-lg border-2 px-2 py-2.5 text-center transition-colors",
+                        selected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/30"
+                      )}
+                    >
+                      <span className="text-sm font-bold">{tier.label}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {tier.xp} XP
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {effortLevel &&
+                (() => {
+                  const tier = selectedActivity.effortTiers?.find(
+                    (t) => t.level === effortLevel
+                  );
+                  return tier ? (
+                    <p className="text-xs text-muted-foreground">
+                      Exemplo: {tier.example}
+                    </p>
+                  ) : null;
+                })()}
+              {effortLevelError && (
+                <p className="text-xs text-destructive">{effortLevelError}</p>
+              )}
+            </div>
+          )}
 
         {/* Proof file upload (required) */}
         {selectedActivity?.requiresProof && (

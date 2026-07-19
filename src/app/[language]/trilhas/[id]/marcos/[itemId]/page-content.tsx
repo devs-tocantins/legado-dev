@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import {
@@ -171,7 +171,6 @@ function ProofSubmissionForm({
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [description, setDescription] = useState("");
-  const [isTestOut, setIsTestOut] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -218,7 +217,7 @@ function ProofSubmissionForm({
     try {
       const { status, data } = await postSubmission({
         trackItemId: item.id,
-        isTestOut,
+        isTestOut: false,
         proofUrl: effectiveProofUrl,
         description: description.trim() || undefined,
       });
@@ -320,18 +319,6 @@ function ProofSubmissionForm({
           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
         />
       </div>
-
-      {item.allowsTestOut && (
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isTestOut}
-            onChange={(e) => setIsTestOut(e.target.checked)}
-            className="h-4 w-4"
-          />
-          Já domino este conteúdo e estou pulando direto para a prova (test-out)
-        </label>
-      )}
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
@@ -824,9 +811,12 @@ function CompleteMilestonePageContent() {
   const fetchProgress = useGetLearningTrackProgressService();
   const completeItem = useCompleteTrackItemService();
   const fetchMySubmissions = useGetMySubmissionsService();
+  const postSkipSubmission = usePostSubmissionService();
+  const router = useRouter();
 
   const [quizPassed, setQuizPassed] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [justCompleted, setJustCompleted] = useState<number | null>(null);
 
   const { data: mySubmissions, refetch: refetchMySubmissions } = useQuery({
@@ -890,6 +880,8 @@ function CompleteMilestonePageContent() {
     itemIndex >= 0 && itemIndex + 1 < items.length
       ? items[itemIndex + 1]
       : null;
+  const canSkipToProof =
+    nextItem?.type === TrackItemType.PROOF && nextItem.allowsTestOut;
   const isTrackFinished = itemIndex >= 0 && itemIndex === items.length - 1;
 
   // Section-scoped progress for the sidebar brick strip.
@@ -934,6 +926,49 @@ function CompleteMilestonePageContent() {
       }
     } finally {
       setCompleting(false);
+    }
+  };
+
+  // "Já domino esse assunto": conclui o marco de conteúdo atual e já envia a
+  // prova do próximo marco como test-out (sem comprovante), indo pra
+  // moderação como qualquer prova — o usuário só vê o resultado depois que
+  // um moderador aprovar.
+  const handleSkipToNextProof = async () => {
+    if (!item || !nextItem) return;
+    setSkipping(true);
+    try {
+      const completeRes = await completeItem({ id: item.id });
+      if (
+        completeRes.status !== HTTP_CODES_ENUM.OK &&
+        completeRes.status !== HTTP_CODES_ENUM.CREATED
+      ) {
+        enqueueSnackbar(
+          "Não foi possível concluir este marco agora. Tente novamente.",
+          { variant: "error" }
+        );
+        return;
+      }
+
+      const { status, data } = await postSkipSubmission({
+        trackItemId: nextItem.id,
+        isTestOut: true,
+      });
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        enqueueSnackbar(
+          "Marco concluído! Prova pulada enviada para revisão da moderação.",
+          { variant: "success" }
+        );
+        await queryClient.invalidateQueries({
+          queryKey: ["learning-track-progress", trackId],
+        });
+        router.push(`/trilhas/${trackId}/marcos/${nextItem.id}`);
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao pular a prova."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setSkipping(false);
     }
   };
 
@@ -1105,24 +1140,39 @@ function CompleteMilestonePageContent() {
                   </Button>
                 </div>
               ) : isAutoCompletable ? (
-                <div className="mt-6 flex items-center gap-4 rounded-2xl border-2 border-border p-4">
-                  <Circle className="h-6 w-6 shrink-0 text-muted-foreground" />
+                <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
+                  <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
                   <div className="flex-1">
                     <p className="text-sm font-bold">
                       Já estudei este conteúdo
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Marque quando concluir para seguir na trilha.
+                      {canSkipToProof
+                        ? "Marque quando concluir para seguir na trilha, ou pule direto para o próximo marco se já domina o assunto."
+                        : "Marque quando concluir para seguir na trilha."}
                     </p>
                   </div>
-                  <Button
-                    onClick={handleComplete}
-                    disabled={completing}
-                    className="shrink-0 gap-1.5 rounded-xl"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {completing ? "..." : "Concluir"}
-                  </Button>
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                    {canSkipToProof && (
+                      <Button
+                        variant="outline"
+                        onClick={handleSkipToNextProof}
+                        disabled={completing || skipping}
+                        className="gap-1.5 rounded-xl"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                        {skipping ? "..." : "Já domino esse assunto"}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleComplete}
+                      disabled={completing || skipping}
+                      className="gap-1.5 rounded-xl"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {completing ? "..." : "Concluir"}
+                    </Button>
+                  </div>
                 </div>
               ) : item.type === TrackItemType.PROOF ? (
                 <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">

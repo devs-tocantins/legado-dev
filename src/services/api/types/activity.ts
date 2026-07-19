@@ -1,3 +1,17 @@
+export enum EffortLevelEnum {
+  P = "P",
+  M = "M",
+  G = "G",
+  EPICO = "EPICO",
+}
+
+export type EffortTier = {
+  level: EffortLevelEnum;
+  label: string;
+  example: string;
+  xp: number;
+};
+
 export type Activity = {
   id: string;
   title: string;
@@ -10,6 +24,8 @@ export type Activity = {
   requiresDescription: boolean;
   requiresActivityDate: boolean;
   cooldownHours: number;
+  effortTiers?: EffortTier[] | null;
+  isFreeform?: boolean;
   createdAt: string;
   updatedAt: string;
 };

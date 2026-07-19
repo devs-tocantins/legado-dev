@@ -446,7 +446,7 @@ function PortfolioCard({ item }: { item: ProofPortfolioItem }) {
       <div className="flex items-center justify-between pt-1">
         <span className="inline-flex items-center gap-1 text-xs text-emerald-500 font-medium">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          {item.isTestOut ? "Validada (test-out)" : "Prova validada"}
+          {item.isTestOut ? "Prova pulada" : "Prova validada"}
         </span>
         <span className="text-xs text-muted-foreground">
           {new Date(item.completedAt).toLocaleDateString("pt-BR", {

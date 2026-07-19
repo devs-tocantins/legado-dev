@@ -18,9 +18,8 @@ import {
   Menu,
   X,
   LayoutDashboard,
-  BookOpen,
+  HeartHandshake,
   Trophy,
-  Target,
   Sun,
   Moon,
   ExternalLink,
@@ -307,14 +306,13 @@ function ResponsiveAppBar() {
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/trilhas", label: "Trilhas", icon: Map },
         { href: "/cursos", label: "Cursos", icon: GraduationCap },
-        { href: "/activities", label: "Atividades", icon: BookOpen },
-        { href: "/missions", label: "Missões", icon: Target },
+        { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
         { href: "/submissions", label: "Histórico", icon: ClipboardList },
       ]
     : [
-        { href: "/activities", label: "Atividades", icon: BookOpen },
+        { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
       ];

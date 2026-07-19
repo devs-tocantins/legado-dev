@@ -492,7 +492,9 @@ function TrilhaDetailModal({
       });
       if (status === HTTP_CODES_ENUM.OK) {
         enqueueSnackbar(
-          submission.isTestOut ? "Test-out aprovado!" : "Marco aprovado!",
+          submission.isTestOut
+            ? "Marco aprovado (prova pulada)!"
+            : "Marco aprovado!",
           { variant: "success" }
         );
         onReviewed();
@@ -580,7 +582,7 @@ function TrilhaDetailModal({
                   )}
                   {submission.isTestOut && (
                     <Badge variant="outline" className="text-[10px]">
-                      test-out
+                      prova pulada
                     </Badge>
                   )}
                 </div>
@@ -742,7 +744,7 @@ function TrilhaSubmissionRow({
           )}
           {submission.isTestOut && (
             <Badge variant="outline" className="text-[10px] shrink-0">
-              test-out
+              prova pulada
             </Badge>
           )}
         </div>

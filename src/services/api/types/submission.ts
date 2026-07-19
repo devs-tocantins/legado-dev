@@ -1,3 +1,5 @@
+import { EffortLevelEnum } from "./activity";
+
 export enum SubmissionStatusEnum {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -13,6 +15,8 @@ export type Submission = {
   proofUrl?: string | null;
   description?: string | null;
   activityDate?: string | null;
+  customTitle?: string | null;
+  declaredEffort?: EffortLevelEnum | null;
   status: SubmissionStatusEnum;
   feedback?: string | null;
   awardedXp: number;

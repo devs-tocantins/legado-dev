@@ -3,6 +3,7 @@ import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
 import { Submission, PublicSubmissionDetail } from "../types/submission";
+import { EffortLevelEnum } from "../types/activity";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { SortEnum } from "../types/sort-type";
 import { RequestConfigType } from "./types/request-config";
@@ -92,6 +93,8 @@ export type SubmissionPostRequest = {
   proofUrl?: string | null;
   description?: string | null;
   activityDate?: string | null;
+  customTitle?: string | null;
+  effortLevel?: EffortLevelEnum;
 };
 
 export type SubmissionPostResponse = Submission;
@@ -237,6 +240,7 @@ export type ReviewSubmissionRequest = {
   data: {
     status: "APPROVED" | "REJECTED";
     feedback?: string;
+    effortLevel?: EffortLevelEnum;
   };
 };
 

@@ -5,7 +5,7 @@ import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
 import {
   LayoutDashboard,
-  BookOpen,
+  HeartHandshake,
   Trophy,
   User,
   Home,
@@ -45,7 +45,7 @@ function BottomNav() {
 
   const authedLinks: NavItem[] = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/activities", label: "Atividades", icon: BookOpen },
+    { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
     { href: "/submissions", label: "Histórico", icon: ClipboardList },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
     { href: "/profile", label: "Perfil", icon: User },
@@ -53,7 +53,7 @@ function BottomNav() {
 
   const guestLinks: NavItem[] = [
     { href: "/", label: "Início", icon: Home },
-    { href: "/activities", label: "Atividades", icon: BookOpen },
+    { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
     { href: "/sign-in", label: "Entrar", icon: LogIn },
   ];
