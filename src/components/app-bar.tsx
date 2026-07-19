@@ -27,6 +27,7 @@ import {
   CalendarDays,
   Map,
   GraduationCap,
+  FileText,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -463,6 +464,11 @@ function ResponsiveAppBar() {
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     Preferências de notificação
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem render={<Link href="/legal" />}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Termos e Privacidade
                   </DropdownMenuItem>
                 </div>
 

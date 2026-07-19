@@ -393,13 +393,21 @@ function SignUpForm() {
                 className="mt-0.5 h-4 w-4 rounded border-input accent-primary cursor-pointer"
               />
               <span className="text-sm text-muted-foreground leading-snug">
-                {t("inputs.policy.agreement")}{" "}
+                {t("inputs.policy.agreement")}
                 <Link
                   href="/privacy-policy"
                   target="_blank"
                   className="font-medium text-primary hover:underline"
                 >
                   {t("inputs.policy.label")}
+                </Link>
+                {t("inputs.policy.agreementAnd")}
+                <Link
+                  href="/terms-of-service"
+                  target="_blank"
+                  className="font-medium text-primary hover:underline"
+                >
+                  {t("inputs.policy.termsLabel")}
                 </Link>
               </span>
             </label>

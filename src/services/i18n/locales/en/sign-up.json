@@ -44,9 +44,11 @@
     },
     "policy": {
       "label": "Privacy Policy",
-      "agreement": "I have read and accept ",
+      "termsLabel": "Terms of Service",
+      "agreement": "I have read and accept the ",
+      "agreementAnd": " and the ",
       "validation": {
-        "required": "Consent to the Privacy Policy is required"
+        "required": "Consent to the Privacy Policy and the Terms of Service is required"
       }
     }
   },

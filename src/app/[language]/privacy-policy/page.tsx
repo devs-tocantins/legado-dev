@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getServerTranslation } from "@/services/i18n";
+import Link from "@/components/link";
 
 type Props = {
   params: Promise<{ language: string }>;
@@ -63,6 +64,16 @@ async function PrivacyPolicy(props: Props) {
       </div>
 
       <h2 className="mt-10 text-xl font-semibold">
+        {t("public_profile_title")}
+      </h2>
+      <div className="space-y-4">
+        <p>{t("public_profile_paragraph_1")}</p>
+        <p>{t("public_profile_paragraph_2")}</p>
+        <p>{t("public_profile_paragraph_3")}</p>
+        <p>{t("public_profile_paragraph_4")}</p>
+      </div>
+
+      <h2 className="mt-10 text-xl font-semibold">
         {t("security_of_personal_data")}
       </h2>
       <p>{t("security_paragraph")}</p>
@@ -108,6 +119,14 @@ async function PrivacyPolicy(props: Props) {
           </a>
         </div>
       </div>
+
+      <p className="mt-8 text-sm">
+        <Link href="/terms-of-service" className="text-primary hover:underline">
+          {params.language === "en"
+            ? "Read the Terms of Service"
+            : "Ler o Termo de Serviço"}
+        </Link>
+      </p>
     </div>
   );
 }
