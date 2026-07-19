@@ -17,7 +17,6 @@ import {
   Bell,
   Menu,
   X,
-  LayoutDashboard,
   HeartHandshake,
   Trophy,
   Sun,
@@ -303,7 +302,6 @@ function ResponsiveAppBar() {
 
   const navLinks = user
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/trilhas", label: "Trilhas", icon: Map },
         { href: "/cursos", label: "Cursos", icon: GraduationCap },
         { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },

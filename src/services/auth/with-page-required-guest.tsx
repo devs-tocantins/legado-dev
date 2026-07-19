@@ -20,11 +20,11 @@ function withPageRequiredGuest(Component: FunctionComponent<PropsType>) {
         if (!user || !isLoaded) return;
 
         const params = new URLSearchParams(window.location.search);
-        const raw = params.get("returnTo") ?? `/${language}/dashboard`;
+        const raw = params.get("returnTo") ?? `/${language}/trilhas`;
         const returnTo =
           raw.startsWith("/") && !raw.startsWith("//")
             ? raw
-            : `/${language}/dashboard`;
+            : `/${language}/trilhas`;
         router.replace(returnTo);
       };
 

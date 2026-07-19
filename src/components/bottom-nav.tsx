@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
 import {
-  LayoutDashboard,
+  Map,
   HeartHandshake,
   Trophy,
   User,
@@ -44,7 +44,7 @@ function BottomNav() {
   };
 
   const authedLinks: NavItem[] = [
-    { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+    { href: "/trilhas", label: "Trilhas", icon: Map },
     { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
     { href: "/submissions", label: "Histórico", icon: ClipboardList },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },

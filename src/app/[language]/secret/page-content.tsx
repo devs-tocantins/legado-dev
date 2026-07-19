@@ -145,9 +145,9 @@ function SecretPageContent() {
               <Button
                 variant="outline"
                 className="flex-1"
-                render={<Link href="/dashboard" />}
+                render={<Link href="/profile" />}
               >
-                Dashboard
+                Meu Perfil
               </Button>
               <Button className="flex-1" render={<Link href="/submissions" />}>
                 Ver histórico
@@ -177,9 +177,9 @@ function SecretPageContent() {
             <Button
               variant="outline"
               className="w-full"
-              render={<Link href="/dashboard" />}
+              render={<Link href="/profile" />}
             >
-              Ir para o Dashboard
+              Ir para o Meu Perfil
             </Button>
           </CardContent>
         </Card>
@@ -216,9 +216,9 @@ function SecretPageContent() {
               <Button
                 variant="outline"
                 className="w-full"
-                render={<Link href="/dashboard" />}
+                render={<Link href="/profile" />}
               >
-                Ir para o Dashboard
+                Ir para o Meu Perfil
               </Button>
             </div>
           </CardContent>
