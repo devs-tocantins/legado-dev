@@ -15,6 +15,10 @@ import {
   useReviewMissionSubmissionService,
 } from "@/services/api/services/missions";
 import { useGetActivityService } from "@/services/api/services/activities";
+import {
+  useGetPendingCoursesService,
+  useReviewCourseService,
+} from "@/services/api/services/courses";
 import { useGetGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import {
   useGetTrackItemService,
@@ -26,6 +30,7 @@ import { Mission, MissionSubmission } from "@/services/api/types/mission";
 import { Activity } from "@/services/api/types/activity";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { TrackItem } from "@/services/api/types/learning-track";
+import { Course } from "@/services/api/types/course";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +56,9 @@ import {
   AlertTriangle,
   ChevronRight,
   Map,
+  GraduationCap,
+  Gift,
+  Coins,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { cn, getApiError, formatTimeAgo } from "@/lib/utils";
@@ -126,8 +134,23 @@ function useProfile(profileId: string) {
   });
 }
 
+function isLikelyUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
 function ProofPreview({ proofUrl }: { proofUrl: string }) {
   const [imageFailed, setImageFailed] = useState(false);
+
+  if (!isLikelyUrl(proofUrl)) {
+    return (
+      <div className="rounded-md border bg-muted px-3 py-2">
+        <p className="mb-1 text-xs font-medium text-muted-foreground">
+          Texto enviado como comprovante (não é um link)
+        </p>
+        <p className="text-sm whitespace-pre-wrap">{proofUrl}</p>
+      </div>
+    );
+  }
 
   if (imageFailed) {
     return (
@@ -594,21 +617,35 @@ function TrilhaDetailModal({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Evidência enviada
             </p>
-            {submission.description ? (
-              <div className="bg-muted rounded-md px-3 py-2">
-                <MarkdownContent
-                  content={submission.description}
-                  className="text-sm"
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">
-                Sem descrição enviada.
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Notas do candidato
               </p>
-            )}
-            {submission.proofUrl && (
-              <ProofPreview proofUrl={submission.proofUrl} />
-            )}
+              {submission.description ? (
+                <div className="bg-muted rounded-md px-3 py-2">
+                  <MarkdownContent
+                    content={submission.description}
+                    className="text-sm"
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhuma nota enviada.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Comprovante
+              </p>
+              {submission.proofUrl ? (
+                <ProofPreview proofUrl={submission.proofUrl} />
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhum comprovante enviado.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -1235,13 +1272,185 @@ function MissoesTab() {
   );
 }
 
+// ─── Aba: Cursos ──────────────────────────────────────────────────────────────
+
+function CourseRow({
+  course,
+  onReviewed,
+}: {
+  course: Course;
+  onReviewed: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewCourse = useReviewCourseService();
+  const { data: profile } = useProfile(course.submittedByProfileId ?? "");
+  const [processing, setProcessing] = useState(false);
+
+  const handleReview = async (status: "VERIFIED" | "REJECTED") => {
+    setProcessing(true);
+    try {
+      const { status: httpStatus, data } = await reviewCourse({
+        id: course.id,
+        status,
+      });
+      if (httpStatus === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar(
+          status === "VERIFIED" ? "Curso verificado!" : "Curso rejeitado.",
+          { variant: "success" }
+        );
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao revisar curso."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-semibold">{course.title}</span>
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+              course.isFree
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            )}
+          >
+            {course.isFree ? (
+              <>
+                <Gift className="h-3 w-3" /> Gratuito
+              </>
+            ) : (
+              <>
+                <Coins className="h-3 w-3" />
+                {course.price ? `R$ ${course.price}` : "Pago"}
+              </>
+            )}
+          </span>
+        </div>
+        {course.provider && (
+          <p className="text-xs text-muted-foreground">{course.provider}</p>
+        )}
+        <a
+          href={course.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline break-all"
+        >
+          <ExternalLink className="h-3 w-3 shrink-0" /> {course.url}
+        </a>
+        {profile && (
+          <p className="text-xs text-muted-foreground">
+            Sugerido por{" "}
+            <Link
+              href={`/u/${profile.username}`}
+              target="_blank"
+              className="font-mono text-primary hover:underline"
+            >
+              @{profile.username}
+            </Link>
+          </p>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          onClick={() => handleReview("VERIFIED")}
+          disabled={processing}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Verificar
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="flex-1 gap-1.5"
+          onClick={() => handleReview("REJECTED")}
+          disabled={processing}
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          Rejeitar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CursosTab() {
+  const fetchPending = useGetPendingCoursesService();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["pending-courses"],
+    queryFn: async () => {
+      const { status, data } = await fetchPending({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data as Course[];
+      return [] as Course[];
+    },
+  });
+
+  const courses = data ?? [];
+
+  const handleReviewed = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-courses"] });
+    refetch();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Cursos e vídeos sugeridos pela comunidade para marcos de trilha
+        </p>
+        {!isLoading && (
+          <Badge variant="outline" className="text-xs">
+            {courses.length} pendente{courses.length !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse h-24 bg-muted rounded-lg" />
+          ))}
+        </div>
+      ) : courses.length === 0 ? (
+        <EmptyState
+          icon={GraduationCap}
+          title="Nenhum curso pendente"
+          description="Todos os cursos sugeridos foram revisados!"
+        />
+      ) : (
+        <div className="space-y-2">
+          {courses.map((course) => (
+            <CourseRow
+              key={course.id}
+              course={course}
+              onReviewed={handleReviewed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = "atividades" | "trilhas" | "missoes";
+type Tab = "atividades" | "trilhas" | "cursos" | "missoes";
 
 const TAB_CONFIG: Record<Tab, { label: string; icon: typeof ShieldCheck }> = {
   atividades: { label: "Atividades", icon: ShieldCheck },
   trilhas: { label: "Provas de Trilha", icon: Map },
+  cursos: { label: "Cursos", icon: GraduationCap },
   missoes: { label: "Missões", icon: Target },
 };
 
@@ -1282,6 +1491,8 @@ function ModerationPageContent() {
         <AtividadesTab />
       ) : tab === "trilhas" ? (
         <TrilhasTab />
+      ) : tab === "cursos" ? (
+        <CursosTab />
       ) : (
         <MissoesTab />
       )}

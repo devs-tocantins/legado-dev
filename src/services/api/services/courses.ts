@@ -35,6 +35,47 @@ export function useGetCoursesService() {
   );
 }
 
+export function useGetPendingCoursesService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { page: number; limit: number },
+      requestConfig?: RequestConfigType
+    ) => {
+      const requestUrl = new URL(`${API_URL}/api/v1/courses/pending`);
+      requestUrl.searchParams.append("page", data.page.toString());
+      requestUrl.searchParams.append("limit", data.limit.toString());
+
+      return fetch(requestUrl, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CoursesResponse>);
+    },
+    [fetch]
+  );
+}
+
+export type ReviewCourseRequest = {
+  id: string;
+  status: "VERIFIED" | "REJECTED";
+};
+
+export function useReviewCourseService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: ReviewCourseRequest, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/courses/${data.id}/review`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: data.status }),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<Course>);
+    },
+    [fetch]
+  );
+}
+
 export function useGetCoursesByTrackItemService() {
   const fetch = useFetch();
 
