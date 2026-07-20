@@ -448,6 +448,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { useEffect, useState } from "react";
+import { useWatch } from "react-hook-form";
 import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { FileEntity } from "@/services/api/types/file-entity";
@@ -459,9 +460,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
 import { cn } from "@/lib/utils";
-import { Mail, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, CheckCircle2, Loader2, Trophy } from "lucide-react";
 import { useAuthForgotPasswordService } from "@/services/api/services/auth";
 import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
+import { getLevel, LEVELS } from "@/lib/gamification";
 
 // --- Types ---
 type BasicInfoFormData = {
@@ -537,7 +539,11 @@ function BasicInfoActions() {
   );
 }
 
-function FormBasicInfo() {
+function FormBasicInfo({
+  onLiveChange,
+}: {
+  onLiveChange?: (name: { firstName: string; lastName: string }) => void;
+}) {
   const { setUser } = useAuthActions();
   const { user } = useAuth();
   const fetchAuthPatchMe = useAuthPatchMeService();
@@ -552,6 +558,15 @@ function FormBasicInfo() {
 
   const { handleSubmit, setError, reset, register, control } = methods;
   const { errors } = useFormState({ control });
+  const liveFirstName = useWatch({ control, name: "firstName" });
+  const liveLastName = useWatch({ control, name: "lastName" });
+
+  useEffect(() => {
+    onLiveChange?.({
+      firstName: liveFirstName ?? "",
+      lastName: liveLastName ?? "",
+    });
+  }, [liveFirstName, liveLastName, onLiveChange]);
 
   const onSubmit = handleSubmit(async (formData) => {
     const { data, status } = await fetchAuthPatchMe(formData);
@@ -911,7 +926,11 @@ function FormChangePasswordViaEmail() {
 }
 
 // --- Form: Banner ---
-function FormBanner() {
+function FormBanner({
+  onSelectionChange,
+}: {
+  onSelectionChange?: (key: string) => void;
+}) {
   const fetchMyProfile = useGetMyGamificationProfileService();
   const updateMyProfile = useUpdateMyGamificationProfileService();
   const { enqueueSnackbar } = useSnackbar();
@@ -932,6 +951,10 @@ function FormBanner() {
   useEffect(() => {
     if (profile?.bannerPreset) setSelected(profile.bannerPreset);
   }, [profile?.bannerPreset]);
+
+  useEffect(() => {
+    onSelectionChange?.(selected);
+  }, [selected, onSelectionChange]);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -1010,7 +1033,11 @@ function FormBanner() {
 }
 
 // --- Form: Username ---
-function FormUsername() {
+function FormUsername({
+  onUsernameChange,
+}: {
+  onUsernameChange?: (username: string) => void;
+}) {
   const fetchMyProfile = useGetMyGamificationProfileService();
   const updateMyProfile = useUpdateMyGamificationProfileService();
   const { enqueueSnackbar } = useSnackbar();
@@ -1031,6 +1058,10 @@ function FormUsername() {
   useEffect(() => {
     if (profile?.username) setUsername(profile.username);
   }, [profile?.username]);
+
+  useEffect(() => {
+    onUsernameChange?.(username);
+  }, [username, onUsernameChange]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1117,6 +1148,80 @@ function FormUsername() {
   );
 }
 
+// --- Prévia ao vivo do cabeçalho do perfil público ---
+function LivePreviewCard({
+  firstName,
+  lastName,
+  username,
+  bannerKey,
+  photoUrl,
+  totalXp,
+}: {
+  firstName: string;
+  lastName: string;
+  username: string;
+  bannerKey: string;
+  photoUrl?: string | null;
+  totalXp: number;
+}) {
+  const banner = BANNER_PRESETS[bannerKey] ?? BANNER_PRESETS["raiz-verde"];
+  const level = getLevel(totalXp);
+  const levelNumber = LEVELS.indexOf(level) + 1;
+  const fullName = `${firstName} ${lastName}`.trim() || "Seu nome";
+  const initials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
+
+  return (
+    <div className="lg:sticky lg:top-6">
+      <p className="mb-2.5 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+        Prévia do perfil público
+      </p>
+      <div className="overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_6px_0_var(--border)]">
+        <div className="relative h-32 w-full overflow-hidden bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={banner.url}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover"
+          />
+          <span className="absolute right-3 top-3 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[10px] text-white/80">
+            seu banner
+          </span>
+        </div>
+        <div className="relative px-6 pb-6">
+          {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoUrl}
+              alt=""
+              className="-mt-10 h-20 w-20 rounded-[20px] border-4 border-card object-cover"
+            />
+          ) : (
+            <div className="-mt-10 flex h-20 w-20 items-center justify-center rounded-[20px] border-4 border-card bg-primary text-2xl font-bold text-primary-foreground">
+              {initials}
+            </div>
+          )}
+          <p className="mt-3 text-xl font-bold tracking-tight">{fullName}</p>
+          <p className="font-mono text-sm text-muted-foreground">
+            @{username || "seu_username"}
+          </p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              N{levelNumber} · {level.name}
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Trophy className="h-3.5 w-3.5" />
+              {totalXp} XP
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Wrappers for email-only providers ---
 function ChangeEmailWrapper() {
   const { user } = useAuth();
@@ -1131,16 +1236,47 @@ function ChangePasswordWrapper() {
 }
 
 function EditProfile() {
+  const { user } = useAuth();
+  const fetchMyProfile = useGetMyGamificationProfileService();
+
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async () => {
+      const { status, data } = await fetchMyProfile();
+      return status === HTTP_CODES_ENUM.OK ? data : null;
+    },
+  });
+
+  const [liveName, setLiveName] = useState({ firstName: "", lastName: "" });
+  const [liveBanner, setLiveBanner] = useState("raiz-verde");
+  const [liveUsername, setLiveUsername] = useState("");
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
       <h1 className="text-2xl font-bold tracking-tight">Editar Perfil</h1>
-      <FormBasicInfo />
-      <FormProfilePicture />
-      <FormBanner />
-      <FormUsername />
-      <ChangeEmailWrapper />
-      <ChangePasswordWrapper />
-      <FormDeleteAccount />
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <FormBasicInfo onLiveChange={setLiveName} />
+          <FormProfilePicture />
+          <FormBanner onSelectionChange={setLiveBanner} />
+          <FormUsername onUsernameChange={setLiveUsername} />
+        </div>
+        <LivePreviewCard
+          firstName={liveName.firstName || (user?.firstName ?? "")}
+          lastName={liveName.lastName || (user?.lastName ?? "")}
+          username={liveUsername || (profile?.username ?? "")}
+          bannerKey={liveBanner}
+          photoUrl={user?.photo?.path}
+          totalXp={profile?.totalXp ?? 0}
+        />
+      </div>
+
+      <div className="max-w-2xl space-y-6">
+        <ChangeEmailWrapper />
+        <ChangePasswordWrapper />
+        <FormDeleteAccount />
+      </div>
     </div>
   );
 }
