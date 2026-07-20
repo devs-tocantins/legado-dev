@@ -1,0 +1,20 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" style="--badge-bg:oklch(0.62 0.11 230)">
+  <!-- hard shadow -->
+  <circle cx="64" cy="66" r="50" fill="oklch(0.50 0.10 230)"/>
+  <!-- ring -->
+  <circle cx="64" cy="60" r="52" fill="oklch(0.78 0.09 230)"/>
+  
+  <!-- face -->
+  <circle cx="64" cy="60" r="46" fill="oklch(0.62 0.11 230)"/>
+  <circle cx="64" cy="60" r="46" fill="white" opacity="0.06"/>
+  <!-- icon -->
+  <g transform="translate(0, -8)">
+    <path d="M64 34 L72.5 54.5 L94.5 56.5 L78 71 L83 92.5 L64 81 L45 92.5 L50 71 L33.5 56.5 L55.5 54.5 Z" fill="white"/>
+  </g>
+  <!-- tier pips -->
+  <circle cx="38" cy="104" r="4.5" fill="white"/>
+    <circle cx="51" cy="104" r="4.5" fill="white"/>
+    <circle cx="64" cy="104" r="4.5" fill="none" stroke="white" stroke-width="2" opacity="0.55"/>
+    <circle cx="77" cy="104" r="4.5" fill="none" stroke="white" stroke-width="2" opacity="0.55"/>
+    <circle cx="90" cy="104" r="4.5" fill="none" stroke="white" stroke-width="2" opacity="0.55"/>
+</svg>
