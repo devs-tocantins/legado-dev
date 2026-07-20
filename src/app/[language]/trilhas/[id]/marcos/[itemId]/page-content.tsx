@@ -654,46 +654,41 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
   );
 
   return (
-    <div className="mt-6 rounded-[22px] border border-border bg-card p-6 shadow-[0_6px_0_var(--border)]">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-[16px] font-bold">
-            Cursos e vídeos sobre este assunto
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Materiais sugeridos pela comunidade e verificados pela moderação.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="shrink-0 gap-1.5"
-          onClick={() => setSuggestOpen(true)}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Sugerir
-        </Button>
-      </div>
+    <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
+      <h2 className="text-sm font-bold">Cursos e vídeos sobre este assunto</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Materiais sugeridos pela comunidade e verificados pela moderação.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-3 w-full gap-1.5"
+        onClick={() => setSuggestOpen(true)}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Sugerir material
+      </Button>
 
       {!courses || courses.length === 0 ? (
-        <div className="mt-4">
+        <div className="mt-3">
           <EmptyState
             icon={GraduationCap}
-            title="Nenhum material verificado ainda"
-            description="Sugira um curso ou vídeo sobre este assunto para a comunidade avaliar."
+            title="Nenhum material ainda"
+            description="Sugira um curso ou vídeo para a comunidade avaliar."
+            className="py-8"
           />
         </div>
       ) : (
         <>
           {!hasRatedAny && (
-            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-4">
-              <Star className="h-4 w-4 shrink-0 text-primary" />
-              <p className="text-sm">
-                Avalie pelo menos um curso ou vídeo sobre este assunto e ganhe
-                XP de comunidade.
+            <div className="mt-3 flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/[0.03] p-3">
+              <Star className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <p className="text-xs">
+                Avalie um material e ganhe XP de comunidade.
               </p>
             </div>
           )}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 flex flex-col gap-3">
             {courses.map((course) => {
               const reviews = reviewsByCourse?.[course.id] ?? [];
               const avg =
@@ -972,6 +967,32 @@ function CompleteMilestonePageContent() {
     }
   };
 
+  // Pular a prova atual direto desta página (para quem chega aqui sem passar
+  // pelo conteúdo anterior, ou volta depois — o botão de pular no conteúdo
+  // some de vista quando isso acontece).
+  const handleSkipThisProof = async () => {
+    if (!item) return;
+    setSkipping(true);
+    try {
+      const { status, data } = await postSkipSubmission({
+        trackItemId: item.id,
+        isTestOut: true,
+      });
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        enqueueSnackbar("Prova pulada enviada para revisão da moderação.", {
+          variant: "success",
+        });
+        await refetchMySubmissions();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao pular a prova."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setSkipping(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
@@ -1215,16 +1236,40 @@ function CompleteMilestonePageContent() {
                       </div>
                     </div>
                   ) : (
-                    <ProofSubmissionForm
-                      item={item}
-                      rejectionFeedback={
-                        myItemSubmission?.status ===
-                        SubmissionStatusEnum.REJECTED
-                          ? myItemSubmission.feedback
-                          : null
-                      }
-                      onSubmitted={() => refetchMySubmissions()}
-                    />
+                    <>
+                      {item.allowsTestOut && (
+                        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-border p-4">
+                          <div>
+                            <p className="text-sm font-bold">
+                              Já domina esse assunto?
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Pule direto para a moderação, sem comprovante
+                              (test-out).
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={handleSkipThisProof}
+                            disabled={completing || skipping}
+                            className="shrink-0 gap-1.5 rounded-xl"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                            {skipping ? "..." : "Pular esta prova"}
+                          </Button>
+                        </div>
+                      )}
+                      <ProofSubmissionForm
+                        item={item}
+                        rejectionFeedback={
+                          myItemSubmission?.status ===
+                          SubmissionStatusEnum.REJECTED
+                            ? myItemSubmission.feedback
+                            : null
+                        }
+                        onSubmitted={() => refetchMySubmissions()}
+                      />
+                    </>
                   )}
                 </div>
               ) : (
@@ -1294,10 +1339,9 @@ function CompleteMilestonePageContent() {
               </p>
             </div>
           )}
+          <CourseTopicSection item={item} />
         </div>
       </div>
-
-      <CourseTopicSection item={item} />
     </div>
   );
 }
