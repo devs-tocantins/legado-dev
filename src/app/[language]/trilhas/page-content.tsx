@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import {
@@ -15,22 +15,25 @@ import {
   LearningTrackOverview,
   LearningTrackProgress,
   LearningTrackStatus,
+  LearningTrackTier,
 } from "@/services/api/types/learning-track";
 import {
   getTrackColor,
   getTrackAbbreviation,
   TIER_SEAL_LABEL,
 } from "@/lib/track-colors";
+import { getLevel, LEVELS } from "@/lib/gamification";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Map as MapIcon,
-  ArrowRight,
-  Lock,
-  Compass,
-  Trophy,
-} from "lucide-react";
+import { Map as MapIcon, ArrowRight, Lock, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const TIER_FILTERS: { key: LearningTrackTier | "all"; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: LearningTrackTier.ALICERCE, label: "Estagiar" },
+  { key: LearningTrackTier.PILAR, label: "Júnior" },
+  { key: LearningTrackTier.ARCO, label: "Pleno" },
+];
 
 type TrackData = {
   track: LearningTrack;
@@ -141,16 +144,11 @@ function TrackCard({
             {sectionCount} etapas · {itemCount} marcos
           </span>
           {locked ? (
-            <span
-              className="flex items-center gap-1.5 rounded-xl bg-muted px-4 py-2 text-[13px] font-bold text-muted-foreground"
-              title={
-                requiredTrackTitle
-                  ? `Conclua ${requiredTrackTitle} para desbloquear`
-                  : undefined
-              }
-            >
-              <Lock className="h-3.5 w-3.5" />
-              Bloqueada
+            <span className="flex items-center gap-1.5 rounded-xl bg-muted px-4 py-2 text-[13px] font-bold text-muted-foreground">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
+              {requiredTrackTitle
+                ? `Conclua ${requiredTrackTitle}`
+                : "Bloqueada"}
             </span>
           ) : (
             <span
@@ -196,6 +194,9 @@ function TrackCard({
 function TrilhasPageContent() {
   const { data: tracksData, isLoading } = useTracksWithProgress();
   const fetchMyProfile = useGetMyGamificationProfileService();
+  const [tierFilter, setTierFilter] = useState<LearningTrackTier | "all">(
+    "all"
+  );
 
   const { data: profile } = useQuery({
     queryKey: ["my-gamification-profile", "trilhas-hub"],
@@ -255,6 +256,14 @@ function TrilhasPageContent() {
 
   const doneCount = heroSectionBricks.filter((b) => b.state === "done").length;
 
+  const visibleTracks = useMemo(
+    () =>
+      tierFilter === "all"
+        ? tracks
+        : tracks.filter((t) => t.track.tier === tierFilter),
+    [tracks, tierFilter]
+  );
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8 pb-20">
@@ -291,8 +300,11 @@ function TrilhasPageContent() {
             } as React.CSSProperties
           }
         >
-          <div className="hidden h-[196px] w-[196px] items-center justify-center rounded-3xl bg-white/15 sm:flex">
-            <Compass className="h-20 w-20 text-white/90" />
+          <div className="relative hidden h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-3xl bg-white/15 sm:flex">
+            <span className="pointer-events-none absolute -bottom-6 -right-3 select-none font-mono text-[110px] font-bold leading-none tracking-tighter text-white/15">
+              {getTrackAbbreviation(featured.track.title)}
+            </span>
+            <MapIcon className="relative z-[1] h-16 w-16 text-white/90" />
           </div>
           <div className="flex flex-col justify-center">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-white/75">
@@ -346,7 +358,7 @@ function TrilhasPageContent() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
         <div>
-          <div className="mb-5 flex items-end justify-between gap-3">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-[22px] font-bold tracking-tight">
                 Explorar trilhas
@@ -355,9 +367,26 @@ function TrilhasPageContent() {
                 Cada marco cumprido vira prova verificada no seu perfil público.
               </p>
             </div>
+            <div className="flex gap-2">
+              {TIER_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setTierFilter(f.key)}
+                  className={cn(
+                    "rounded-xl border px-3.5 py-2 text-[13px] font-semibold transition-colors",
+                    tierFilter === f.key
+                      ? "border-foreground/20 bg-foreground text-background"
+                      : "border-border text-muted-foreground hover:border-foreground/30"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
-            {tracks.map((data) => {
+            {visibleTracks.map((data) => {
               const lockInfo = lockInfoByTrackId.get(data.track.id);
               return (
                 <TrackCard
@@ -374,9 +403,15 @@ function TrilhasPageContent() {
         {profile && (
           <div className="flex flex-col gap-4">
             <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
-              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Sua reputação
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Sua reputação
+                </p>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+                  N{LEVELS.indexOf(getLevel(profile.totalXp)) + 1} ·{" "}
+                  {getLevel(profile.totalXp).name}
+                </span>
+              </div>
               <div className="mt-2 flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-accent" />
                 <span className="text-[26px] font-bold">{profile.totalXp}</span>
