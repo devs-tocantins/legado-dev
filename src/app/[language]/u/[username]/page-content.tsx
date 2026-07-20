@@ -164,6 +164,52 @@ export const BANNER_PRESETS: Record<string, { url: string; label: string }> = {
     url: `${BANNER_BASE}/bandeira-noite.svg`,
     label: "Bandeira Noite",
   },
+  // Jogos
+  "jogo-tetris": { url: `${BANNER_BASE}/jogo-tetris.svg`, label: "Tetris" },
+  "jogo-labirinto": {
+    url: `${BANNER_BASE}/jogo-labirinto.svg`,
+    label: "Labirinto",
+  },
+  "jogo-invasores": {
+    url: `${BANNER_BASE}/jogo-invasores.svg`,
+    label: "Invasores",
+  },
+  "jogo-cobrinha": {
+    url: `${BANNER_BASE}/jogo-cobrinha.svg`,
+    label: "Cobrinha",
+  },
+  "jogo-xadrez": { url: `${BANNER_BASE}/jogo-xadrez.svg`, label: "Xadrez" },
+  "jogo-pong": { url: `${BANNER_BASE}/jogo-pong.svg`, label: "Pong" },
+  "jogo-voxel": {
+    url: `${BANNER_BASE}/jogo-voxel.svg`,
+    label: "Mundo de Blocos",
+  },
+  "jogo-plataforma": {
+    url: `${BANNER_BASE}/jogo-plataforma.svg`,
+    label: "Plataforma 8-bit",
+  },
+  "jogo-ritmo": { url: `${BANNER_BASE}/jogo-ritmo.svg`, label: "Ritmo" },
+  "jogo-fliperama": {
+    url: `${BANNER_BASE}/jogo-fliperama.svg`,
+    label: "Fliperama",
+  },
+  // Linguagens e tecnologias
+  "tech-java": { url: `${BANNER_BASE}/tech-java.svg`, label: "Java" },
+  "tech-python": { url: `${BANNER_BASE}/tech-python.svg`, label: "Python" },
+  "tech-rust": { url: `${BANNER_BASE}/tech-rust.svg`, label: "Rust" },
+  "tech-javascript": {
+    url: `${BANNER_BASE}/tech-javascript.svg`,
+    label: "JavaScript",
+  },
+  "tech-go": { url: `${BANNER_BASE}/tech-go.svg`, label: "Go" },
+  "tech-cpp": { url: `${BANNER_BASE}/tech-cpp.svg`, label: "C++" },
+  "tech-csharp": { url: `${BANNER_BASE}/tech-csharp.svg`, label: "C#" },
+  "tech-php": { url: `${BANNER_BASE}/tech-php.svg`, label: "PHP" },
+  "tech-ruby": { url: `${BANNER_BASE}/tech-ruby.svg`, label: "Ruby" },
+  "tech-typescript": {
+    url: `${BANNER_BASE}/tech-typescript.svg`,
+    label: "TypeScript",
+  },
 };
 
 const DEFAULT_BANNER = "raiz-verde";
