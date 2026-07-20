@@ -33,6 +33,7 @@ import {
   CalendarDays,
   MessageCircle,
   Map,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -321,6 +322,12 @@ function AdminDashboardPageContent() {
             icon={Map}
             label="Trilhas"
             description="Criar e montar trilhas: seções, marcos e vínculos"
+          />
+          <NavCard
+            href="/admin-panel/track-suggestions"
+            icon={Lightbulb}
+            label="Sugestões de Trilha"
+            description="Ideias de trilhas novas e melhorias enviadas pela comunidade"
           />
           <NavCard
             href="/admin-panel/activities"

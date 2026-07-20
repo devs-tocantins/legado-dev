@@ -23,8 +23,10 @@ import {
   Lock,
   Map,
   PlayCircle,
+  MessageSquarePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrackSuggestionDialog } from "@/components/track-suggestion-dialog";
 
 type SectionState = "done" | "current" | "locked";
 
@@ -111,6 +113,7 @@ function TrackDetailPageContent() {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [enrolling, setEnrolling] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const fetchOverview = useGetLearningTrackOverviewService();
   const fetchProgress = useGetLearningTrackProgressService();
@@ -207,13 +210,23 @@ function TrackDetailPageContent() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 pb-20">
-      <Link
-        href="/trilhas"
-        className="mb-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Trilhas
-      </Link>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <Link
+          href="/trilhas"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Trilhas
+        </Link>
+        <button
+          type="button"
+          onClick={() => setSuggestOpen(true)}
+          className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary"
+        >
+          <MessageSquarePlus className="h-3.5 w-3.5" />
+          Sugerir melhoria
+        </button>
+      </div>
 
       <div
         className="grid grid-cols-1 gap-8 rounded-[26px] bg-primary p-8 text-primary-foreground shadow-[0_11px_0_var(--hero-shadow)] sm:grid-cols-[1fr_auto]"
@@ -389,6 +402,13 @@ function TrackDetailPageContent() {
           );
         })}
       </div>
+
+      <TrackSuggestionDialog
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        trackId={track.id}
+        trackTitle={track.title}
+      />
     </div>
   );
 }

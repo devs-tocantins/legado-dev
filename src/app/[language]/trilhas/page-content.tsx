@@ -25,8 +25,15 @@ import {
 import { getLevel, LEVELS } from "@/lib/gamification";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Map as MapIcon, ArrowRight, Lock, Trophy } from "lucide-react";
+import {
+  Map as MapIcon,
+  ArrowRight,
+  Lock,
+  Trophy,
+  MessageSquarePlus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrackSuggestionDialog } from "@/components/track-suggestion-dialog";
 
 const TIER_FILTERS: { key: LearningTrackTier | "all"; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -197,6 +204,7 @@ function TrilhasPageContent() {
   const [tierFilter, setTierFilter] = useState<LearningTrackTier | "all">(
     "all"
   );
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["my-gamification-profile", "trilhas-hub"],
@@ -367,7 +375,7 @@ function TrilhasPageContent() {
                 Cada marco cumprido vira prova verificada no seu perfil público.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {TIER_FILTERS.map((f) => (
                 <button
                   key={f.key}
@@ -383,6 +391,14 @@ function TrilhasPageContent() {
                   {f.label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setSuggestOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-dashed border-border px-3.5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+                Sugerir trilha
+              </button>
             </div>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -451,6 +467,8 @@ function TrilhasPageContent() {
           </div>
         )}
       </div>
+
+      <TrackSuggestionDialog open={suggestOpen} onOpenChange={setSuggestOpen} />
     </div>
   );
 }
