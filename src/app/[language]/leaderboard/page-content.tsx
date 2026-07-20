@@ -32,29 +32,29 @@ const TAB_FIELD: Record<Tab, keyof GamificationProfile> = {
   alltime: "totalXp",
 };
 
+const RANK_BACKGROUND_BASE =
+  "https://pub-902e55385b5f4a268555827946cd271d.r2.dev/ranking-backgrounds";
+
 const PODIUM_CONFIG = {
   1: {
-    height: "h-60",
-    border: "border-l-4 border-amber-400",
-    bg: "bg-amber-400/5",
-    rankColor: "text-amber-400",
-    icon: <Crown className="h-5 w-5 text-amber-400" />,
+    height: "h-64",
+    bgImage: `${RANK_BACKGROUND_BASE}/rank-1-ouro.svg`,
+    rankColor: "text-amber-300",
+    icon: <Crown className="h-5 w-5 text-amber-300" />,
     order: "order-2",
   },
   2: {
-    height: "h-48",
-    border: "border-l-4 border-slate-400",
-    bg: "bg-slate-400/5",
-    rankColor: "text-slate-400",
-    icon: <Medal className="h-4 w-4 text-slate-400" />,
+    height: "h-52",
+    bgImage: `${RANK_BACKGROUND_BASE}/rank-2-prata.svg`,
+    rankColor: "text-slate-200",
+    icon: <Medal className="h-4 w-4 text-slate-200" />,
     order: "order-1",
   },
   3: {
-    height: "h-44",
-    border: "border-l-4 border-amber-700",
-    bg: "bg-amber-700/5",
-    rankColor: "text-amber-700",
-    icon: <Medal className="h-4 w-4 text-amber-700" />,
+    height: "h-48",
+    bgImage: `${RANK_BACKGROUND_BASE}/rank-3-bronze.svg`,
+    rankColor: "text-orange-200",
+    icon: <Medal className="h-4 w-4 text-orange-200" />,
     order: "order-3",
   },
 } as const;
@@ -75,45 +75,57 @@ function PodiumCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-lg border p-3 text-center w-full relative overflow-hidden",
+        "flex flex-col justify-between rounded-2xl p-3 text-center w-full relative overflow-hidden shadow-md",
         cfg.height,
-        cfg.border,
-        cfg.bg,
         cfg.order
       )}
+      style={{
+        backgroundImage: `url(${cfg.bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      <div className="flex flex-col items-center gap-1 pt-1 z-10">
-        <div className="flex items-center justify-center">{cfg.icon}</div>
-        <p className={cn("text-lg font-bold leading-none", cfg.rankColor)}>
+      <div className="flex flex-col items-center gap-1 pt-1">
+        <div className="flex items-center justify-center drop-shadow">
+          {cfg.icon}
+        </div>
+        <p
+          className={cn(
+            "text-lg font-bold leading-none drop-shadow",
+            cfg.rankColor
+          )}
+        >
           #{rank}
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-1 z-10">
+      <div className="flex flex-col items-center gap-1">
         <div className="relative mb-1">
           {profile.photo?.path ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={profile.photo.path}
               alt={`@${profile.username}`}
-              className="h-10 w-10 rounded-full border-2 border-background object-cover"
+              className="h-10 w-10 rounded-full border-2 border-white/80 object-cover shadow"
             />
           ) : (
-            <div className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+            <div className="h-10 w-10 rounded-full border-2 border-white/80 bg-white/90 flex items-center justify-center text-xs font-bold text-foreground shadow">
               {profile.username.substring(0, 2).toUpperCase()}
             </div>
           )}
         </div>
         <Link
           href={`/u/${profile.username}`}
-          className="font-semibold text-xs truncate max-w-full hover:text-primary transition-colors"
+          className="font-semibold text-xs text-white truncate max-w-full hover:underline drop-shadow"
         >
           @{profile.username}
         </Link>
-        <p className={cn("text-[10px] font-medium", level.color)}>
+        <p className="text-[10px] font-medium text-white/85 drop-shadow">
           {level.name}
         </p>
-        <p className="text-base font-bold font-mono mt-0.5">{formatXp(xp)}</p>
+        <p className="text-base font-bold font-mono mt-0.5 text-white drop-shadow">
+          {formatXp(xp)}
+        </p>
       </div>
     </div>
   );
