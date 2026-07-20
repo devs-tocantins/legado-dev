@@ -926,7 +926,7 @@ function FormBanner() {
     },
   });
 
-  const [selected, setSelected] = useState("default");
+  const [selected, setSelected] = useState("raiz-verde");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -969,42 +969,27 @@ function FormBanner() {
         <p className="text-sm text-muted-foreground">
           Escolha o banner que aparece no topo do seu perfil público.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {Object.entries(BANNER_PRESETS).map(([key, { className, label }]) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+          {Object.entries(BANNER_PRESETS).map(([key, { url, label }]) => (
             <button
               key={key}
               type="button"
               onClick={() => setSelected(key)}
               className={cn(
                 "relative h-14 rounded-lg overflow-hidden border-2 transition-all",
-                className,
                 selected === key
                   ? "border-primary ring-2 ring-primary ring-offset-2"
                   : "border-border hover:border-muted-foreground"
               )}
               title={label}
             >
-              {key === "default" && (
-                <svg
-                  className="absolute inset-0 h-full w-full text-foreground/10"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <defs>
-                    <pattern
-                      id={`dots-${key}`}
-                      x="0"
-                      y="0"
-                      width="10"
-                      height="10"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <circle cx="1" cy="1" r="0.8" fill="currentColor" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill={`url(#dots-${key})`} />
-                </svg>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
               <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-medium text-white drop-shadow">
                 {label}
               </span>
@@ -1013,7 +998,9 @@ function FormBanner() {
         </div>
         <Button
           onClick={handleSave}
-          disabled={saving || selected === (profile.bannerPreset ?? "default")}
+          disabled={
+            saving || selected === (profile.bannerPreset ?? "raiz-verde")
+          }
         >
           {saving ? "Salvando..." : "Salvar banner"}
         </Button>

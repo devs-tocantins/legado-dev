@@ -78,65 +78,109 @@ import {
 } from "@/components/ui/dialog";
 
 // ─── Banner presets ───────────────────────────────────────────────────────────
-export const BANNER_PRESETS: Record<
-  string,
-  { className: string; label: string }
-> = {
-  default: { className: "bg-muted", label: "Padrão" },
-  emerald: {
-    className: "bg-gradient-to-r from-emerald-500 to-teal-600",
-    label: "Esmeralda",
+// Banners temáticos (TI + cores do Tocantins + identidade legado.dev),
+// gerados como SVG e hospedados no R2. "raiz-verde" é o padrão.
+const BANNER_BASE =
+  "https://pub-902e55385b5f4a268555827946cd271d.r2.dev/banners";
+
+export const BANNER_PRESETS: Record<string, { url: string; label: string }> = {
+  "raiz-verde": { url: `${BANNER_BASE}/raiz-verde.svg`, label: "Raiz Verde" },
+  "raiz-dourada": {
+    url: `${BANNER_BASE}/raiz-dourada.svg`,
+    label: "Raiz Dourada",
   },
-  amber: {
-    className: "bg-gradient-to-r from-amber-400 to-orange-500",
-    label: "Âmbar",
+  "raiz-azul": { url: `${BANNER_BASE}/raiz-azul.svg`, label: "Raiz Azul" },
+  "raiz-clara": { url: `${BANNER_BASE}/raiz-clara.svg`, label: "Raiz Clara" },
+  "terminal-verde": {
+    url: `${BANNER_BASE}/terminal-verde.svg`,
+    label: "Terminal Verde",
   },
-  purple: {
-    className: "bg-gradient-to-r from-violet-600 to-purple-700",
-    label: "Roxo",
+  "terminal-ambar": {
+    url: `${BANNER_BASE}/terminal-ambar.svg`,
+    label: "Terminal Âmbar",
   },
-  blue: {
-    className: "bg-gradient-to-r from-blue-500 to-sky-600",
-    label: "Azul",
+  "terminal-azul": {
+    url: `${BANNER_BASE}/terminal-azul.svg`,
+    label: "Terminal Azul",
   },
-  dark: {
-    className: "bg-gradient-to-r from-slate-700 to-slate-900",
-    label: "Escuro",
+  "commits-tricolor": {
+    url: `${BANNER_BASE}/commits-tricolor.svg`,
+    label: "Commits Tricolor",
   },
-  rose: {
-    className: "bg-gradient-to-r from-rose-500 to-pink-600",
-    label: "Rosa",
+  "commits-noturno": {
+    url: `${BANNER_BASE}/commits-noturno.svg`,
+    label: "Commits Noturno",
+  },
+  "commits-claro": {
+    url: `${BANNER_BASE}/commits-claro.svg`,
+    label: "Commits Claro",
+  },
+  "hex-cerrado": {
+    url: `${BANNER_BASE}/hex-cerrado.svg`,
+    label: "Chip Cerrado",
+  },
+  "hex-dourado": {
+    url: `${BANNER_BASE}/hex-dourado.svg`,
+    label: "Chip Dourado",
+  },
+  "hex-profundo": {
+    url: `${BANNER_BASE}/hex-profundo.svg`,
+    label: "Chip Profundo",
+  },
+  "rio-agua": { url: `${BANNER_BASE}/rio-agua.svg`, label: "Rio Digital" },
+  "rio-dourado": {
+    url: `${BANNER_BASE}/rio-dourado.svg`,
+    label: "Rio Dourado",
+  },
+  "rio-noturno": {
+    url: `${BANNER_BASE}/rio-noturno.svg`,
+    label: "Rio Noturno",
+  },
+  "cerrado-noite": {
+    url: `${BANNER_BASE}/cerrado-noite.svg`,
+    label: "Céu do Cerrado",
+  },
+  "cerrado-amanhecer": {
+    url: `${BANNER_BASE}/cerrado-amanhecer.svg`,
+    label: "Amanhecer Dourado",
+  },
+  "cerrado-dia": {
+    url: `${BANNER_BASE}/cerrado-dia.svg`,
+    label: "Cerrado Azul",
+  },
+  "binario-verde": {
+    url: `${BANNER_BASE}/binario-verde.svg`,
+    label: "Binário Verde",
+  },
+  "binario-dourado": {
+    url: `${BANNER_BASE}/binario-dourado.svg`,
+    label: "Binário Dourado",
+  },
+  "bandeira-dia": {
+    url: `${BANNER_BASE}/bandeira-dia.svg`,
+    label: "Bandeira Dia",
+  },
+  "bandeira-noite": {
+    url: `${BANNER_BASE}/bandeira-noite.svg`,
+    label: "Bandeira Noite",
   },
 };
 
-// ─── Dot-grid cover pattern ───────────────────────────────────────────────────
-function CoverPattern({ preset = "default" }: { preset?: string }) {
-  const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS.default;
-  const isDotGrid = preset === "default";
+const DEFAULT_BANNER = "raiz-verde";
+
+// ─── Banner de capa (imagem temática) ─────────────────────────────────────────
+function CoverPattern({ preset = DEFAULT_BANNER }: { preset?: string }) {
+  const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS[DEFAULT_BANNER];
 
   return (
-    <div className={cn("relative h-36 w-full overflow-hidden", cfg.className)}>
-      {isDotGrid && (
-        <svg
-          className="absolute inset-0 h-full w-full text-primary/10"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <defs>
-            <pattern
-              id="cover-dots"
-              x="0"
-              y="0"
-              width="20"
-              height="20"
-              patternUnits="userSpaceOnUse"
-            >
-              <circle cx="2" cy="2" r="1.5" fill="currentColor" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#cover-dots)" />
-        </svg>
-      )}
+    <div className="relative h-36 w-full overflow-hidden bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={cfg.url}
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full object-cover"
+      />
     </div>
   );
 }

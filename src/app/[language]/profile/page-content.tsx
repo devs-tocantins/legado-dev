@@ -275,8 +275,8 @@ function Profile() {
   const isMaxLevel = level.maxXp === Infinity;
   const recentSubmissions = submissionsData ?? [];
   const banner =
-    BANNER_PRESETS[profile?.bannerPreset ?? "default"] ??
-    BANNER_PRESETS.default;
+    BANNER_PRESETS[profile?.bannerPreset ?? "raiz-verde"] ??
+    BANNER_PRESETS["raiz-verde"];
 
   const handleTransfer = async () => {
     if (!recipientId.trim() || tokenAmount < 1) return;
@@ -309,7 +309,13 @@ function Profile() {
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-8">
       {/* Identidade */}
       <HardShadowSection className="rounded-[24px]">
-        <div className={cn("h-28 w-full", banner.className)} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={banner.url}
+          alt=""
+          aria-hidden="true"
+          className="h-28 w-full object-cover"
+        />
         <div className="px-5 pb-5">
           <div className="-mt-10 flex items-end justify-between gap-3">
             <Avatar className="h-20 w-20 shrink-0 border-4 border-card shadow-sm">
