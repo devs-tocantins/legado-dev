@@ -11,7 +11,7 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
 import { getLevel, formatXp } from "@/lib/gamification";
-import { Trophy, Medal, Coins, Crown } from "lucide-react";
+import { Trophy, Medal, Coins, Crown, Sparkle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonLeaderboard } from "@/components/ui/skeleton-patterns";
 import { cn } from "@/lib/utils";
@@ -32,30 +32,38 @@ const TAB_FIELD: Record<Tab, keyof GamificationProfile> = {
   alltime: "totalXp",
 };
 
-const RANK_BACKGROUND_BASE =
-  "https://pub-902e55385b5f4a268555827946cd271d.r2.dev/ranking-backgrounds";
-
-const PODIUM_CONFIG = {
+// Sticker palette per lugar — mesma linguagem "hard-shadow" do resto do app
+// (cartão sólido + sombra sólida deslocada, tipo Duolingo), sem imagem de fundo.
+const PODIUM_STYLE = {
   1: {
-    height: "h-64",
-    bgImage: `${RANK_BACKGROUND_BASE}/rank-1-ouro.svg`,
-    rankColor: "text-amber-300",
-    icon: <Crown className="h-5 w-5 text-amber-300" />,
+    height: "h-56",
+    bg: "oklch(0.84 0.15 87)",
+    shadow: "oklch(0.65 0.15 82)",
+    ink: "oklch(0.34 0.09 75)",
+    chip: "oklch(0.94 0.06 87)",
+    icon: Crown,
     order: "order-2",
+    label: "1º lugar",
   },
   2: {
-    height: "h-52",
-    bgImage: `${RANK_BACKGROUND_BASE}/rank-2-prata.svg`,
-    rankColor: "text-slate-200",
-    icon: <Medal className="h-4 w-4 text-slate-200" />,
+    height: "h-48",
+    bg: "oklch(0.89 0.012 240)",
+    shadow: "oklch(0.7 0.018 240)",
+    ink: "oklch(0.32 0.02 240)",
+    chip: "oklch(0.97 0.005 240)",
+    icon: Medal,
     order: "order-1",
+    label: "2º lugar",
   },
   3: {
-    height: "h-48",
-    bgImage: `${RANK_BACKGROUND_BASE}/rank-3-bronze.svg`,
-    rankColor: "text-orange-200",
-    icon: <Medal className="h-4 w-4 text-orange-200" />,
+    height: "h-44",
+    bg: "oklch(0.77 0.12 52)",
+    shadow: "oklch(0.58 0.12 48)",
+    ink: "oklch(0.29 0.07 50)",
+    chip: "oklch(0.94 0.05 52)",
+    icon: Medal,
     order: "order-3",
+    label: "3º lugar",
   },
 } as const;
 
@@ -70,62 +78,71 @@ function PodiumCard({
 }) {
   const xp = profile[xpField] as number;
   const level = getLevel(profile.totalXp);
-  const cfg = PODIUM_CONFIG[rank];
+  const style = PODIUM_STYLE[rank];
+  const Icon = style.icon;
 
   return (
-    <div
-      className={cn(
-        "flex flex-col justify-between rounded-2xl p-3 text-center w-full relative overflow-hidden shadow-md",
-        cfg.height,
-        cfg.order
-      )}
-      style={{
-        backgroundImage: `url(${cfg.bgImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="flex flex-col items-center gap-1 pt-1">
-        <div className="flex items-center justify-center drop-shadow">
-          {cfg.icon}
+    <div className="flex flex-col items-center">
+      {rank === 1 && (
+        <div className="flex gap-10 -mb-1">
+          <Sparkle className="h-3.5 w-3.5 rotate-[-12deg] text-[oklch(0.8_0.15_87)]" />
+          <Sparkle className="h-3 w-3 rotate-[18deg] text-[oklch(0.8_0.15_87)]" />
         </div>
-        <p
-          className={cn(
-            "text-lg font-bold leading-none drop-shadow",
-            cfg.rankColor
-          )}
+      )}
+      <div className="relative z-10 -mb-8">
+        {profile.photo?.path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.photo.path}
+            alt={`@${profile.username}`}
+            className="h-16 w-16 rounded-full border-[3px] object-cover"
+            style={{ borderColor: style.shadow }}
+          />
+        ) : (
+          <div
+            className="h-16 w-16 rounded-full border-[3px] bg-card flex items-center justify-center text-sm font-extrabold"
+            style={{ borderColor: style.shadow, color: style.shadow }}
+          >
+            {profile.username.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+        <div
+          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-card"
+          style={{ background: style.chip }}
         >
-          #{rank}
-        </p>
+          <Icon className="h-3.5 w-3.5" style={{ color: style.shadow }} />
+        </div>
       </div>
 
-      <div className="flex flex-col items-center gap-1">
-        <div className="relative mb-1">
-          {profile.photo?.path ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.photo.path}
-              alt={`@${profile.username}`}
-              className="h-10 w-10 rounded-full border-2 border-white/80 object-cover shadow"
-            />
-          ) : (
-            <div className="h-10 w-10 rounded-full border-2 border-white/80 bg-white/90 flex items-center justify-center text-xs font-bold text-foreground shadow">
-              {profile.username.substring(0, 2).toUpperCase()}
-            </div>
-          )}
-        </div>
+      <div
+        className={cn(
+          "w-full rounded-[24px] pt-9 pb-3 px-2 flex flex-col items-center justify-end gap-1 text-center",
+          style.height
+        )}
+        style={{
+          background: style.bg,
+          boxShadow: `0 5px 0 ${style.shadow}`,
+          color: style.ink,
+        }}
+      >
+        <span className="font-mono text-[10px] font-extrabold uppercase tracking-wider opacity-70">
+          {style.label}
+        </span>
         <Link
           href={`/u/${profile.username}`}
-          className="font-semibold text-xs text-white truncate max-w-full hover:underline drop-shadow"
+          className="font-bold text-xs truncate max-w-full hover:underline"
         >
           @{profile.username}
         </Link>
-        <p className="text-[10px] font-medium text-white/85 drop-shadow">
+        <span className="text-[10px] font-semibold opacity-80">
           {level.name}
-        </p>
-        <p className="text-base font-bold font-mono mt-0.5 text-white drop-shadow">
+        </span>
+        <span
+          className="mt-1 inline-flex items-center gap-1 rounded-full px-3 py-1 font-mono text-sm font-extrabold"
+          style={{ background: style.chip }}
+        >
           {formatXp(xp)}
-        </p>
+        </span>
       </div>
     </div>
   );
@@ -306,7 +323,10 @@ function LeaderboardPageContent() {
                   const profile = top3[rank - 1];
                   if (!profile) return null;
                   return (
-                    <div key={rank} className="flex-1">
+                    <div
+                      key={rank}
+                      className={cn("flex-1", PODIUM_STYLE[rank].order)}
+                    >
                       <PodiumCard
                         profile={profile}
                         rank={rank}
