@@ -24,6 +24,10 @@ import {
   useGetTrackItemService,
   useGetLearningTrackOverviewService,
 } from "@/services/api/services/learning-tracks";
+import {
+  useGetPendingEventsService,
+  usePatchReviewEventService,
+} from "@/services/api/services/events";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { Submission } from "@/services/api/types/submission";
 import { Mission, MissionSubmission } from "@/services/api/types/mission";
@@ -31,7 +35,13 @@ import { Activity } from "@/services/api/types/activity";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { TrackItem } from "@/services/api/types/learning-track";
 import { Course } from "@/services/api/types/course";
+import { Event, EventModality } from "@/services/api/types/event";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
+import {
+  EVENT_CATEGORY_LABELS,
+  EVENT_MODALITY_LABELS,
+  formatEventDate,
+} from "@/lib/event-labels";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,6 +69,9 @@ import {
   GraduationCap,
   Gift,
   Coins,
+  CalendarDays,
+  MapPin,
+  Video,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { cn, getApiError, formatTimeAgo } from "@/lib/utils";
@@ -1445,15 +1458,222 @@ function CursosTab() {
   );
 }
 
+// ─── Aba: Eventos ─────────────────────────────────────────────────────────────
+
+function EventRow({
+  event,
+  onReviewed,
+}: {
+  event: Event;
+  onReviewed: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewEvent = usePatchReviewEventService();
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const handleApprove = async () => {
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewEvent({
+        id: event.id,
+        status: "APPROVED",
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Evento aprovado!", { variant: "success" });
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao aprovar."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) return;
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewEvent({
+        id: event.id,
+        status: "REJECTED",
+        rejectionReason: rejectionReason.trim(),
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Evento rejeitado.", { variant: "success" });
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao rejeitar."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <span className="text-sm font-semibold">{event.title}</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>{EVENT_CATEGORY_LABELS[event.category]}</span>
+            <span className="flex items-center gap-1">
+              {event.modality === EventModality.ONLINE ? (
+                <Video className="h-3 w-3" />
+              ) : (
+                <MapPin className="h-3 w-3" />
+              )}
+              {EVENT_MODALITY_LABELS[event.modality]}
+            </span>
+            <span className="flex items-center gap-1 font-mono">
+              <CalendarDays className="h-3 w-3" />
+              {formatEventDate(event.startAt)}
+            </span>
+          </div>
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <User className="h-3 w-3" />
+            Organizador: {event.organizerId}
+          </p>
+        </div>
+        <Badge variant="outline" className="shrink-0 text-xs">
+          Pendente
+        </Badge>
+      </div>
+
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
+        {event.description}
+      </p>
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          onClick={handleApprove}
+          disabled={processing}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Aprovar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 gap-1.5"
+          onClick={() => setRejectOpen((o) => !o)}
+          disabled={processing}
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          {rejectOpen ? "Cancelar" : "Rejeitar"}
+        </Button>
+      </div>
+
+      {rejectOpen && (
+        <div className="flex flex-col gap-2 rounded-lg bg-secondary p-3">
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Explique o motivo da rejeição (ex: fora do foco de TI, informações incompletas...)"
+            rows={3}
+            maxLength={500}
+            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] resize-none"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRejectOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleReject}
+              disabled={processing || !rejectionReason.trim()}
+            >
+              Confirmar rejeição
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventosTab() {
+  const fetchPending = useGetPendingEventsService();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["pending-events"],
+    queryFn: async () => {
+      const { status, data } = await fetchPending({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data as Event[];
+      return [] as Event[];
+    },
+  });
+
+  const events = data ?? [];
+
+  const handleReviewed = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-events"] });
+    refetch();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Eventos enviados pela comunidade antes de entrarem na agenda pública
+        </p>
+        {!isLoading && (
+          <Badge variant="outline" className="text-xs">
+            {events.length} pendente{events.length !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse h-32 bg-muted rounded-lg" />
+          ))}
+        </div>
+      ) : events.length === 0 ? (
+        <EmptyState
+          icon={CalendarDays}
+          title="Nenhum evento pendente"
+          description="Todos os eventos enviados foram revisados!"
+        />
+      ) : (
+        <div className="space-y-2">
+          {events.map((event) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              onReviewed={handleReviewed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = "atividades" | "trilhas" | "cursos" | "missoes";
+type Tab = "atividades" | "trilhas" | "cursos" | "missoes" | "eventos";
 
 const TAB_CONFIG: Record<Tab, { label: string; icon: typeof ShieldCheck }> = {
   atividades: { label: "Atividades", icon: ShieldCheck },
   trilhas: { label: "Provas de Trilha", icon: Map },
   cursos: { label: "Cursos", icon: GraduationCap },
   missoes: { label: "Missões", icon: Target },
+  eventos: { label: "Eventos", icon: CalendarDays },
 };
 
 function ModerationPageContent() {
@@ -1495,6 +1715,8 @@ function ModerationPageContent() {
         <TrilhasTab />
       ) : tab === "cursos" ? (
         <CursosTab />
+      ) : tab === "eventos" ? (
+        <EventosTab />
       ) : (
         <MissoesTab />
       )}
