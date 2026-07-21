@@ -11,12 +11,29 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
 import { getLevel, formatXp } from "@/lib/gamification";
-import { Trophy, Medal, Coins, Crown, Sparkle } from "lucide-react";
+import { Trophy, Coins, Sparkle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonLeaderboard } from "@/components/ui/skeleton-patterns";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
+import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
+
+const DEFAULT_BANNER = "raiz-verde";
+
+function bannerUrl(preset?: string): string {
+  return (BANNER_PRESETS[preset ?? ""] ?? BANNER_PRESETS[DEFAULT_BANNER]).url;
+}
+
+// Pílula de nível — mesma paleta de cor usada em getLevel(), só que como chip.
+const LEVEL_PILL: Record<string, string> = {
+  Novato: "bg-slate-400/15 text-slate-400",
+  Contribuidor: "bg-emerald-400/15 text-emerald-400",
+  "Colaborador Ativo": "bg-sky-400/15 text-sky-400",
+  Referência: "bg-blue-400/15 text-blue-400",
+  Mentor: "bg-amber-400/15 text-amber-400",
+  Lenda: "bg-rose-400/15 text-rose-400",
+};
 
 type Tab = "monthly" | "yearly" | "alltime";
 
@@ -32,36 +49,38 @@ const TAB_FIELD: Record<Tab, keyof GamificationProfile> = {
   alltime: "totalXp",
 };
 
-// Sticker palette per lugar — mesma linguagem "hard-shadow" do resto do app
-// (cartão sólido + sombra sólida deslocada, tipo Duolingo), sem imagem de fundo.
-const PODIUM_STYLE = {
+// Paleta por posição (design "8A — Ranking"): laranja/azul/verde, sombra
+// sólida deslocada (mesma linguagem hard-shadow do resto do app). Os valores
+// oklch são literais — funcionam iguais em claro/escuro; só a base do cartão
+// (bg-card/border/foreground) segue o tema.
+const RANK_STYLE = {
   1: {
-    height: "h-56",
-    bg: "oklch(0.84 0.15 87)",
-    shadow: "oklch(0.65 0.15 82)",
-    ink: "oklch(0.34 0.09 75)",
-    chip: "oklch(0.94 0.06 87)",
-    icon: Crown,
+    bright: "oklch(0.7 0.17 55)",
+    ring: "oklch(0.85 0.09 62)",
+    shadow: "oklch(0.72 0.15 55)",
+    chipBg: "oklch(0.96 0.06 62)",
+    chipText: "oklch(0.55 0.16 50)",
+    bannerHeight: "h-[88px]",
     order: "order-2",
-    label: "1º lugar",
+    label: "1º lugar · líder do mês",
   },
   2: {
-    height: "h-48",
-    bg: "oklch(0.89 0.012 240)",
-    shadow: "oklch(0.7 0.018 240)",
-    ink: "oklch(0.32 0.02 240)",
-    chip: "oklch(0.97 0.005 240)",
-    icon: Medal,
+    bright: "oklch(0.6 0.14 245)",
+    ring: "oklch(0.86 0.06 245)",
+    shadow: "oklch(0.78 0.11 245)",
+    chipBg: "oklch(0.96 0.04 245)",
+    chipText: "oklch(0.5 0.13 245)",
+    bannerHeight: "h-[64px]",
     order: "order-1",
     label: "2º lugar",
   },
   3: {
-    height: "h-44",
-    bg: "oklch(0.77 0.12 52)",
-    shadow: "oklch(0.58 0.12 48)",
-    ink: "oklch(0.29 0.07 50)",
-    chip: "oklch(0.94 0.05 52)",
-    icon: Medal,
+    bright: "oklch(0.56 0.13 150)",
+    ring: "oklch(0.85 0.07 150)",
+    shadow: "oklch(0.75 0.12 150)",
+    chipBg: "oklch(0.95 0.05 150)",
+    chipText: "oklch(0.46 0.13 150)",
+    bannerHeight: "h-[64px]",
     order: "order-3",
     label: "3º lugar",
   },
@@ -78,72 +97,107 @@ function PodiumCard({
 }) {
   const xp = profile[xpField] as number;
   const level = getLevel(profile.totalXp);
-  const style = PODIUM_STYLE[rank];
-  const Icon = style.icon;
+  const style = RANK_STYLE[rank];
 
   return (
-    <div className="flex flex-col items-center">
-      {rank === 1 && (
-        <div className="flex gap-10 -mb-1">
-          <Sparkle className="h-3.5 w-3.5 rotate-[-12deg] text-[oklch(0.8_0.15_87)]" />
-          <Sparkle className="h-3 w-3 rotate-[18deg] text-[oklch(0.8_0.15_87)]" />
-        </div>
-      )}
-      <div className="relative z-10 -mb-8">
+    <div
+      className="relative flex flex-col items-center overflow-hidden rounded-[24px] border bg-card pb-5 text-center"
+      style={{
+        borderColor: style.ring,
+        boxShadow: `0 ${rank === 1 ? 13 : 9}px 0 ${style.shadow}`,
+      }}
+    >
+      {/* banner real do usuário */}
+      <div className={cn("relative w-full", style.bannerHeight)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bannerUrl(profile.bannerPreset)}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-8"
+          style={{
+            background: "linear-gradient(180deg, transparent, var(--card))",
+          }}
+        />
+        {rank === 1 && (
+          <>
+            <Sparkle
+              className="absolute left-5 top-4 h-3.5 w-3.5 text-white/85"
+              strokeWidth={1.5}
+            />
+            <Sparkle
+              className="absolute right-6 top-7 h-3 w-3 text-white/85"
+              strokeWidth={1.5}
+            />
+            <span className="absolute left-1/2 top-0.5 -translate-x-1/2 text-lg drop-shadow">
+              👑
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* avatar squircle sobrepondo o banner */}
+      <div className={cn("relative -mt-[38px] z-10", rank === 1 && "-mt-11")}>
         {profile.photo?.path ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profile.photo.path}
             alt={`@${profile.username}`}
-            className="h-16 w-16 rounded-full border-[3px] object-cover"
-            style={{ borderColor: style.shadow }}
+            className={cn(
+              "rounded-[22px] border-[5px] border-card object-cover",
+              rank === 1 ? "h-[88px] w-[88px]" : "h-20 w-20"
+            )}
           />
         ) : (
           <div
-            className="h-16 w-16 rounded-full border-[3px] bg-card flex items-center justify-center text-sm font-extrabold"
-            style={{ borderColor: style.shadow, color: style.shadow }}
+            className={cn(
+              "flex items-center justify-center rounded-[22px] border-[5px] border-card text-2xl font-bold text-white",
+              rank === 1 ? "h-[88px] w-[88px]" : "h-20 w-20"
+            )}
+            style={{ background: style.bright }}
           >
             {profile.username.substring(0, 2).toUpperCase()}
           </div>
         )}
         <div
-          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-card"
-          style={{ background: style.chip }}
+          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-card font-mono text-sm font-extrabold text-white"
+          style={{ background: style.bright }}
         >
-          <Icon className="h-3.5 w-3.5" style={{ color: style.shadow }} />
+          {rank}
         </div>
       </div>
 
-      <div
-        className={cn(
-          "w-full rounded-[24px] pt-9 pb-3 px-2 flex flex-col items-center justify-end gap-1 text-center",
-          style.height
-        )}
-        style={{
-          background: style.bg,
-          boxShadow: `0 5px 0 ${style.shadow}`,
-          color: style.ink,
-        }}
+      <span className="mt-3.5 font-mono text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+        {style.label}
+      </span>
+      <Link
+        href={`/u/${profile.username}`}
+        className="mt-1.5 text-base font-bold text-foreground hover:underline truncate max-w-[90%]"
       >
-        <span className="font-mono text-[10px] font-extrabold uppercase tracking-wider opacity-70">
-          {style.label}
-        </span>
-        <Link
-          href={`/u/${profile.username}`}
-          className="font-bold text-xs truncate max-w-full hover:underline"
-        >
-          @{profile.username}
-        </Link>
-        <span className="text-[10px] font-semibold opacity-80">
-          {level.name}
-        </span>
-        <span
-          className="mt-1 inline-flex items-center gap-1 rounded-full px-3 py-1 font-mono text-sm font-extrabold"
-          style={{ background: style.chip }}
-        >
-          {formatXp(xp)}
-        </span>
-      </div>
+        @{profile.username}
+      </Link>
+      <span
+        className={cn(
+          "mt-2 rounded-full px-3 py-1 font-mono text-[11px] font-bold",
+          LEVEL_PILL[level.name]
+        )}
+      >
+        {level.name}
+      </span>
+      <span
+        className="mx-5 mt-3.5 w-[calc(100%-2.5rem)] rounded-2xl py-2.5 font-mono text-lg font-extrabold"
+        style={{ background: style.chipBg, color: style.chipText }}
+      >
+        {formatXp(xp)}
+        <small className="ml-1 text-xs font-bold opacity-70">XP</small>
+      </span>
+      <span className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-amber-500">
+        <Coins className="h-3 w-3" />
+        {profile.gratitudeTokens} reconhecimentos
+      </span>
     </div>
   );
 }
@@ -173,21 +227,41 @@ function TableRow({
         {position}
       </td>
       <td className="px-4 py-3 font-medium">
-        <Link
-          href={`/u/${profile.username}`}
-          className={cn(
-            "hover:text-primary transition-colors",
-            isMe && "text-primary font-semibold"
+        <div className="flex items-center gap-3">
+          {profile.photo?.path ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photo.path}
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-8 shrink-0 rounded-[10px] object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-muted text-[11px] font-bold text-muted-foreground">
+              {profile.username.substring(0, 2).toUpperCase()}
+            </div>
           )}
-        >
-          @{profile.username}
-        </Link>
-        {isMe && (
-          <span className="ml-2 text-xs text-primary font-normal">(você)</span>
-        )}
+          <Link
+            href={`/u/${profile.username}`}
+            className={cn(
+              "hover:text-primary transition-colors",
+              isMe && "text-primary font-semibold"
+            )}
+          >
+            @{profile.username}
+          </Link>
+          {isMe && (
+            <span className="text-xs text-primary font-normal">(você)</span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 hidden sm:table-cell">
-        <span className={cn("text-xs font-medium", level.color)}>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 font-mono text-[11px] font-bold",
+            LEVEL_PILL[level.name]
+          )}
+        >
           {level.name}
         </span>
       </td>
@@ -248,39 +322,45 @@ function LeaderboardPageContent() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-amber-400" />
-          Ranking da Comunidade
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Os membros mais ativos do legado.dev
-        </p>
-      </div>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-amber-400/90 text-xl">
+              🏆
+            </span>
+            Ranking da Comunidade
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Os membros mais ativos do legado.dev
+          </p>
+        </div>
 
-      {/* Animated tabs */}
-      <div className="flex gap-0 border-b">
-        {(Object.entries(TAB_LABELS) as [Tab, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              "relative px-4 py-2 text-sm font-medium transition-colors",
-              tab === key
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-            {tab === key && (
-              <motion.div
-                layoutId="tab-indicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-              />
-            )}
-          </button>
-        ))}
+        {/* Abas em pílula */}
+        <div className="flex gap-1 rounded-2xl bg-muted p-1">
+          {(Object.entries(TAB_LABELS) as [Tab, string][]).map(
+            ([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "relative px-4 py-2 rounded-xl text-sm font-bold transition-colors",
+                  tab === key
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab === key && (
+                  <motion.div
+                    layoutId="tab-indicator"
+                    className="absolute inset-0 rounded-xl bg-card shadow-sm"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative">{label}</span>
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -325,7 +405,7 @@ function LeaderboardPageContent() {
                   return (
                     <div
                       key={rank}
-                      className={cn("flex-1", PODIUM_STYLE[rank].order)}
+                      className={cn("flex-1", RANK_STYLE[rank].order)}
                     >
                       <PodiumCard
                         profile={profile}
