@@ -26,6 +26,7 @@ import {
   BellRing,
   BellOff,
   Ban,
+  Pencil,
 } from "lucide-react";
 import {
   EVENT_CATEGORY_LABELS,
@@ -35,6 +36,7 @@ import {
 } from "@/lib/event-labels";
 import { EmptyState } from "@/components/ui/empty-state";
 import useAuth from "@/services/auth/use-auth";
+import { RoleEnum } from "@/services/api/types/role";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +139,7 @@ function EventDetailPageContent() {
   const params = useParams();
   const id = params.id as string;
   const fetchEvent = useGetEventService();
+  const { user } = useAuth();
   const [reminderMinutes, setReminderMinutes] = useState(60);
 
   const { data: event, isLoading } = useQuery({
@@ -173,6 +176,11 @@ function EventDetailPageContent() {
 
   const isCancelled = event.status === EventStatus.CANCELLED;
   const icsUrl = `${API_URL}/api/v1/events/${event.id}/ics?reminderMinutes=${reminderMinutes}`;
+  const canEdit =
+    !!user &&
+    (event.organizerId === user.id ||
+      Number(user.role?.id) === RoleEnum.ADMIN ||
+      Number(user.role?.id) === RoleEnum.MODERATOR);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -214,13 +222,26 @@ function EventDetailPageContent() {
 
       <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
         <div>
-          <div className="mb-3.5 flex flex-wrap gap-2">
-            <Badge variant="secondary">
-              {EVENT_CATEGORY_LABELS[event.category]}
-            </Badge>
-            <Badge variant="secondary">
-              {EVENT_MODALITY_LABELS[event.modality]}
-            </Badge>
+          <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">
+                {EVENT_CATEGORY_LABELS[event.category]}
+              </Badge>
+              <Badge variant="secondary">
+                {EVENT_MODALITY_LABELS[event.modality]}
+              </Badge>
+            </div>
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                render={<Link href={`/eventos/edit/${event.id}`} />}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar evento
+              </Button>
+            )}
           </div>
           <h1 className="mb-5 font-heading text-[28px] font-bold leading-tight tracking-tight sm:text-[32px]">
             {event.title}
@@ -255,7 +276,19 @@ function EventDetailPageContent() {
                     </a>
                   )
                 ) : (
-                  <span className="font-medium">{event.location}</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-medium">{event.location}</span>
+                    {event.locationMapUrl && (
+                      <a
+                        href={event.locationMapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        Ver no mapa
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

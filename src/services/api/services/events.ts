@@ -128,6 +128,7 @@ export type EventPostRequest = {
   startAt: string;
   endAt?: string;
   location?: string;
+  locationMapUrl?: string;
   onlineUrl?: string;
   externalUrl?: string;
   coverImageId?: string;
