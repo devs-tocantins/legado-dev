@@ -393,11 +393,23 @@ export function EventForm({
           <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-card">
             <div
               className="relative h-28"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 10px, var(--background) 10px, var(--background) 20px)",
-              }}
+              style={
+                values.coverImage
+                  ? undefined
+                  : {
+                      backgroundImage:
+                        "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 10px, var(--background) 10px, var(--background) 20px)",
+                    }
+              }
             >
+              {values.coverImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={values.coverImage.path}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
               <span className="absolute left-2.5 top-2.5 rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold shadow-sm">
                 {EVENT_CATEGORY_LABELS[values.category]}
               </span>

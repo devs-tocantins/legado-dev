@@ -192,12 +192,25 @@ function EventDetailPageContent() {
       )}
 
       <div
-        className="mb-7 h-56 rounded-[var(--radius)] sm:h-72"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 14px, var(--background) 14px, var(--background) 28px)",
-        }}
-      />
+        className="relative mb-7 h-56 overflow-hidden rounded-[var(--radius)] sm:h-72"
+        style={
+          event.coverImage
+            ? undefined
+            : {
+                backgroundImage:
+                  "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 14px, var(--background) 14px, var(--background) 28px)",
+              }
+        }
+      >
+        {event.coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={event.coverImage.path}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
 
       <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
         <div>

@@ -42,12 +42,25 @@ function MyEventRow({
   return (
     <div className="flex items-center gap-4.5 rounded-xl border border-border bg-card p-4">
       <div
-        className="h-16 w-16 shrink-0 rounded-lg"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 6px, var(--background) 6px, var(--background) 12px)",
-        }}
-      />
+        className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg"
+        style={
+          event.coverImage
+            ? undefined
+            : {
+                backgroundImage:
+                  "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 6px, var(--background) 6px, var(--background) 12px)",
+              }
+        }
+      >
+        {event.coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={event.coverImage.path}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
       <div className="min-w-0 flex-1">
         <h3 className="mb-1 font-heading text-[15px] font-semibold">
           {event.title}
