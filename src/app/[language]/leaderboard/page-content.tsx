@@ -299,7 +299,7 @@ function LeaderboardPageContent() {
   });
 
   const { data: myProfile } = useQuery({
-    queryKey: ["my-profile-leaderboard"],
+    queryKey: ["my-profile"],
     queryFn: async () => {
       const { status, data } = await fetchMyProfile();
       if (status === HTTP_CODES_ENUM.OK) return data;

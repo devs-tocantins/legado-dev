@@ -279,7 +279,7 @@ function ResponsiveAppBar() {
 
   const fetchMyProfile = useGetMyGamificationProfileService();
   const { data: profile } = useQuery<GamificationProfile | null>({
-    queryKey: ["my-profile-appbar"],
+    queryKey: ["my-profile"],
     queryFn: async () => {
       const res = await fetchMyProfile();
       if (res.status === HTTP_CODES_ENUM.OK) {

@@ -949,10 +949,9 @@ function CompleteMilestonePageContent() {
         isTestOut: true,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
-        enqueueSnackbar(
-          "Marco concluído! Prova pulada enviada para revisão da moderação.",
-          { variant: "success" }
-        );
+        enqueueSnackbar("Marco concluído! Prova pulada.", {
+          variant: "success",
+        });
         await queryClient.invalidateQueries({
           queryKey: ["learning-track-progress", trackId],
         });
@@ -979,10 +978,13 @@ function CompleteMilestonePageContent() {
         isTestOut: true,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
-        enqueueSnackbar("Prova pulada enviada para revisão da moderação.", {
+        enqueueSnackbar("Prova pulada! Você já pode seguir em frente.", {
           variant: "success",
         });
         await refetchMySubmissions();
+        await queryClient.invalidateQueries({
+          queryKey: ["learning-track-progress", trackId],
+        });
       } else {
         enqueueSnackbar(getApiError(data, "Erro ao pular a prova."), {
           variant: "error",
@@ -1071,6 +1073,14 @@ function CompleteMilestonePageContent() {
                       ? `Você ganhou ${justCompleted} XP de Jornada.`
                       : "Este marco já faz parte da sua caminhada nesta trilha."}
                   </p>
+                  {myItemSubmission?.status === SubmissionStatusEnum.PENDING &&
+                    !myItemSubmission.isTestOut && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        Sua prova ainda está aguardando revisão de um moderador
+                        — o XP de Jornada é liberado assim que for aprovada.
+                      </p>
+                    )}
                 </div>
               </div>
 
@@ -1267,7 +1277,12 @@ function CompleteMilestonePageContent() {
                             ? myItemSubmission.feedback
                             : null
                         }
-                        onSubmitted={() => refetchMySubmissions()}
+                        onSubmitted={async () => {
+                          await refetchMySubmissions();
+                          await queryClient.invalidateQueries({
+                            queryKey: ["learning-track-progress", trackId],
+                          });
+                        }}
                       />
                     </>
                   )}
