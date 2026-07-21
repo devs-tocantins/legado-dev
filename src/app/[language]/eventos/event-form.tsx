@@ -56,6 +56,7 @@ export type EventFormValues = {
   startAt: string;
   endAt: string;
   location: string;
+  locationMapUrl: string;
   onlineUrl: string;
   externalUrl: string;
   coverImage: FileEntity | null;
@@ -70,6 +71,7 @@ function buildInitialValues(event?: Event): EventFormValues {
     startAt: toDatetimeLocal(event?.startAt),
     endAt: toDatetimeLocal(event?.endAt),
     location: event?.location ?? "",
+    locationMapUrl: event?.locationMapUrl ?? "",
     onlineUrl: event?.onlineUrl ?? "",
     externalUrl: event?.externalUrl ?? "",
     coverImage: event?.coverImage ?? null,
@@ -181,6 +183,7 @@ export function EventForm({
         startAt: new Date(values.startAt).toISOString(),
         endAt: values.endAt ? new Date(values.endAt).toISOString() : undefined,
         location: values.location.trim() || undefined,
+        locationMapUrl: values.locationMapUrl.trim() || undefined,
         onlineUrl: values.onlineUrl.trim() || undefined,
         externalUrl: values.externalUrl.trim() || undefined,
         coverImageId: values.coverImage?.id,
@@ -289,6 +292,20 @@ export function EventForm({
               onChange={handleChange("location")}
               className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm"
               placeholder="Endereço ou nome do espaço"
+            />
+          </div>
+        )}
+
+        {values.modality !== EventModality.ONLINE && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">
+              Link do Google Maps (opcional)
+            </label>
+            <input
+              value={values.locationMapUrl}
+              onChange={handleChange("locationMapUrl")}
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm"
+              placeholder="https://maps.app.goo.gl/..."
             />
           </div>
         )}

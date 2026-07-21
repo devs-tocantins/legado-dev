@@ -31,6 +31,7 @@ export type Event = {
   startAt: string;
   endAt?: string | null;
   location?: string | null;
+  locationMapUrl?: string | null;
   onlineUrl?: string | null;
   externalUrl?: string | null;
   status: EventStatus;
