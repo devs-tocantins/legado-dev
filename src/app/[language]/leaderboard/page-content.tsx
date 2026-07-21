@@ -11,7 +11,7 @@ import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
 import { getLevel, formatXp } from "@/lib/gamification";
-import { Trophy, Coins, Sparkle } from "lucide-react";
+import { Trophy, Medal, Coins, Crown, Sparkle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonLeaderboard } from "@/components/ui/skeleton-patterns";
 import { cn } from "@/lib/utils";
@@ -32,82 +32,40 @@ const TAB_FIELD: Record<Tab, keyof GamificationProfile> = {
   alltime: "totalXp",
 };
 
-// Cerimônia de pódio: medalha com brilho + faixa/estandarte + louros + base 3D.
-// Tudo em CSS/SVG (nenhuma imagem), palette oklch por posição.
-const RANK_STYLE = {
+// Sticker palette per lugar — mesma linguagem "hard-shadow" do resto do app
+// (cartão sólido + sombra sólida deslocada, tipo Duolingo), sem imagem de fundo.
+const PODIUM_STYLE = {
   1: {
-    hue: 87,
-    bright: "oklch(0.8 0.16 87)",
-    glow: "oklch(0.8 0.16 87 / 0.55)",
-    ring: "oklch(0.88 0.1 87)",
-    bannerTop: "oklch(0.34 0.07 85)",
-    bannerBottom: "oklch(0.15 0.03 85)",
-    riserTop: "oklch(0.62 0.15 85)",
-    riserBottom: "oklch(0.4 0.12 83)",
-    riserHeight: 92,
-    scale: 1,
+    height: "h-56",
+    bg: "oklch(0.84 0.15 87)",
+    shadow: "oklch(0.65 0.15 82)",
+    ink: "oklch(0.34 0.09 75)",
+    chip: "oklch(0.94 0.06 87)",
+    icon: Crown,
     order: "order-2",
+    label: "1º lugar",
   },
   2: {
-    hue: 235,
-    bright: "oklch(0.82 0.02 235)",
-    glow: "oklch(0.82 0.02 235 / 0.45)",
-    ring: "oklch(0.88 0.012 235)",
-    bannerTop: "oklch(0.32 0.015 235)",
-    bannerBottom: "oklch(0.15 0.01 235)",
-    riserTop: "oklch(0.68 0.02 235)",
-    riserBottom: "oklch(0.46 0.015 235)",
-    riserHeight: 68,
-    scale: 0.88,
+    height: "h-48",
+    bg: "oklch(0.89 0.012 240)",
+    shadow: "oklch(0.7 0.018 240)",
+    ink: "oklch(0.32 0.02 240)",
+    chip: "oklch(0.97 0.005 240)",
+    icon: Medal,
     order: "order-1",
+    label: "2º lugar",
   },
   3: {
-    hue: 45,
-    bright: "oklch(0.68 0.13 45)",
-    glow: "oklch(0.68 0.13 45 / 0.45)",
-    ring: "oklch(0.8 0.09 45)",
-    bannerTop: "oklch(0.32 0.06 45)",
-    bannerBottom: "oklch(0.15 0.03 45)",
-    riserTop: "oklch(0.55 0.13 45)",
-    riserBottom: "oklch(0.36 0.1 43)",
-    riserHeight: 56,
-    scale: 0.82,
+    height: "h-44",
+    bg: "oklch(0.77 0.12 52)",
+    shadow: "oklch(0.58 0.12 48)",
+    ink: "oklch(0.29 0.07 50)",
+    chip: "oklch(0.94 0.05 52)",
+    icon: Medal,
     order: "order-3",
+    label: "3º lugar",
   },
 } as const;
-
-function LaurelBranch({
-  color,
-  mirror,
-  scale,
-}: {
-  color: string;
-  mirror?: boolean;
-  scale: number;
-}) {
-  return (
-    <svg
-      width={30 * scale}
-      height={128 * scale}
-      viewBox="0 0 30 128"
-      className={cn("shrink-0", mirror && "-scale-x-100")}
-      style={{ color }}
-    >
-      <path
-        d="M3 4 C 3 44, 3 84, 3 124"
-        stroke="currentColor"
-        strokeWidth="2"
-        fill="none"
-        opacity="0.55"
-      />
-      {[10, 34, 58, 82, 104].map((y, i) => (
-        <g key={y} transform={`translate(3 ${y}) rotate(${-58 + i * 6})`}>
-          <path d="M0 0 Q 13 -5 26 1 Q 13 7 0 0 Z" fill="currentColor" />
-        </g>
-      ))}
-    </svg>
-  );
-}
 
 function PodiumCard({
   profile,
@@ -120,110 +78,71 @@ function PodiumCard({
 }) {
   const xp = profile[xpField] as number;
   const level = getLevel(profile.totalXp);
-  const style = RANK_STYLE[rank];
+  const style = PODIUM_STYLE[rank];
+  const Icon = style.icon;
 
   return (
     <div className="flex flex-col items-center">
-      {/* brilho ambiente + medalha */}
-      <div className="relative flex items-center justify-center h-16">
-        <div
-          className="absolute h-20 w-20 rounded-full blur-xl"
-          style={{ background: style.glow }}
-        />
-        {rank === 1 && (
-          <>
-            <Sparkle
-              className="absolute -left-9 -top-1 h-4 w-4 rotate-[-12deg]"
-              style={{ color: style.bright }}
-            />
-            <Sparkle
-              className="absolute -right-8 top-2 h-3 w-3 rotate-[18deg]"
-              style={{ color: style.bright }}
-            />
-          </>
+      {rank === 1 && (
+        <div className="flex gap-10 -mb-1">
+          <Sparkle className="h-3.5 w-3.5 rotate-[-12deg] text-[oklch(0.8_0.15_87)]" />
+          <Sparkle className="h-3 w-3 rotate-[18deg] text-[oklch(0.8_0.15_87)]" />
+        </div>
+      )}
+      <div className="relative z-10 -mb-8">
+        {profile.photo?.path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.photo.path}
+            alt={`@${profile.username}`}
+            className="h-16 w-16 rounded-full border-[3px] object-cover"
+            style={{ borderColor: style.shadow }}
+          />
+        ) : (
+          <div
+            className="h-16 w-16 rounded-full border-[3px] bg-card flex items-center justify-center text-sm font-extrabold"
+            style={{ borderColor: style.shadow, color: style.shadow }}
+          >
+            {profile.username.substring(0, 2).toUpperCase()}
+          </div>
         )}
         <div
-          className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-[3px] font-mono text-xl font-black text-background"
-          style={{
-            background: style.bright,
-            borderColor: style.ring,
-            boxShadow: `0 0 18px ${style.glow}`,
-          }}
+          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-card"
+          style={{ background: style.chip }}
         >
-          {rank}
+          <Icon className="h-3.5 w-3.5" style={{ color: style.shadow }} />
         </div>
       </div>
 
-      {/* estandarte + louros */}
-      <div className="flex items-start -mt-1">
-        <LaurelBranch color={style.bright} scale={style.scale} />
-        <div
-          className="relative flex w-[132px] flex-col items-center gap-1 px-3 pb-6 pt-6 text-center"
-          style={{
-            background: `linear-gradient(180deg, ${style.bannerTop}, ${style.bannerBottom})`,
-            clipPath: "polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%)",
-            border: `1px solid ${style.glow}`,
-          }}
-        >
-          <div className="relative -mt-2 mb-1">
-            {profile.photo?.path ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.photo.path}
-                alt={`@${profile.username}`}
-                className="h-12 w-12 rounded-full border-2 object-cover"
-                style={{ borderColor: style.bright }}
-              />
-            ) : (
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background text-xs font-extrabold text-foreground"
-                style={{ borderColor: style.bright }}
-              >
-                {profile.username.substring(0, 2).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <Link
-            href={`/u/${profile.username}`}
-            className="font-bold text-xs text-white truncate max-w-full hover:underline"
-          >
-            @{profile.username}
-          </Link>
-          <span className={cn("text-[10px] font-semibold", level.color)}>
-            {level.name}
-          </span>
-          <span
-            className="mt-0.5 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-xs font-extrabold text-white"
-            style={{
-              borderColor: style.bright,
-              background: "rgba(0,0,0,0.25)",
-            }}
-          >
-            {formatXp(xp)} XP
-          </span>
-        </div>
-        <LaurelBranch color={style.bright} mirror scale={style.scale} />
-      </div>
-
-      {/* base do pódio */}
       <div
-        className="relative w-[110px] rounded-b-md"
-        style={{ height: style.riserHeight }}
+        className={cn(
+          "w-full rounded-[24px] pt-9 pb-3 px-2 flex flex-col items-center justify-end gap-1 text-center",
+          style.height
+        )}
+        style={{
+          background: style.bg,
+          boxShadow: `0 5px 0 ${style.shadow}`,
+          color: style.ink,
+        }}
       >
-        <div
-          className="absolute inset-x-0 top-0 h-3 rounded-[50%]"
-          style={{ background: style.riserTop }}
-        />
-        <div
-          className="absolute inset-x-0 top-1.5 bottom-0 flex items-start justify-center overflow-hidden rounded-b-md pt-1"
-          style={{
-            background: `linear-gradient(180deg, ${style.riserTop}, ${style.riserBottom})`,
-          }}
+        <span className="font-mono text-[10px] font-extrabold uppercase tracking-wider opacity-70">
+          {style.label}
+        </span>
+        <Link
+          href={`/u/${profile.username}`}
+          className="font-bold text-xs truncate max-w-full hover:underline"
         >
-          <span className="font-mono text-4xl font-black text-black/15">
-            {rank}
-          </span>
-        </div>
+          @{profile.username}
+        </Link>
+        <span className="text-[10px] font-semibold opacity-80">
+          {level.name}
+        </span>
+        <span
+          className="mt-1 inline-flex items-center gap-1 rounded-full px-3 py-1 font-mono text-sm font-extrabold"
+          style={{ background: style.chip }}
+        >
+          {formatXp(xp)}
+        </span>
       </div>
     </div>
   );
@@ -406,7 +325,7 @@ function LeaderboardPageContent() {
                   return (
                     <div
                       key={rank}
-                      className={cn("flex-1", RANK_STYLE[rank].order)}
+                      className={cn("flex-1", PODIUM_STYLE[rank].order)}
                     >
                       <PodiumCard
                         profile={profile}
