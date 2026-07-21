@@ -124,6 +124,7 @@ export function EventForm({
     buildInitialValues(event)
   );
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -135,9 +136,7 @@ export function EventForm({
       setValues((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFileUpload = async (file: File) => {
     setUploadingCover(true);
     try {
       const { status, data } = await uploadFile(file);
@@ -150,6 +149,35 @@ export function EventForm({
       }
     } finally {
       setUploadingCover(false);
+    }
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFileUpload(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        enqueueSnackbar("Por favor, envie apenas arquivos de imagem.", { variant: "error" });
+        return;
+      }
+      await processFileUpload(file);
     }
   };
 
@@ -186,7 +214,7 @@ export function EventForm({
         locationMapUrl: values.locationMapUrl.trim() || undefined,
         onlineUrl: values.onlineUrl.trim() || undefined,
         externalUrl: values.externalUrl.trim() || undefined,
-        coverImageId: values.coverImage?.id,
+        coverImageId: values.coverImage ? values.coverImage.id : null,
       };
 
       const { status, data } = isEditing
@@ -362,13 +390,23 @@ export function EventForm({
               </button>
             </div>
           ) : (
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-border bg-secondary px-3 py-6 text-center transition-colors hover:border-primary/50">
+            <label 
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={cn(
+                "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-3 py-6 text-center transition-colors",
+                isDragging 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border bg-secondary hover:border-primary/50"
+              )}
+            >
               {uploadingCover ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : (
-                <Upload className="h-5 w-5 text-muted-foreground" />
+                <Upload className={cn("h-5 w-5", isDragging ? "text-primary" : "text-muted-foreground")} />
               )}
-              <span className="text-xs text-muted-foreground">
+              <span className={cn("text-xs", isDragging ? "text-primary font-medium" : "text-muted-foreground")}>
                 Arraste uma imagem ou clique para enviar · 1200×630px
                 recomendado
               </span>
