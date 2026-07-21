@@ -131,7 +131,7 @@ export type EventPostRequest = {
   locationMapUrl?: string;
   onlineUrl?: string;
   externalUrl?: string;
-  coverImageId?: string;
+  coverImageId?: string | null;
 };
 
 export type EventPostResponse = Event;

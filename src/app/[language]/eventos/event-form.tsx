@@ -174,7 +174,9 @@ export function EventForm({
     const file = e.dataTransfer.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        enqueueSnackbar("Por favor, envie apenas arquivos de imagem.", { variant: "error" });
+        enqueueSnackbar("Por favor, envie apenas arquivos de imagem.", {
+          variant: "error",
+        });
         return;
       }
       await processFileUpload(file);
@@ -390,23 +392,35 @@ export function EventForm({
               </button>
             </div>
           ) : (
-            <label 
+            <label
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-3 py-6 text-center transition-colors",
-                isDragging 
-                  ? "border-primary bg-primary/5" 
+                isDragging
+                  ? "border-primary bg-primary/5"
                   : "border-border bg-secondary hover:border-primary/50"
               )}
             >
               {uploadingCover ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : (
-                <Upload className={cn("h-5 w-5", isDragging ? "text-primary" : "text-muted-foreground")} />
+                <Upload
+                  className={cn(
+                    "h-5 w-5",
+                    isDragging ? "text-primary" : "text-muted-foreground"
+                  )}
+                />
               )}
-              <span className={cn("text-xs", isDragging ? "text-primary font-medium" : "text-muted-foreground")}>
+              <span
+                className={cn(
+                  "text-xs",
+                  isDragging
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground"
+                )}
+              >
                 Arraste uma imagem ou clique para enviar · 1200×630px
                 recomendado
               </span>
