@@ -200,6 +200,7 @@ export type UpdateMyGamificationProfileRequest = {
   bannerPreset?: string;
   whatsappNumber?: string | null;
   avatarConfig?: string | null;
+  showFullName?: boolean;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;

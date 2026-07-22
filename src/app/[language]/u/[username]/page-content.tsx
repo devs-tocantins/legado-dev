@@ -1110,6 +1110,12 @@ function PublicProfilePageContent() {
     },
   ];
 
+  const fullName = [profile.firstName, profile.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const shouldShowFullName = profile.showFullName === true && Boolean(fullName);
+
   return (
     <div className="mx-auto max-w-4xl">
       {/* Cover */}
@@ -1128,9 +1134,18 @@ function PublicProfilePageContent() {
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="space-y-1">
-            <h1 className="text-xl font-bold font-mono leading-tight">
-              @{profile.username}
-            </h1>
+            {shouldShowFullName ? (
+              <>
+                <h1 className="text-xl font-bold tracking-tight">{fullName}</h1>
+                <p className="font-mono text-sm text-muted-foreground">
+                  @{profile.username}
+                </p>
+              </>
+            ) : (
+              <h1 className="text-xl font-bold font-mono leading-tight">
+                @{profile.username}
+              </h1>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={cn(

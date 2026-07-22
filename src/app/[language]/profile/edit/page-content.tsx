@@ -739,7 +739,12 @@ function FormChangePasswordViaEmail() {
 }
 
 // --- Form: Identidade (nome + banner + username) — modelo rascunho/salvo ---
-type IdentityDraft = { name: string; banner: string; username: string };
+type IdentityDraft = {
+  name: string;
+  banner: string;
+  username: string;
+  showFullName: boolean;
+};
 
 type FormActions = {
   saving: boolean;
@@ -843,6 +848,7 @@ function FormIdentity({
       name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
       banner: profile.bannerPreset || "raiz-verde",
       username: profile.username,
+      showFullName: profile.showFullName ?? false,
     };
     setSaved(initial);
     setDraft(initial);
@@ -852,7 +858,10 @@ function FormIdentity({
   const bannerChanged = !!saved && !!draft && draft.banner !== saved.banner;
   const usernameChanged =
     !!saved && !!draft && draft.username !== saved.username;
-  const dirty = nameChanged || bannerChanged || usernameChanged;
+  const showFullNameChanged =
+    !!saved && !!draft && draft.showFullName !== saved.showFullName;
+  const dirty =
+    nameChanged || bannerChanged || usernameChanged || showFullNameChanged;
 
   useLeavePage(dirty);
 
@@ -890,10 +899,11 @@ function FormIdentity({
         setUser(patchResult.data);
       }
 
-      if (bannerChanged || usernameChanged) {
+      if (bannerChanged || usernameChanged || showFullNameChanged) {
         const { status } = await updateMyProfile({
           username: trimmedUsername,
           bannerPreset: draft.banner,
+          showFullName: draft.showFullName,
         });
         if (status === HTTP_CODES_ENUM.CONFLICT) {
           setUsernameError("Este username já está em uso.");
@@ -947,10 +957,10 @@ function FormIdentity({
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             Nome
-            {nameChanged && <UnsavedBadge />}
+            {(nameChanged || showFullNameChanged) && <UnsavedBadge />}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Field label="Nome completo" error={nameError}>
             <TextInput
               value={draft.name}
@@ -959,6 +969,38 @@ function FormIdentity({
               error={!!nameError}
             />
           </Field>
+          <div className="pt-2 flex items-start gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.showFullName}
+              onClick={() => setField({ showFullName: !draft.showFullName })}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-0.5",
+                draft.showFullName ? "bg-primary" : "bg-input"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition-transform",
+                  draft.showFullName ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
+            <div className="space-y-1">
+              <label
+                onClick={() => setField({ showFullName: !draft.showFullName })}
+                className="text-sm font-medium leading-none cursor-pointer select-none"
+              >
+                Exibir meu nome no perfil público
+              </label>
+              {!draft.showFullName && (
+                <p className="text-xs text-muted-foreground">
+                  Apenas o seu @username aparecerá publicamente.
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
