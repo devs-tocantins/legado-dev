@@ -674,25 +674,13 @@ function ItemDialog({
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          {type === TrackItemType.TEXT ? (
-            <MarkdownEditor
-              value={body}
-              onChange={setBody}
-              label="Conteúdo (Markdown)"
-              rows={12}
-              placeholder="Escreva o texto completo que a pessoa vai ler neste marco. Suporta **markdown**: cabeçalhos, listas, `código`, links..."
-            />
-          ) : (
-            <div className="space-y-1.5">
-              <Label>Conteúdo / instrução (opcional)</Label>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          )}
+          <MarkdownEditor
+            value={body}
+            onChange={setBody}
+            label="Conteúdo / instrução (Markdown, opcional)"
+            rows={type === TrackItemType.TEXT ? 12 : 5}
+            placeholder="Suporta **markdown**: cabeçalhos, listas, `código`, links..."
+          />
 
           {type === "PROOF" && (
             <div className="space-y-1.5">

@@ -1175,17 +1175,12 @@ function CompleteMilestonePageContent() {
               <h1 className="mt-3 text-[24px] font-bold leading-tight tracking-tight">
                 {item.title}
               </h1>
-              {item.body &&
-                (item.type === TrackItemType.TEXT ? (
-                  <MarkdownContent
-                    content={item.body}
-                    className="mt-3 max-w-none text-sm leading-relaxed text-muted-foreground"
-                  />
-                ) : (
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    {item.body}
-                  </p>
-                ))}
+              {item.body && (
+                <MarkdownContent
+                  content={item.body}
+                  className="mt-3 max-w-none text-sm leading-relaxed text-muted-foreground"
+                />
+              )}
 
               {item.type === TrackItemType.CHECKPOINT &&
               isCheckpointConfig(item.config) ? (
