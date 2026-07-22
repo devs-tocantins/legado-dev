@@ -219,7 +219,7 @@ function CoverPattern({ preset = DEFAULT_BANNER }: { preset?: string }) {
   const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS[DEFAULT_BANNER];
 
   return (
-    <div className="relative h-36 w-full overflow-hidden bg-muted">
+    <div className="relative aspect-[4/1] w-full overflow-hidden bg-muted">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={cfg.url}

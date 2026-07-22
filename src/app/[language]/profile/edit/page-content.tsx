@@ -1089,7 +1089,7 @@ function LivePreviewCard({
         )}
       </p>
       <div className="overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_6px_0_var(--border)]">
-        <div className="relative h-32 w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[4/1] w-full overflow-hidden bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={banner.url}
