@@ -788,6 +788,12 @@ function FormChangePasswordViaEmail() {
 // --- Form: Identidade (nome + banner + username) — modelo rascunho/salvo ---
 type IdentityDraft = { name: string; banner: string; username: string };
 
+type FormActions = {
+  saving: boolean;
+  save: () => Promise<void>;
+  discard: () => void;
+};
+
 function UnsavedBadge() {
   return (
     <span className="rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
@@ -796,10 +802,64 @@ function UnsavedBadge() {
   );
 }
 
+function SaveStatusBar({
+  dirty,
+  saving,
+  onDiscard,
+  onSave,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  onDiscard: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur transition-colors",
+        dirty
+          ? "border-amber-400/50 bg-amber-50/95 dark:bg-amber-950/40"
+          : "border-border bg-card/95"
+      )}
+    >
+      <div className="flex items-center gap-2 text-sm">
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            dirty ? "bg-amber-500" : "bg-emerald-500"
+          )}
+        />
+        <span className="font-medium">
+          {dirty ? "Você tem alterações não salvas" : "Tudo salvo"}
+        </span>
+      </div>
+      {dirty && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onDiscard}
+            disabled={saving}
+          >
+            Descartar
+          </Button>
+          <Button type="button" onClick={onSave} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar alterações"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormIdentity({
   onDraftChange,
 }: {
-  onDraftChange?: (draft: IdentityDraft, dirty: boolean) => void;
+  onDraftChange?: (
+    draft: IdentityDraft,
+    dirty: boolean,
+    actions?: FormActions
+  ) => void;
 }) {
   const { user } = useAuth();
   const { setUser } = useAuthActions();
@@ -843,19 +903,6 @@ function FormIdentity({
 
   useLeavePage(dirty);
 
-  useEffect(() => {
-    if (draft) onDraftChange?.(draft, dirty);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, dirty]);
-
-  if (!saved || !draft) return null;
-
-  const setField = (patch: Partial<IdentityDraft>) => {
-    setNameError("");
-    setUsernameError("");
-    setDraft((d) => (d ? { ...d, ...patch } : d));
-  };
-
   const discard = () => {
     setDraft(saved);
     setNameError("");
@@ -863,6 +910,7 @@ function FormIdentity({
   };
 
   const save = async () => {
+    if (!saved || !draft) return;
     const trimmedName = draft.name.trim();
     if (!trimmedName) {
       setNameError("Nome é obrigatório.");
@@ -925,6 +973,19 @@ function FormIdentity({
     } finally {
       setSaving(false);
     }
+  };
+
+  useEffect(() => {
+    if (draft) onDraftChange?.(draft, dirty, { saving, save, discard });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, dirty, saving]);
+
+  if (!saved || !draft) return null;
+
+  const setField = (patch: Partial<IdentityDraft>) => {
+    setNameError("");
+    setUsernameError("");
+    setDraft((d) => (d ? { ...d, ...patch } : d));
   };
 
   return (
@@ -1029,42 +1090,6 @@ function FormIdentity({
           </Field>
         </CardContent>
       </Card>
-
-      <div
-        className={cn(
-          "sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur transition-colors",
-          dirty
-            ? "border-amber-400/50 bg-amber-50/95 dark:bg-amber-950/40"
-            : "border-border bg-card/95"
-        )}
-      >
-        <div className="flex items-center gap-2 text-sm">
-          <span
-            className={cn(
-              "h-2 w-2 rounded-full",
-              dirty ? "bg-amber-500" : "bg-emerald-500"
-            )}
-          />
-          <span className="font-medium">
-            {dirty ? "Você tem alterações não salvas" : "Tudo salvo"}
-          </span>
-        </div>
-        {dirty && (
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={discard}
-              disabled={saving}
-            >
-              Descartar
-            </Button>
-            <Button type="button" onClick={save} disabled={saving}>
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </Button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -1095,7 +1120,7 @@ function LivePreviewCard({
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
 
   return (
-    <div className="lg:sticky lg:top-6">
+    <div>
       <p className="mb-2.5 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <span
           className={cn(
@@ -1182,11 +1207,15 @@ function EditProfile() {
 
   const [draft, setDraft] = useState<IdentityDraft | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
+  const [formActions, setFormActions] = useState<FormActions | null>(null);
 
   const handleDraftChange = useCallback(
-    (nextDraft: IdentityDraft, dirty: boolean) => {
+    (nextDraft: IdentityDraft, dirty: boolean, actions?: FormActions) => {
       setDraft(nextDraft);
       setDraftDirty(dirty);
+      if (actions) {
+        setFormActions(actions);
+      }
     },
     []
   );
@@ -1204,17 +1233,25 @@ function EditProfile() {
           <FormProfilePicture />
           <FormIdentity onDraftChange={handleDraftChange} />
         </div>
-        <LivePreviewCard
-          firstName={draft ? previewFirstName || "" : (user?.firstName ?? "")}
-          lastName={
-            draft ? previewLastNameParts.join(" ") : (user?.lastName ?? "")
-          }
-          username={draft?.username || (profile?.username ?? "")}
-          bannerKey={draft?.banner || "raiz-verde"}
-          photoUrl={user?.photo?.path}
-          totalXp={profile?.totalXp ?? 0}
-          dirty={draftDirty}
-        />
+        <div className="space-y-4 lg:sticky lg:top-6 self-start">
+          <LivePreviewCard
+            firstName={draft ? previewFirstName || "" : (user?.firstName ?? "")}
+            lastName={
+              draft ? previewLastNameParts.join(" ") : (user?.lastName ?? "")
+            }
+            username={draft?.username || (profile?.username ?? "")}
+            bannerKey={draft?.banner || "raiz-verde"}
+            photoUrl={user?.photo?.path}
+            totalXp={profile?.totalXp ?? 0}
+            dirty={draftDirty}
+          />
+          <SaveStatusBar
+            dirty={draftDirty}
+            saving={formActions?.saving ?? false}
+            onDiscard={formActions?.discard ?? (() => {})}
+            onSave={formActions?.save ?? (() => {})}
+          />
+        </div>
       </div>
 
       <div className="max-w-2xl space-y-6">
