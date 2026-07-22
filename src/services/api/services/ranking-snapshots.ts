@@ -32,3 +32,20 @@ export function useGetChampionSnapshotService() {
     [fetch]
   );
 }
+
+export type GetProfileRankingHistoryResponse = RankingSnapshot[];
+
+// GET /api/v1/ranking-snapshots/profile/:profileId
+export function useGetProfileRankingHistoryService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (profileId: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/ranking-snapshots/profile/${profileId}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<GetProfileRankingHistoryResponse>);
+    },
+    [fetch]
+  );
+}

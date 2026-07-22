@@ -1,29 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import useAuth from "@/services/auth/use-auth";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import SpotlightTour from "@/components/tour/spotlight-tour";
+import { ProfileHistoryTimeline } from "@/components/profile-history-timeline";
 import { useQuery } from "@tanstack/react-query";
 import {
   useGetMyGamificationProfileService,
   useGetGamificationProfilesService,
   useTransferTokensService,
 } from "@/services/api/services/gamification-profiles";
-import { useGetMySubmissionsService } from "@/services/api/services/submissions";
-import { useGetActivitiesService } from "@/services/api/services/activities";
 import { useGetProfileBadgesService } from "@/services/api/services/badges";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import {
   getLevel,
   getLevelProgress,
   getNextLevelXp,
   formatXp,
 } from "@/lib/gamification";
-import { getTrackColor } from "@/lib/track-colors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,9 +47,6 @@ import {
   ArrowRight,
   Receipt,
   KeyRound,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Search,
   X,
   Loader2,
@@ -114,45 +108,10 @@ function StatTile({
   );
 }
 
-function StatusIcon({ status }: { status: SubmissionStatusEnum }) {
-  if (status === SubmissionStatusEnum.APPROVED)
-    return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
-  if (status === SubmissionStatusEnum.REJECTED)
-    return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
-  return <Clock className="h-4 w-4 text-amber-500 shrink-0" />;
-}
-
-function StatusPill({ status }: { status: SubmissionStatusEnum }) {
-  const style =
-    status === SubmissionStatusEnum.APPROVED
-      ? "bg-accent/15 text-accent"
-      : status === SubmissionStatusEnum.REJECTED
-        ? "bg-destructive/10 text-destructive"
-        : "bg-amber-500/10 text-amber-600";
-  const label =
-    status === SubmissionStatusEnum.APPROVED
-      ? "Aprovado"
-      : status === SubmissionStatusEnum.REJECTED
-        ? "Rejeitado"
-        : "Pendente";
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold",
-        style
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
 function Profile() {
   const { user } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const fetchMyProfile = useGetMyGamificationProfileService();
-  const fetchMySubmissions = useGetMySubmissionsService();
-  const fetchActivities = useGetActivitiesService();
   const transferTokens = useTransferTokensService();
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchProfileBadges = useGetProfileBadgesService();
@@ -230,25 +189,6 @@ function Profile() {
     },
   });
 
-  const { data: submissionsData } = useQuery({
-    queryKey: ["my-submissions-recent"],
-    queryFn: async () => {
-      const { status, data } = await fetchMySubmissions({ page: 1, limit: 5 });
-      if (status === HTTP_CODES_ENUM.OK) return data.data;
-      return [];
-    },
-  });
-
-  const { data: activitiesData } = useQuery({
-    queryKey: ["activities-map"],
-    queryFn: async () => {
-      const { status, data } = await fetchActivities({ page: 1, limit: 100 });
-      if (status === HTTP_CODES_ENUM.OK) return data.data;
-      return [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: myBadges } = useQuery({
     queryKey: ["my-badges", profile?.id],
     queryFn: async () => {
@@ -259,21 +199,12 @@ function Profile() {
     enabled: !!profile?.id,
   });
 
-  const activityMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const a of activitiesData ?? []) {
-      map.set(a.id, a.title);
-    }
-    return map;
-  }, [activitiesData]);
-
   const totalXp = profile?.totalXp ?? 0;
   const level = getLevel(totalXp);
   const progress = getLevelProgress(totalXp);
   const nextLevelXp = getNextLevelXp(totalXp);
   const xpToNext = Math.max(0, nextLevelXp - totalXp);
   const isMaxLevel = level.maxXp === Infinity;
-  const recentSubmissions = submissionsData ?? [];
   const banner =
     BANNER_PRESETS[profile?.bannerPreset ?? "raiz-verde"] ??
     BANNER_PRESETS["raiz-verde"];
@@ -438,69 +369,12 @@ function Profile() {
         </HardShadowSection>
       )}
 
-      {/* Submissões Recentes */}
-      <HardShadowSection>
-        <div className="flex flex-row items-center justify-between px-5 pt-4 pb-1">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Submissões Recentes
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 rounded-lg text-xs font-bold"
-            render={<Link href="/submissions" />}
-          >
-            Ver todas
-            <ArrowRight className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="p-3 pt-2">
-          {recentSubmissions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhuma submissão ainda.
-            </p>
-          ) : (
-            <div className="space-y-1.5">
-              {recentSubmissions.map((sub) => {
-                const color = getTrackColor(sub.activityId);
-                return (
-                  <div
-                    key={sub.id}
-                    className="flex items-center gap-3 rounded-2xl bg-muted/40 py-2.5 px-3"
-                  >
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                      style={{ background: color.bg }}
-                    >
-                      <StatusIcon status={sub.status} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">
-                        {activityMap.get(sub.activityId) ?? (
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {sub.activityId.substring(0, 8)}…
-                          </span>
-                        )}
-                      </p>
-                      <p className="font-mono text-[11px] text-muted-foreground">
-                        {new Date(sub.createdAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {sub.status === SubmissionStatusEnum.APPROVED && (
-                        <span className="font-mono text-xs font-bold text-accent">
-                          +{sub.awardedXp}
-                        </span>
-                      )}
-                      <StatusPill status={sub.status} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </HardShadowSection>
+      {/* Histórico */}
+      {profile?.id && (
+        <HardShadowSection className="p-5">
+          <ProfileHistoryTimeline profileId={profile.id} />
+        </HardShadowSection>
+      )}
 
       {/* Conquistas */}
       {myBadges && myBadges.length > 0 && (

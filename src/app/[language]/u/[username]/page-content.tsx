@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   useGetGamificationProfileByUsernameService,
@@ -19,20 +19,17 @@ import {
   BadgeCategoryEnum,
   GamificationProfileBadge,
 } from "@/services/api/services/badges";
-import { useGetActivitiesService } from "@/services/api/services/activities";
-import { useGetPublicSubmissionDetailService } from "@/services/api/services/submissions";
-import { PublicSubmissionDetail } from "@/services/api/types/submission";
 import {
   useGetLearningTracksService,
   useGetLearningTrackOverviewService,
   useGetProofPortfolioService,
-  ProofPortfolioItem,
 } from "@/services/api/services/learning-tracks";
 import {
   LearningTrackOverview,
   LearningTrackStatus,
 } from "@/services/api/types/learning-track";
-import { getTrackColor, getTrackAbbreviation } from "@/lib/track-colors";
+import { ProfileHistoryTimeline } from "@/components/profile-history-timeline";
+import { getTrackColor } from "@/lib/track-colors";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SortEnum } from "@/services/api/types/sort-type";
 import {
@@ -52,30 +49,14 @@ import {
   Share2,
   Check,
   Ban,
-  Flag,
   Medal,
   Lock,
   ArrowDownLeft,
   ArrowUpRight,
-  ChevronDown,
-  FileText,
-  Paperclip,
   ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
-import useAuth from "@/services/auth/use-auth";
-import { useSnackbar } from "@/hooks/use-snackbar";
-import { getApiError } from "@/lib/utils";
-import { useCreateContributionReportService } from "@/services/api/services/notifications";
-import { MarkdownContent } from "@/components/markdown-editor";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 // ─── Banner presets ───────────────────────────────────────────────────────────
 // Banners temáticos (TI + cores do Tocantins + identidade legado.dev),
@@ -297,89 +278,6 @@ const LEVEL_BAR_COLOR: Record<string, string> = {
   Lenda: "bg-rose-400",
 };
 
-function ReportModal({
-  submissionId,
-  open,
-  onClose,
-}: {
-  submissionId: string;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const [reason, setReason] = useState("");
-  const { enqueueSnackbar } = useSnackbar();
-  const createReport = useCreateContributionReportService();
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async () => {
-      const res = await createReport({ submissionId, reason: reason.trim() });
-      if (res.status !== HTTP_CODES_ENUM.CREATED) {
-        throw new Error(getApiError(res.data, "Erro ao enviar report."));
-      }
-    },
-    onSuccess: () => {
-      enqueueSnackbar("Report enviado. Nossa equipe vai analisar.", {
-        variant: "success",
-      });
-      setReason("");
-      onClose();
-    },
-    onError: (e: any) => enqueueSnackbar(e.message, { variant: "error" }),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Flag className="h-4 w-4 text-destructive" />
-            Reportar contribuição
-          </DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          Descreva por que esta contribuição é inválida. Nossa equipe vai
-          analisar e tomar as medidas necessárias.
-        </p>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Motivo *</label>
-            <span className="text-xs text-muted-foreground">
-              {reason.length}/2000
-            </span>
-          </div>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={4}
-            maxLength={2000}
-            placeholder="Ex: Esta contribuição não foi feita por esta pessoa. Tenho evidências de que foi realizada por outra conta..."
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-          />
-        </div>
-        <div className="flex gap-2 pt-1">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            className="flex-1 gap-1.5"
-            disabled={isPending || reason.trim().length < 10}
-            onClick={() => mutate()}
-          >
-            <Flag className="h-3.5 w-3.5" />
-            {isPending ? "Enviando..." : "Enviar report"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ─── Selos de trilha (conquistado / em progresso / bloqueado) ─────────────────
 
 type SealState = "conquistado" | "em-progresso" | "bloqueado";
@@ -508,65 +406,6 @@ function TrilhaSealsRow({ seals }: { seals: TrilhaSeal[] }) {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Portfólio de provas ───────────────────────────────────────────────────────
-
-function PortfolioCard({ item }: { item: ProofPortfolioItem }) {
-  const color = getTrackColor(item.trackId);
-  const abbr = getTrackAbbreviation(item.trackTitle);
-
-  return (
-    <div className="rounded-lg border bg-card p-4 space-y-2">
-      <div className="flex items-center gap-2">
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
-          style={{ background: color.bg }}
-        >
-          {abbr}
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground truncate">
-            {item.trackTitle}
-          </p>
-          <p className="text-xs text-muted-foreground/70 truncate">
-            {item.sectionTitle}
-          </p>
-        </div>
-      </div>
-      <p className="text-sm font-semibold leading-snug">{item.itemTitle}</p>
-      <div className="flex items-center justify-between pt-1">
-        <span className="inline-flex items-center gap-1 text-xs text-emerald-500 font-medium">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          {item.isTestOut ? "Prova pulada" : "Prova validada"}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {new Date(item.completedAt).toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function PortfolioSection({ portfolio }: { portfolio: ProofPortfolioItem[] }) {
-  if (portfolio.length === 0) return null;
-
-  return (
-    <div className="mb-8">
-      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
-        Portfólio de provas
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {portfolio.map((item) => (
-          <PortfolioCard key={item.itemId} item={item} />
-        ))}
       </div>
     </div>
   );
@@ -759,141 +598,14 @@ function TokenActivitySection({ profileId }: { profileId: string }) {
   );
 }
 
-function SubmissionDetailModal({
-  submissionId,
-  activityTitle,
-  awardedXp,
-  open,
-  onClose,
-}: {
-  submissionId: string;
-  activityTitle: string;
-  awardedXp: number;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const fetchDetail = useGetPublicSubmissionDetailService();
-
-  const { data, isLoading } = useQuery<PublicSubmissionDetail | null>({
-    queryKey: ["submission-public-detail", submissionId],
-    queryFn: async () => {
-      const { status, data } = await fetchDetail({ id: submissionId });
-      if (status === HTTP_CODES_ENUM.OK) return data as PublicSubmissionDetail;
-      return null;
-    },
-    enabled: open,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base leading-snug">
-            <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
-            {activityTitle}
-          </DialogTitle>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="space-y-3 animate-pulse py-2">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-2/3" />
-          </div>
-        ) : !data ? (
-          <p className="text-sm text-muted-foreground py-2">
-            Não foi possível carregar os detalhes.
-          </p>
-        ) : (
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span className="flex items-center gap-1 font-semibold font-mono text-emerald-500">
-                <Zap className="h-3.5 w-3.5" />+{awardedXp} XP
-              </span>
-              {data.activityDate && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {new Date(data.activityDate).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-              {data.hasProof && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  Arquivo enviado
-                </span>
-              )}
-            </div>
-
-            {data.description && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Relato da pessoa
-                </p>
-                <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-48 overflow-y-auto">
-                  <MarkdownContent
-                    content={data.description}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Sobre esta atividade
-              </p>
-              <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-36 overflow-y-auto">
-                <MarkdownContent
-                  content={data.activityDescription}
-                  className="text-xs text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Aprovado em{" "}
-              {data.reviewedAt
-                ? new Date(data.reviewedAt).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : new Date(data.createdAt).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-            </p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function PublicProfilePageContent() {
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
   const [copied, setCopied] = useState(false);
-  const [reportingSubmissionId, setReportingSubmissionId] = useState<
-    string | null
-  >(null);
-  const [detailSubmission, setDetailSubmission] = useState<{
-    id: string;
-    activityTitle: string;
-    awardedXp: number;
-  } | null>(null);
-  const { user } = useAuth();
 
   const fetchByUsername = useGetGamificationProfileByUsernameService();
   const fetchApprovedSubmissions = useGetProfileApprovedSubmissionsService();
   const fetchProfiles = useGetGamificationProfilesService();
-  const fetchActivities = useGetActivitiesService();
   const fetchProfileBadges = useGetProfileBadgesService();
   const fetchProofPortfolio = useGetProofPortfolioService();
 
@@ -907,7 +619,7 @@ function PublicProfilePageContent() {
     enabled: !!username,
   });
 
-  const { data: submissionsData, isLoading: loadingSubmissions } = useQuery({
+  const { data: submissionsData } = useQuery({
     queryKey: ["public-profile-submissions", profile?.id],
     queryFn: async () => {
       const { status, data } = await fetchApprovedSubmissions(profile!.id, {
@@ -928,16 +640,6 @@ function PublicProfilePageContent() {
         limit: 100,
         sort: [{ orderBy: "totalXp", order: SortEnum.DESC }],
       });
-      if (status === HTTP_CODES_ENUM.OK) return data.data;
-      return [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: activitiesData } = useQuery({
-    queryKey: ["activities-map"],
-    queryFn: async () => {
-      const { status, data } = await fetchActivities({ page: 1, limit: 100 });
       if (status === HTTP_CODES_ENUM.OK) return data.data;
       return [];
     },
@@ -974,12 +676,6 @@ function PublicProfilePageContent() {
     [portfolio]
   );
   const trilhaSeals = useTrilhaSeals(ownedBadgeIds, activeTrackIds);
-
-  const activityMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const a of activitiesData ?? []) map.set(a.id, a.title);
-    return map;
-  }, [activitiesData]);
 
   const rank = useMemo(() => {
     if (!leaderboardData || !profile) return null;
@@ -1242,9 +938,6 @@ function PublicProfilePageContent() {
         {/* Selos de trilha */}
         <TrilhaSealsRow seals={trilhaSeals} />
 
-        {/* Portfólio de provas */}
-        <PortfolioSection portfolio={portfolio} />
-
         {/* Badges / Conquistas */}
         {badgesData && badgesData.length > 0 && (
           <BadgesSection badges={badgesData} />
@@ -1253,111 +946,9 @@ function PublicProfilePageContent() {
         {/* Token activity */}
         <TokenActivitySection profileId={profile.id} />
 
-        {/* Contributions timeline */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-4">
-            Contribuições
-          </h2>
-          {loadingSubmissions ? (
-            <div className="space-y-3 pl-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex gap-3 animate-pulse">
-                  <div className="h-3 w-3 rounded-full bg-muted mt-1 shrink-0" />
-                  <div className="flex-1 h-4 bg-muted rounded" />
-                </div>
-              ))}
-            </div>
-          ) : submissions.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Nenhuma contribuição aprovada ainda.
-            </p>
-          ) : (
-            <div className="relative pl-4">
-              {/* Vertical line */}
-              <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
-
-              <div className="space-y-0">
-                {submissions.map((sub, i) => {
-                  const activityTitle =
-                    activityMap.get(sub.activityId) ??
-                    sub.activityId.substring(0, 8) + "…";
-                  return (
-                    <div key={sub.id} className="relative flex gap-4 pb-4">
-                      {/* Timeline dot */}
-                      <div
-                        className={cn(
-                          "absolute left-[-3px] top-[5px] h-3 w-3 rounded-full border-2 border-background",
-                          "bg-emerald-500"
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          "pl-6 flex items-start justify-between w-full gap-2",
-                          i === submissions.length - 1 && "pb-0"
-                        )}
-                      >
-                        <button
-                          onClick={() =>
-                            setDetailSubmission({
-                              id: sub.id,
-                              activityTitle,
-                              awardedXp: sub.awardedXp,
-                            })
-                          }
-                          className="text-left group flex items-baseline gap-1 hover:text-primary transition-colors"
-                        >
-                          <p className="text-sm font-medium leading-snug group-hover:underline underline-offset-2">
-                            {activityTitle}
-                          </p>
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/50 shrink-0 -rotate-90" />
-                        </button>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-semibold font-mono text-emerald-500">
-                            +{sub.awardedXp} XP
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(sub.createdAt).toLocaleDateString(
-                              "pt-BR",
-                              { day: "2-digit", month: "short" }
-                            )}
-                          </span>
-                          {user && (
-                            <button
-                              onClick={() => setReportingSubmissionId(sub.id)}
-                              title="Reportar contribuição inválida"
-                              className="text-muted-foreground/40 hover:text-destructive transition-colors"
-                            >
-                              <Flag className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Histórico timeline */}
+        <ProfileHistoryTimeline profileId={profile.id} className="mb-8" />
       </div>
-
-      {reportingSubmissionId && (
-        <ReportModal
-          submissionId={reportingSubmissionId}
-          open={!!reportingSubmissionId}
-          onClose={() => setReportingSubmissionId(null)}
-        />
-      )}
-
-      {detailSubmission && (
-        <SubmissionDetailModal
-          submissionId={detailSubmission.id}
-          activityTitle={detailSubmission.activityTitle}
-          awardedXp={detailSubmission.awardedXp}
-          open={!!detailSubmission}
-          onClose={() => setDetailSubmission(null)}
-        />
-      )}
     </div>
   );
 }
