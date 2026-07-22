@@ -4,21 +4,43 @@ Frontend Next.js (App Router) do legado.dev, deploy via Vercel. Repo remoto
 real: `devs-tocantins/legado-dev` (o `origin` local aponta pra
 `front-engajamento`, o GitHub redireciona).
 
-## `main` NÃO é protegida aqui
+## `main` agora É protegida (desde 2026-07-22) — nada de push direto
 
-Diferente do backend, `git push origin main` funciona direto — não precisa
-de PR pra mesclar. Mas isso não é licença pra pular verificação: rode
-`npm run lint` e (se a mudança afetar algo que dê pra rodar no navegador)
-verifique visualmente antes de empurrar pra `main`, porque não há branch
-protection nem CI bloqueante te segurando.
+Igual ao backend: `git push origin main` é rejeitado. Fluxo obrigatório:
 
-- **Existe um workflow de CI (`.github/workflows/e2e.yml`) mas ele já está
-  quebrado há várias rodadas antes de qualquer mudança sua** — ele testa
+```
+git checkout -b fix/nome-descritivo
+# ... mudanças ...
+git add <arquivos específicos>   # nunca `git add -A`/`git add .` sem checar antes
+git commit -m "..."
+git push -u origin fix/nome-descritivo
+gh pr create --title "..." --body "..."
+```
+
+O check obrigatório é o job `build` do workflow **"Frontend CI"**
+(`.github/workflows/ci.yml` — lint + `tsc --noEmit`), não o `e2e.yml` antigo.
+Espere ele ficar verde:
+
+```
+gh pr checks <numero-do-pr>
+```
+
+Só então mescle:
+
+```
+gh pr merge <numero-do-pr> --merge --delete-branch
+```
+
+**Nunca faça `git push --force`, `git reset --hard`, ou pule hooks
+(`--no-verify`) sem autorização explícita do usuário no chat.**
+
+- **Existe um workflow de CI antigo (`.github/workflows/e2e.yml`) que já está
+  quebrado há várias rodadas, sem relação com sua mudança** — ele testa
   contra um backend genérico de outro projeto (`brocoders/nestjs-boilerplate`,
-  resquício do boilerplate original), não contra a API real. Um "❌ E2E tests"
-  na aba de checks é esperado e não indica que sua mudança quebrou algo.
-  Confirme com `gh run list --workflow=e2e.yml --limit 5` se quiser comparar
-  com o histórico.
+  resquício do boilerplate original), não contra a API real. Ele NÃO é o
+  check obrigatório (só o `build` do `ci.yml` é) — um "❌ E2E tests" na aba
+  de checks é esperado e não bloqueia o merge nem indica que sua mudança
+  quebrou algo.
 
 ## `.env.local` aponta pro backend local, não produção
 
@@ -26,19 +48,6 @@ protection nem CI bloqueante te segurando.
 dados reais, é preciso o backend rodando localmente também (que por sua vez
 lê do Neon/R2 de produção — mesmo cuidado do outro repo: leitura é segura,
 escrita não é sem confirmar antes).
-
-## Fluxo de trabalho
-
-```
-git status --short          # sempre confira antes de commitar
-git add <arquivos específicos>
-git commit -m "..."
-git push origin main
-```
-
-Se a mudança for grande/arriscada o suficiente pra merecer revisão, use
-branch + PR do mesmo jeito que no backend (`gh pr create`), mas isso é
-opcional aqui, não obrigatório.
 
 ## Testes e lint
 
@@ -60,10 +69,11 @@ de assumir que o app está fora do ar.
 
 ## Se te pedirem pra "corrigir" algo sozinho
 
-1. Diagnostique a causa raiz antes de mexer.
-2. Faça a menor mudança que resolve.
-3. Rode lint + tsc antes de commitar.
-4. Push direto em `main` é permitido aqui, mas prefira relatar o que vai
-   fazer antes de mudanças grandes/arriscadas (deletar features, mudar
-   modelo de dados no front, etc.) — nem tudo que é tecnicamente permitido
-   deveria ser feito sem avisar.
+1. Diagnostique a causa raiz antes de mexer (não aplique patch sem entender
+   o porquê).
+2. Faça a menor mudança que resolve, sem refatorações não pedidas.
+3. Rode lint + tsc localmente antes de commitar.
+4. Siga o fluxo de branch/PR acima — nunca commite direto em `main`.
+5. Depois de abrir o PR, espere a CI e reporte o resultado antes de mesclar
+   sozinho, a menos que o usuário já tenha autorizado merge solo sem revisão
+   humana (isso já foi autorizado nesta equipe, mas espere a CI mesmo assim).
