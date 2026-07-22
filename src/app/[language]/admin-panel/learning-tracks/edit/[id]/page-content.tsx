@@ -41,6 +41,7 @@ import { useGetActivitiesService } from "@/services/api/services/activities";
 import { useGetAllMissionsService } from "@/services/api/services/missions";
 import { useGetCoursesService } from "@/services/api/services/courses";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "@/components/link";
@@ -673,15 +674,25 @@ function ItemDialog({
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Conteúdo / instrução (opcional)</Label>
-            <textarea
+          {type === TrackItemType.TEXT ? (
+            <MarkdownEditor
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              onChange={setBody}
+              label="Conteúdo (Markdown)"
+              rows={12}
+              placeholder="Escreva o texto completo que a pessoa vai ler neste marco. Suporta **markdown**: cabeçalhos, listas, `código`, links..."
             />
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Conteúdo / instrução (opcional)</Label>
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          )}
 
           {type === "PROOF" && (
             <div className="space-y-1.5">
