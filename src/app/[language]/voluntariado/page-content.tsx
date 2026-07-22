@@ -106,7 +106,7 @@ function FreeformActivityCard({ activity }: { activity: Activity }) {
         className="relative h-[52px] shrink-0"
         style={{ background: "var(--accent-bg)" }}
       >
-        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-primary shadow-sm">
+        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-card px-3 py-1 text-[11px] font-bold text-primary shadow-sm">
           <Sparkles className="h-3 w-3" />
           Atividade livre
         </span>
@@ -142,7 +142,7 @@ function ActivityCard({ activity }: { activity: Activity }) {
         className="relative h-[52px] shrink-0"
         style={{ background: "var(--accent-bg)" }}
       >
-        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold shadow-sm">
+        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-card px-3 py-1 text-[11px] font-bold text-foreground shadow-sm">
           ◆ Atividade
         </span>
       </div>
@@ -313,7 +313,7 @@ function MissionCard({ mission }: { mission: Mission }) {
           background: isClosed ? "var(--muted-foreground)" : "var(--accent-bg)",
         }}
       >
-        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold shadow-sm">
+        <span className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-card px-3 py-1 text-[11px] font-bold text-foreground shadow-sm">
           <Target className="h-3 w-3" />
           Missão
         </span>
