@@ -127,9 +127,8 @@ import {
 } from "@/components/ui/dialog";
 import { AvatarEditor } from "@/components/avatar";
 import { svgToPngFile } from "@/components/avatar/utils/avatar-utils";
-import { Trash2 } from "lucide-react";
 
-// --- Form: Profile Picture (foto ou avatar, num único card com abas) ---
+// --- Form: Profile Picture (foto ou avatar num único card sem abas) ---
 function FormProfilePicture() {
   const { user } = useAuth();
   const { setUser } = useAuthActions();
@@ -149,7 +148,6 @@ function FormProfilePicture() {
     },
   });
 
-  const [tab, setTab] = useState<"photo" | "avatar">("photo");
   const [saving, setSaving] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -212,7 +210,6 @@ function FormProfilePicture() {
     }
   };
 
-  // --- Aba "Foto" ---
   const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
     const file = _e.target.files?.[0];
     if (!file) return;
@@ -261,7 +258,6 @@ function FormProfilePicture() {
     }
   };
 
-  // --- Aba "Avatar" ---
   const handleSaveAvatar = async () => {
     if (!pendingAvatar) return;
     setSaving(true);
@@ -291,117 +287,74 @@ function FormProfilePicture() {
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Foto de Perfil</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="shrink-0">
-              {previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-[10px] text-center leading-tight px-1 font-medium">
-                  {user?.firstName?.charAt(0)}
-                  {user?.lastName?.charAt(0)}
-                </div>
-              )}
-            </div>
-            {previewUrl && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={handleRemovePhoto}
-                disabled={saving}
-              >
-                <Trash2 className="h-4 w-4" />
-                Remover foto
-              </Button>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Envie uma foto ou monte um avatar. Diferente do resto, isto é aplicado
+          na hora — sem precisar salvar.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="shrink-0">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-[10px] text-center leading-tight px-1 font-medium">
+                {user?.firstName?.charAt(0)}
+                {user?.lastName?.charAt(0)}
+              </div>
             )}
           </div>
 
-          <div role="tablist" className="flex gap-1 border-b border-border">
-            <button
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
               type="button"
-              role="tab"
-              aria-selected={tab === "photo"}
-              onClick={() => setTab("photo")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                tab === "photo"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
+              variant="default"
+              disabled={saving}
+              onClick={() =>
+                document.getElementById("photo-upload-input")?.click()
+              }
             >
-              Enviar foto
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "avatar"}
-              onClick={() => setTab("avatar")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                tab === "avatar"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Criar avatar
-            </button>
-          </div>
+              {saving ? "Salvando..." : "Enviar foto"}
+            </Button>
+            <input
+              id="photo-upload-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
 
-          {tab === "photo" ? (
-            <div className="space-y-1.5">
-              <p className="text-sm text-muted-foreground">
-                Escolha uma foto para o seu perfil. Ela aparecerá no ranking, no
-                seu perfil público e no menu principal.
-              </p>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  type="button"
-                  disabled={saving}
-                  onClick={() =>
-                    document.getElementById("photo-upload-input")?.click()
-                  }
-                  variant="outline"
-                >
-                  {saving ? "Salvando..." : "Escolher imagem"}
-                </Button>
-                <input
-                  id="photo-upload-input"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Envie uma imagem de até 5MB — você poderá recortá-la no formato
-                quadrado a seguir.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <p className="text-sm text-muted-foreground">
-                Prefere montar um personagem em vez de usar uma foto? Crie seu
-                avatar com estilos, cores e acessórios.
-              </p>
-              <div className="pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAvatarDialogOpen(true)}
-                >
-                  {profile?.avatarConfig ? "Editar avatar" : "Criar avatar"}
-                </Button>
-              </div>
-            </div>
-          )}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={() => setAvatarDialogOpen(true)}
+            >
+              {profile?.avatarConfig ? "Editar avatar" : "Criar avatar"}
+            </Button>
+
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={handleRemovePhoto}
+                disabled={saving}
+              >
+                Remover
+              </Button>
+            )}
+          </div>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          Aplicado imediatamente ao confirmar no modal.
+        </p>
       </CardContent>
 
       <ImageCropDialog
