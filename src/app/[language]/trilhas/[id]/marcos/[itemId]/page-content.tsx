@@ -26,6 +26,7 @@ import { TrackItem, TrackItemType } from "@/services/api/types/learning-track";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import { Course, CourseReview } from "@/services/api/types/course";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
+import { MarkdownContent } from "@/components/markdown-editor";
 import { Button } from "@/components/ui/button";
 import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -1174,11 +1175,17 @@ function CompleteMilestonePageContent() {
               <h1 className="mt-3 text-[24px] font-bold leading-tight tracking-tight">
                 {item.title}
               </h1>
-              {item.body && (
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  {item.body}
-                </p>
-              )}
+              {item.body &&
+                (item.type === TrackItemType.TEXT ? (
+                  <MarkdownContent
+                    content={item.body}
+                    className="mt-3 max-w-none text-sm leading-relaxed text-muted-foreground"
+                  />
+                ) : (
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {item.body}
+                  </p>
+                ))}
 
               {item.type === TrackItemType.CHECKPOINT &&
               isCheckpointConfig(item.config) ? (
