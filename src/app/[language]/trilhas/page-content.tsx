@@ -421,7 +421,7 @@ function TrilhasPageContent() {
             <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
               <div className="flex items-center justify-between gap-2">
                 <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Sua reputação
+                  Seu XP
                 </p>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
                   N{LEVELS.indexOf(getLevel(profile.totalXp)) + 1} ·{" "}
@@ -433,8 +433,7 @@ function TrilhasPageContent() {
                 <span className="text-[26px] font-bold">{profile.totalXp}</span>
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                Pontos de reputação construídos com contribuição para a
-                comunidade.
+                XP acumulado com trilhas e contribuições para a comunidade.
               </p>
             </div>
             {featured && (
