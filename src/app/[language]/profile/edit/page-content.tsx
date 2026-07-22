@@ -127,9 +127,8 @@ import {
 } from "@/components/ui/dialog";
 import { AvatarEditor } from "@/components/avatar";
 import { svgToPngFile } from "@/components/avatar/utils/avatar-utils";
-import { Trash2 } from "lucide-react";
 
-// --- Form: Profile Picture (foto ou avatar, num único card com abas) ---
+// --- Form: Profile Picture (foto ou avatar num único card sem abas) ---
 function FormProfilePicture() {
   const { user } = useAuth();
   const { setUser } = useAuthActions();
@@ -149,7 +148,6 @@ function FormProfilePicture() {
     },
   });
 
-  const [tab, setTab] = useState<"photo" | "avatar">("photo");
   const [saving, setSaving] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -212,7 +210,6 @@ function FormProfilePicture() {
     }
   };
 
-  // --- Aba "Foto" ---
   const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
     const file = _e.target.files?.[0];
     if (!file) return;
@@ -261,7 +258,6 @@ function FormProfilePicture() {
     }
   };
 
-  // --- Aba "Avatar" ---
   const handleSaveAvatar = async () => {
     if (!pendingAvatar) return;
     setSaving(true);
@@ -291,117 +287,74 @@ function FormProfilePicture() {
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Foto de Perfil</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="shrink-0">
-              {previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-[10px] text-center leading-tight px-1 font-medium">
-                  {user?.firstName?.charAt(0)}
-                  {user?.lastName?.charAt(0)}
-                </div>
-              )}
-            </div>
-            {previewUrl && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={handleRemovePhoto}
-                disabled={saving}
-              >
-                <Trash2 className="h-4 w-4" />
-                Remover foto
-              </Button>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Envie uma foto ou monte um avatar. Diferente do resto, isto é aplicado
+          na hora — sem precisar salvar.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="shrink-0">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center text-muted-foreground text-[10px] text-center leading-tight px-1 font-medium">
+                {user?.firstName?.charAt(0)}
+                {user?.lastName?.charAt(0)}
+              </div>
             )}
           </div>
 
-          <div role="tablist" className="flex gap-1 border-b border-border">
-            <button
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
               type="button"
-              role="tab"
-              aria-selected={tab === "photo"}
-              onClick={() => setTab("photo")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                tab === "photo"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
+              variant="default"
+              disabled={saving}
+              onClick={() =>
+                document.getElementById("photo-upload-input")?.click()
+              }
             >
-              Enviar foto
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "avatar"}
-              onClick={() => setTab("avatar")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                tab === "avatar"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Criar avatar
-            </button>
-          </div>
+              {saving ? "Salvando..." : "Enviar foto"}
+            </Button>
+            <input
+              id="photo-upload-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
 
-          {tab === "photo" ? (
-            <div className="space-y-1.5">
-              <p className="text-sm text-muted-foreground">
-                Escolha uma foto para o seu perfil. Ela aparecerá no ranking, no
-                seu perfil público e no menu principal.
-              </p>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  type="button"
-                  disabled={saving}
-                  onClick={() =>
-                    document.getElementById("photo-upload-input")?.click()
-                  }
-                  variant="outline"
-                >
-                  {saving ? "Salvando..." : "Escolher imagem"}
-                </Button>
-                <input
-                  id="photo-upload-input"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Envie uma imagem de até 5MB — você poderá recortá-la no formato
-                quadrado a seguir.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <p className="text-sm text-muted-foreground">
-                Prefere montar um personagem em vez de usar uma foto? Crie seu
-                avatar com estilos, cores e acessórios.
-              </p>
-              <div className="pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAvatarDialogOpen(true)}
-                >
-                  {profile?.avatarConfig ? "Editar avatar" : "Criar avatar"}
-                </Button>
-              </div>
-            </div>
-          )}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={() => setAvatarDialogOpen(true)}
+            >
+              {profile?.avatarConfig ? "Editar avatar" : "Criar avatar"}
+            </Button>
+
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={handleRemovePhoto}
+                disabled={saving}
+              >
+                Remover
+              </Button>
+            )}
+          </div>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          Aplicado imediatamente ao confirmar no modal.
+        </p>
       </CardContent>
 
       <ImageCropDialog
@@ -786,7 +739,18 @@ function FormChangePasswordViaEmail() {
 }
 
 // --- Form: Identidade (nome + banner + username) — modelo rascunho/salvo ---
-type IdentityDraft = { name: string; banner: string; username: string };
+type IdentityDraft = {
+  name: string;
+  banner: string;
+  username: string;
+  showFullName: boolean;
+};
+
+type FormActions = {
+  saving: boolean;
+  save: () => Promise<void>;
+  discard: () => void;
+};
 
 function UnsavedBadge() {
   return (
@@ -796,10 +760,64 @@ function UnsavedBadge() {
   );
 }
 
+function SaveStatusBar({
+  dirty,
+  saving,
+  onDiscard,
+  onSave,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  onDiscard: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur transition-colors",
+        dirty
+          ? "border-amber-400/50 bg-amber-50/95 dark:bg-amber-950/40"
+          : "border-border bg-card/95"
+      )}
+    >
+      <div className="flex items-center gap-2 text-sm">
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            dirty ? "bg-amber-500" : "bg-emerald-500"
+          )}
+        />
+        <span className="font-medium">
+          {dirty ? "Você tem alterações não salvas" : "Tudo salvo"}
+        </span>
+      </div>
+      {dirty && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onDiscard}
+            disabled={saving}
+          >
+            Descartar
+          </Button>
+          <Button type="button" onClick={onSave} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar alterações"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormIdentity({
   onDraftChange,
 }: {
-  onDraftChange?: (draft: IdentityDraft, dirty: boolean) => void;
+  onDraftChange?: (
+    draft: IdentityDraft,
+    dirty: boolean,
+    actions?: FormActions
+  ) => void;
 }) {
   const { user } = useAuth();
   const { setUser } = useAuthActions();
@@ -830,6 +848,7 @@ function FormIdentity({
       name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
       banner: profile.bannerPreset || "raiz-verde",
       username: profile.username,
+      showFullName: profile.showFullName ?? false,
     };
     setSaved(initial);
     setDraft(initial);
@@ -839,22 +858,12 @@ function FormIdentity({
   const bannerChanged = !!saved && !!draft && draft.banner !== saved.banner;
   const usernameChanged =
     !!saved && !!draft && draft.username !== saved.username;
-  const dirty = nameChanged || bannerChanged || usernameChanged;
+  const showFullNameChanged =
+    !!saved && !!draft && draft.showFullName !== saved.showFullName;
+  const dirty =
+    nameChanged || bannerChanged || usernameChanged || showFullNameChanged;
 
   useLeavePage(dirty);
-
-  useEffect(() => {
-    if (draft) onDraftChange?.(draft, dirty);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, dirty]);
-
-  if (!saved || !draft) return null;
-
-  const setField = (patch: Partial<IdentityDraft>) => {
-    setNameError("");
-    setUsernameError("");
-    setDraft((d) => (d ? { ...d, ...patch } : d));
-  };
 
   const discard = () => {
     setDraft(saved);
@@ -863,6 +872,7 @@ function FormIdentity({
   };
 
   const save = async () => {
+    if (!saved || !draft) return;
     const trimmedName = draft.name.trim();
     if (!trimmedName) {
       setNameError("Nome é obrigatório.");
@@ -889,10 +899,11 @@ function FormIdentity({
         setUser(patchResult.data);
       }
 
-      if (bannerChanged || usernameChanged) {
+      if (bannerChanged || usernameChanged || showFullNameChanged) {
         const { status } = await updateMyProfile({
           username: trimmedUsername,
           bannerPreset: draft.banner,
+          showFullName: draft.showFullName,
         });
         if (status === HTTP_CODES_ENUM.CONFLICT) {
           setUsernameError("Este username já está em uso.");
@@ -927,16 +938,29 @@ function FormIdentity({
     }
   };
 
+  useEffect(() => {
+    if (draft) onDraftChange?.(draft, dirty, { saving, save, discard });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, dirty, saving]);
+
+  if (!saved || !draft) return null;
+
+  const setField = (patch: Partial<IdentityDraft>) => {
+    setNameError("");
+    setUsernameError("");
+    setDraft((d) => (d ? { ...d, ...patch } : d));
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             Nome
-            {nameChanged && <UnsavedBadge />}
+            {(nameChanged || showFullNameChanged) && <UnsavedBadge />}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Field label="Nome completo" error={nameError}>
             <TextInput
               value={draft.name}
@@ -945,6 +969,38 @@ function FormIdentity({
               error={!!nameError}
             />
           </Field>
+          <div className="pt-2 flex items-start gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.showFullName}
+              onClick={() => setField({ showFullName: !draft.showFullName })}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-0.5",
+                draft.showFullName ? "bg-primary" : "bg-input"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition-transform",
+                  draft.showFullName ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
+            <div className="space-y-1">
+              <label
+                onClick={() => setField({ showFullName: !draft.showFullName })}
+                className="text-sm font-medium leading-none cursor-pointer select-none"
+              >
+                Exibir meu nome no perfil público
+              </label>
+              {!draft.showFullName && (
+                <p className="text-xs text-muted-foreground">
+                  Apenas o seu @username aparecerá publicamente.
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1029,42 +1085,6 @@ function FormIdentity({
           </Field>
         </CardContent>
       </Card>
-
-      <div
-        className={cn(
-          "sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur transition-colors",
-          dirty
-            ? "border-amber-400/50 bg-amber-50/95 dark:bg-amber-950/40"
-            : "border-border bg-card/95"
-        )}
-      >
-        <div className="flex items-center gap-2 text-sm">
-          <span
-            className={cn(
-              "h-2 w-2 rounded-full",
-              dirty ? "bg-amber-500" : "bg-emerald-500"
-            )}
-          />
-          <span className="font-medium">
-            {dirty ? "Você tem alterações não salvas" : "Tudo salvo"}
-          </span>
-        </div>
-        {dirty && (
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={discard}
-              disabled={saving}
-            >
-              Descartar
-            </Button>
-            <Button type="button" onClick={save} disabled={saving}>
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </Button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -1095,7 +1115,7 @@ function LivePreviewCard({
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
 
   return (
-    <div className="lg:sticky lg:top-6">
+    <div>
       <p className="mb-2.5 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <span
           className={cn(
@@ -1111,7 +1131,7 @@ function LivePreviewCard({
         )}
       </p>
       <div className="overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_6px_0_var(--border)]">
-        <div className="relative h-32 w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[4/1] w-full overflow-hidden bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={banner.url}
@@ -1182,11 +1202,15 @@ function EditProfile() {
 
   const [draft, setDraft] = useState<IdentityDraft | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
+  const [formActions, setFormActions] = useState<FormActions | null>(null);
 
   const handleDraftChange = useCallback(
-    (nextDraft: IdentityDraft, dirty: boolean) => {
+    (nextDraft: IdentityDraft, dirty: boolean, actions?: FormActions) => {
       setDraft(nextDraft);
       setDraftDirty(dirty);
+      if (actions) {
+        setFormActions(actions);
+      }
     },
     []
   );
@@ -1204,17 +1228,25 @@ function EditProfile() {
           <FormProfilePicture />
           <FormIdentity onDraftChange={handleDraftChange} />
         </div>
-        <LivePreviewCard
-          firstName={draft ? previewFirstName || "" : (user?.firstName ?? "")}
-          lastName={
-            draft ? previewLastNameParts.join(" ") : (user?.lastName ?? "")
-          }
-          username={draft?.username || (profile?.username ?? "")}
-          bannerKey={draft?.banner || "raiz-verde"}
-          photoUrl={user?.photo?.path}
-          totalXp={profile?.totalXp ?? 0}
-          dirty={draftDirty}
-        />
+        <div className="space-y-4 lg:sticky lg:top-6 self-start">
+          <LivePreviewCard
+            firstName={draft ? previewFirstName || "" : (user?.firstName ?? "")}
+            lastName={
+              draft ? previewLastNameParts.join(" ") : (user?.lastName ?? "")
+            }
+            username={draft?.username || (profile?.username ?? "")}
+            bannerKey={draft?.banner || "raiz-verde"}
+            photoUrl={user?.photo?.path}
+            totalXp={profile?.totalXp ?? 0}
+            dirty={draftDirty}
+          />
+          <SaveStatusBar
+            dirty={draftDirty}
+            saving={formActions?.saving ?? false}
+            onDiscard={formActions?.discard ?? (() => {})}
+            onSave={formActions?.save ?? (() => {})}
+          />
+        </div>
       </div>
 
       <div className="max-w-2xl space-y-6">

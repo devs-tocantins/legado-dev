@@ -219,7 +219,7 @@ function CoverPattern({ preset = DEFAULT_BANNER }: { preset?: string }) {
   const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS[DEFAULT_BANNER];
 
   return (
-    <div className="relative h-36 w-full overflow-hidden bg-muted">
+    <div className="relative aspect-[4/1] w-full overflow-hidden bg-muted">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={cfg.url}
@@ -287,10 +287,15 @@ function ProfileAvatar({
   );
 }
 
-// ─── Level bar color (matches level.color text-* → bg-*) ─────────────────────
-function levelBarColor(levelColor: string): string {
-  return levelColor.replace("text-", "bg-");
-}
+// ─── Level bar color (matches level name → bg-* literal class) ────────────────
+const LEVEL_BAR_COLOR: Record<string, string> = {
+  Novato: "bg-slate-400",
+  Contribuidor: "bg-emerald-400",
+  "Colaborador Ativo": "bg-sky-400",
+  Referência: "bg-blue-400",
+  Mentor: "bg-amber-400",
+  Lenda: "bg-rose-400",
+};
 
 function ReportModal({
   submissionId,
@@ -1105,6 +1110,12 @@ function PublicProfilePageContent() {
     },
   ];
 
+  const fullName = [profile.firstName, profile.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const shouldShowFullName = profile.showFullName === true && Boolean(fullName);
+
   return (
     <div className="mx-auto max-w-4xl">
       {/* Cover */}
@@ -1123,9 +1134,18 @@ function PublicProfilePageContent() {
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="space-y-1">
-            <h1 className="text-xl font-bold font-mono leading-tight">
-              @{profile.username}
-            </h1>
+            {shouldShowFullName ? (
+              <>
+                <h1 className="text-xl font-bold tracking-tight">{fullName}</h1>
+                <p className="font-mono text-sm text-muted-foreground">
+                  @{profile.username}
+                </p>
+              </>
+            ) : (
+              <h1 className="text-xl font-bold font-mono leading-tight">
+                @{profile.username}
+              </h1>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={cn(
@@ -1206,7 +1226,7 @@ function PublicProfilePageContent() {
           </div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
-              className={cn("h-full rounded-full", levelBarColor(level.color))}
+              className={cn("h-full rounded-full", LEVEL_BAR_COLOR[level.name])}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}

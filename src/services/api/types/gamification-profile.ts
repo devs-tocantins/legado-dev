@@ -15,6 +15,7 @@ export type GamificationProfile = {
   isBanned?: boolean;
   firstName?: string;
   lastName?: string;
+  showFullName?: boolean;
   photo?: FileEntity | null;
   createdAt: string;
   updatedAt: string;
