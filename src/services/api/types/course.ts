@@ -7,6 +7,7 @@ export enum CourseStatusEnum {
 export type Course = {
   id: string;
   title: string;
+  description?: string | null;
   provider?: string | null;
   url: string;
   isFree: boolean;

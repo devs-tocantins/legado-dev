@@ -111,6 +111,7 @@ export function useGetCourseReviewsByCourseService() {
 
 export type CreateCourseRequest = {
   title: string;
+  description?: string | null;
   provider?: string | null;
   url: string;
   isFree: boolean;
