@@ -188,7 +188,7 @@ function PodiumCard({
       </span>
       <span className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-amber-500">
         <Coins className="h-3 w-3" />
-        {profile.gratitudeTokens} reconhecimentos
+        {profile.gratitudeTokensReceived} reconhecimentos
       </span>
     </div>
   );
@@ -340,7 +340,7 @@ function TableRow({
       <td className="px-4 py-3 text-right hidden sm:table-cell">
         <span className="flex items-center justify-end gap-1 text-amber-500 text-xs font-mono">
           <Coins className="h-3 w-3" />
-          {profile.gratitudeTokens}
+          {profile.gratitudeTokensReceived}
         </span>
       </td>
     </tr>

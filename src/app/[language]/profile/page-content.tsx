@@ -329,7 +329,7 @@ function Profile() {
           />
           <StatTile
             icon={<Coins className="h-4 w-4 shrink-0 text-amber-500" />}
-            value={profile.gratitudeTokens}
+            value={profile.gratitudeTokensReceived}
             label="Pts. Reconhecimento"
           />
         </div>

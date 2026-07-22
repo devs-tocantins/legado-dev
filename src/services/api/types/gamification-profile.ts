@@ -8,6 +8,7 @@ export type GamificationProfile = {
   currentMonthlyXp: number;
   currentYearlyXp: number;
   gratitudeTokens: number;
+  gratitudeTokensReceived: number;
   githubUsername?: string | null;
   whatsappNumber?: string | null;
   bannerPreset?: string;
