@@ -60,7 +60,6 @@ const RANK_STYLE = {
     shadow: "oklch(0.72 0.15 55)",
     chipBg: "oklch(0.96 0.06 62)",
     chipText: "oklch(0.55 0.16 50)",
-    bannerHeight: "h-[88px]",
     order: "order-2",
     label: "1º lugar · líder do mês",
   },
@@ -70,7 +69,6 @@ const RANK_STYLE = {
     shadow: "oklch(0.78 0.11 245)",
     chipBg: "oklch(0.96 0.04 245)",
     chipText: "oklch(0.5 0.13 245)",
-    bannerHeight: "h-[64px]",
     order: "order-1",
     label: "2º lugar",
   },
@@ -80,7 +78,6 @@ const RANK_STYLE = {
     shadow: "oklch(0.75 0.12 150)",
     chipBg: "oklch(0.95 0.05 150)",
     chipText: "oklch(0.46 0.13 150)",
-    bannerHeight: "h-[64px]",
     order: "order-3",
     label: "3º lugar",
   },
@@ -108,7 +105,7 @@ function PodiumCard({
       }}
     >
       {/* banner real do usuário */}
-      <div className={cn("relative w-full", style.bannerHeight)}>
+      <div className="relative aspect-[4/1] w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={bannerUrl(profile.bannerPreset)}
@@ -211,7 +208,7 @@ function ChampionCard({
 
   return (
     <div className="relative overflow-hidden rounded-[20px] border bg-card">
-      <div className="relative h-14 w-full">
+      <div className="relative aspect-[4/1] w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={bannerUrl(champion.bannerPreset)}
