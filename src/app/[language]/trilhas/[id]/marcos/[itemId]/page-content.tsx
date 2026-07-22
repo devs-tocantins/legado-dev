@@ -475,6 +475,7 @@ function SuggestMaterialDialog({
   onCreated: () => void;
 }) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [provider, setProvider] = useState("");
   const [url, setUrl] = useState("");
   const [isFree, setIsFree] = useState(true);
@@ -490,6 +491,7 @@ function SuggestMaterialDialog({
     try {
       const { status, data } = await createCourse({
         title: title.trim(),
+        description: description.trim() || null,
         provider: provider.trim() || null,
         url: url.trim(),
         isFree,
@@ -503,6 +505,7 @@ function SuggestMaterialDialog({
           { variant: "success" }
         );
         setTitle("");
+        setDescription("");
         setProvider("");
         setUrl("");
         setIsFree(true);
@@ -540,6 +543,17 @@ function SuggestMaterialDialog({
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium">Descrição (opcional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Resumo curto do que o material aborda..."
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
           <div>
@@ -728,6 +742,11 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
                   {course.provider && (
                     <p className="text-xs text-muted-foreground">
                       {course.provider}
+                    </p>
+                  )}
+                  {course.description && (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {course.description}
                     </p>
                   )}
                   <div className="flex items-center gap-1.5">
@@ -1061,83 +1080,89 @@ function CompleteMilestonePageContent() {
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="flex flex-col gap-5">
           {alreadyDone ? (
-            <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
-                  <Sparkles className="h-7 w-7" />
+            <>
+              <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+                    <Sparkles className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">Marco concluído</p>
+                    <p className="text-sm text-muted-foreground">
+                      {justCompleted !== null && justCompleted > 0
+                        ? `Você ganhou ${justCompleted} XP de Jornada.`
+                        : "Este marco já faz parte da sua caminhada nesta trilha."}
+                    </p>
+                    {myItemSubmission?.status ===
+                      SubmissionStatusEnum.PENDING &&
+                      !myItemSubmission.isTestOut && (
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          Sua prova ainda está aguardando revisão de um
+                          moderador — o XP de Jornada é liberado assim que for
+                          aprovada.
+                        </p>
+                      )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-lg font-bold">Marco concluído</p>
-                  <p className="text-sm text-muted-foreground">
-                    {justCompleted !== null && justCompleted > 0
-                      ? `Você ganhou ${justCompleted} XP de Jornada.`
-                      : "Este marco já faz parte da sua caminhada nesta trilha."}
-                  </p>
-                  {myItemSubmission?.status === SubmissionStatusEnum.PENDING &&
-                    !myItemSubmission.isTestOut && (
-                      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3 shrink-0" />
-                        Sua prova ainda está aguardando revisão de um moderador
-                        — o XP de Jornada é liberado assim que for aprovada.
-                      </p>
-                    )}
+
+                <div className="mt-6 border-t border-border pt-5">
+                  {sectionJustFinished && section && (
+                    <Button
+                      variant="outline"
+                      className="mb-3 w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold border-accent/40 text-accent hover:bg-accent/5"
+                      render={
+                        <Link
+                          href={`/trilhas/${trackId}/conquista/${section.section.id}`}
+                        />
+                      }
+                    >
+                      <span className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4 shrink-0" />
+                        Ver selo conquistado
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                    </Button>
+                  )}
+                  {nextItem ? (
+                    <Button
+                      className="w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold"
+                      render={
+                        <Link
+                          href={`/trilhas/${trackId}/marcos/${nextItem.id}`}
+                        />
+                      }
+                    >
+                      <span className="flex flex-col items-start text-left">
+                        <span className="font-mono text-[11px] font-normal uppercase tracking-wide text-primary-foreground/70">
+                          próximo marco
+                        </span>
+                        {nextItem.title}
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                    </Button>
+                  ) : isTrackFinished ? (
+                    <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-4">
+                      <Trophy className="h-6 w-6 shrink-0 text-accent" />
+                      <div>
+                        <p className="font-bold">Trilha concluída!</p>
+                        <p className="text-sm text-muted-foreground">
+                          Você percorreu todos os marcos desta trilha.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                  <Link
+                    href={`/trilhas/${trackId}`}
+                    className="mt-3 inline-block text-sm font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    Voltar para a trilha
+                  </Link>
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-border pt-5">
-                {sectionJustFinished && section && (
-                  <Button
-                    variant="outline"
-                    className="mb-3 w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold border-accent/40 text-accent hover:bg-accent/5"
-                    render={
-                      <Link
-                        href={`/trilhas/${trackId}/conquista/${section.section.id}`}
-                      />
-                    }
-                  >
-                    <span className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 shrink-0" />
-                      Ver selo conquistado
-                    </span>
-                    <ArrowRight className="h-4 w-4 shrink-0" />
-                  </Button>
-                )}
-                {nextItem ? (
-                  <Button
-                    className="w-full justify-between gap-2 rounded-2xl py-6 text-[15px] font-bold"
-                    render={
-                      <Link
-                        href={`/trilhas/${trackId}/marcos/${nextItem.id}`}
-                      />
-                    }
-                  >
-                    <span className="flex flex-col items-start text-left">
-                      <span className="font-mono text-[11px] font-normal uppercase tracking-wide text-primary-foreground/70">
-                        próximo marco
-                      </span>
-                      {nextItem.title}
-                    </span>
-                    <ArrowRight className="h-4 w-4 shrink-0" />
-                  </Button>
-                ) : isTrackFinished ? (
-                  <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-4">
-                    <Trophy className="h-6 w-6 shrink-0 text-accent" />
-                    <div>
-                      <p className="font-bold">Trilha concluída!</p>
-                      <p className="text-sm text-muted-foreground">
-                        Você percorreu todos os marcos desta trilha.
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-                <Link
-                  href={`/trilhas/${trackId}`}
-                  className="mt-3 inline-block text-sm font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  Voltar para a trilha
-                </Link>
-              </div>
-            </div>
+              <CourseTopicSection item={item} />
+            </>
           ) : (
             <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
               <span
@@ -1157,165 +1182,195 @@ function CompleteMilestonePageContent() {
 
               {item.type === TrackItemType.CHECKPOINT &&
               isCheckpointConfig(item.config) ? (
-                <div className="mt-6 flex flex-col gap-5 border-t border-border pt-6">
-                  <Quiz
-                    questions={item.config.questions}
-                    onAllCorrect={setQuizPassed}
-                  />
-                  <Button
-                    onClick={handleComplete}
-                    disabled={!quizPassed || completing}
-                    className="w-full rounded-2xl py-6 text-[15px] font-bold"
-                  >
-                    {completing ? "Concluindo..." : "Concluir marco"}
-                  </Button>
-                </div>
-              ) : isAutoCompletable ? (
-                <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
-                  <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold">
-                      Já estudei este conteúdo
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {canSkipToProof
-                        ? "Marque quando concluir para seguir na trilha, ou pule direto para o próximo marco se já domina o assunto."
-                        : "Marque quando concluir para seguir na trilha."}
-                    </p>
+                <>
+                  <div className="mt-6 border-t border-border pt-6">
+                    <Quiz
+                      questions={item.config.questions}
+                      onAllCorrect={setQuizPassed}
+                    />
                   </div>
-                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                    {canSkipToProof && (
+
+                  <div className="mt-6">
+                    <CourseTopicSection item={item} />
+                  </div>
+
+                  <div className="mt-6">
+                    <Button
+                      onClick={handleComplete}
+                      disabled={!quizPassed || completing}
+                      className="w-full rounded-2xl py-6 text-[15px] font-bold"
+                    >
+                      {completing ? "Concluindo..." : "Concluir marco"}
+                    </Button>
+                  </div>
+                </>
+              ) : isAutoCompletable ? (
+                <>
+                  <div className="mt-6">
+                    <CourseTopicSection item={item} />
+                  </div>
+
+                  <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
+                    <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">
+                        Já estudei este conteúdo
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {canSkipToProof
+                          ? "Marque quando concluir para seguir na trilha, ou pule direto para o próximo marco se já domina o assunto."
+                          : "Marque quando concluir para seguir na trilha."}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                      {canSkipToProof && (
+                        <Button
+                          variant="outline"
+                          onClick={handleSkipToNextProof}
+                          disabled={completing || skipping}
+                          className="gap-1.5 rounded-xl"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          {skipping ? "..." : "Já domino esse assunto"}
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
-                        onClick={handleSkipToNextProof}
+                        onClick={handleComplete}
                         disabled={completing || skipping}
                         className="gap-1.5 rounded-xl"
                       >
-                        <ShieldCheck className="h-4 w-4" />
-                        {skipping ? "..." : "Já domino esse assunto"}
+                        <CheckCircle2 className="h-4 w-4" />
+                        {completing ? "..." : "Concluir"}
                       </Button>
-                    )}
-                    <Button
-                      onClick={handleComplete}
-                      disabled={completing || skipping}
-                      className="gap-1.5 rounded-xl"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {completing ? "..." : "Concluir"}
-                    </Button>
+                    </div>
                   </div>
-                </div>
+                </>
               ) : item.type === TrackItemType.PROOF ? (
-                <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
-                  <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
-                    <ShieldCheck className="h-4.5 w-4.5" />
-                    Este marco exige comprovação
-                  </div>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Marcos de prova prática são validados por um moderador da
-                    comunidade.
-                  </p>
-                  {isCriteriaConfig(item.config) && (
-                    <div>
-                      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        O que será avaliado
-                      </p>
-                      <ul className="flex flex-col gap-2 text-sm">
-                        {item.config.criteria.map((criterion, i) => (
-                          <li key={i} className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
-                              {i + 1}
-                            </span>
-                            {criterion}
-                          </li>
-                        ))}
-                      </ul>
+                <>
+                  <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
+                    <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
+                      <ShieldCheck className="h-4.5 w-4.5" />
+                      Este marco exige comprovação
                     </div>
-                  )}
-
-                  {myItemSubmission?.status === SubmissionStatusEnum.PENDING ? (
-                    <div className="mt-4 flex items-center gap-2.5 rounded-2xl border-2 border-border bg-muted/40 p-4">
-                      <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      Marcos de prova prática são validados por um moderador da
+                      comunidade.
+                    </p>
+                    {isCriteriaConfig(item.config) && (
                       <div>
-                        <p className="text-sm font-bold">
-                          Prova enviada, aguardando revisão
+                        <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                          O que será avaliado
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          Um moderador vai avaliar seu envio em breve.
-                        </p>
+                        <ul className="flex flex-col gap-2 text-sm">
+                          {item.config.criteria.map((criterion, i) => (
+                            <li key={i} className="flex items-start gap-2.5">
+                              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
+                                {i + 1}
+                              </span>
+                              {criterion}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      {item.allowsTestOut && (
-                        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-border p-4">
-                          <div>
-                            <p className="text-sm font-bold">
-                              Já domina esse assunto?
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Pule direto para a moderação, sem comprovante
-                              (test-out).
-                            </p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={handleSkipThisProof}
-                            disabled={completing || skipping}
-                            className="shrink-0 gap-1.5 rounded-xl"
-                          >
-                            <ShieldCheck className="h-4 w-4" />
-                            {skipping ? "..." : "Pular esta prova"}
-                          </Button>
-                        </div>
-                      )}
-                      <ProofSubmissionForm
-                        item={item}
-                        rejectionFeedback={
-                          myItemSubmission?.status ===
-                          SubmissionStatusEnum.REJECTED
-                            ? myItemSubmission.feedback
-                            : null
-                        }
-                        onSubmitted={async () => {
-                          await refetchMySubmissions();
-                          await queryClient.invalidateQueries({
-                            queryKey: ["learning-track-progress", trackId],
-                          });
-                        }}
-                      />
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
-                  <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
-                    <ShieldCheck className="h-4.5 w-4.5" />
-                    Este marco exige comprovação
+                    )}
                   </div>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Este marco depende de uma comprovação vinculada a outro
-                    recurso da comunidade (curso, evento ou missão), que ainda
-                    está sendo integrada nesta trilha.
-                  </p>
-                  {isCriteriaConfig(item.config) && (
-                    <div>
-                      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                        O que será avaliado
-                      </p>
-                      <ul className="flex flex-col gap-2 text-sm">
-                        {item.config.criteria.map((criterion, i) => (
-                          <li key={i} className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
-                              {i + 1}
-                            </span>
-                            {criterion}
-                          </li>
-                        ))}
-                      </ul>
+
+                  <div className="mt-6">
+                    <CourseTopicSection item={item} />
+                  </div>
+
+                  <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
+                    {myItemSubmission?.status ===
+                    SubmissionStatusEnum.PENDING ? (
+                      <div className="flex items-center gap-2.5 rounded-2xl border-2 border-border bg-muted/40 p-4">
+                        <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-bold">
+                            Prova enviada, aguardando revisão
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Um moderador vai avaliar seu envio em breve.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {item.allowsTestOut && (
+                          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-border p-4">
+                            <div>
+                              <p className="text-sm font-bold">
+                                Já domina esse assunto?
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Pule direto para a moderação, sem comprovante
+                                (test-out).
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={handleSkipThisProof}
+                              disabled={completing || skipping}
+                              className="shrink-0 gap-1.5 rounded-xl"
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                              {skipping ? "..." : "Pular esta prova"}
+                            </Button>
+                          </div>
+                        )}
+                        <ProofSubmissionForm
+                          item={item}
+                          rejectionFeedback={
+                            myItemSubmission?.status ===
+                            SubmissionStatusEnum.REJECTED
+                              ? myItemSubmission.feedback
+                              : null
+                          }
+                          onSubmitted={async () => {
+                            await refetchMySubmissions();
+                            await queryClient.invalidateQueries({
+                              queryKey: ["learning-track-progress", trackId],
+                            });
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
+                    <div className="mb-3 flex items-center gap-2.5 text-sm font-bold text-primary">
+                      <ShieldCheck className="h-4.5 w-4.5" />
+                      Este marco exige comprovação
                     </div>
-                  )}
-                </div>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      Este marco depende de uma comprovação vinculada a outro
+                      recurso da comunidade (curso, evento ou missão), que ainda
+                      está sendo integrada nesta trilha.
+                    </p>
+                    {isCriteriaConfig(item.config) && (
+                      <div>
+                        <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                          O que será avaliado
+                        </p>
+                        <ul className="flex flex-col gap-2 text-sm">
+                          {item.config.criteria.map((criterion, i) => (
+                            <li key={i} className="flex items-start gap-2.5">
+                              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
+                                {i + 1}
+                              </span>
+                              {criterion}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6">
+                    <CourseTopicSection item={item} />
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -1354,7 +1409,6 @@ function CompleteMilestonePageContent() {
               </p>
             </div>
           )}
-          <CourseTopicSection item={item} />
         </div>
       </div>
     </div>
