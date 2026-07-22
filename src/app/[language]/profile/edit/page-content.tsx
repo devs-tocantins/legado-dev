@@ -447,11 +447,9 @@ import useAuthActions from "@/services/auth/use-auth-actions";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
-import { useEffect, useState } from "react";
-import { useWatch } from "react-hook-form";
+import { useCallback, useEffect, useState } from "react";
 import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { FileEntity } from "@/services/api/types/file-entity";
 import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
@@ -466,12 +464,6 @@ import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
 import { getLevel, LEVELS } from "@/lib/gamification";
 
 // --- Types ---
-type BasicInfoFormData = {
-  firstName: string;
-  lastName: string;
-  photo?: FileEntity;
-};
-
 type ChangeEmailFormData = {
   email: string;
   emailConfirmation: string;
@@ -512,138 +504,6 @@ function TextInput({
         className
       )}
     />
-  );
-}
-
-// --- Form: Basic Info ---
-const useBasicInfoSchema = () => {
-  const { t } = useTranslation("profile");
-  return yup.object().shape({
-    firstName: yup
-      .string()
-      .required(t("profile:inputs.firstName.validation.required")),
-    lastName: yup
-      .string()
-      .required(t("profile:inputs.lastName.validation.required")),
-  });
-};
-
-function BasicInfoActions() {
-  const { t } = useTranslation("profile");
-  const { isSubmitting, isDirty } = useFormState();
-  useLeavePage(isDirty);
-  return (
-    <Button type="submit" disabled={isSubmitting} data-testid="save-profile">
-      {t("profile:actions.submit")}
-    </Button>
-  );
-}
-
-function FormBasicInfo({
-  onLiveChange,
-}: {
-  onLiveChange?: (name: { firstName: string; lastName: string }) => void;
-}) {
-  const { setUser } = useAuthActions();
-  const { user } = useAuth();
-  const fetchAuthPatchMe = useAuthPatchMeService();
-  const { t } = useTranslation("profile");
-  const validationSchema = useBasicInfoSchema();
-  const { enqueueSnackbar } = useSnackbar();
-
-  const methods = useForm<BasicInfoFormData>({
-    resolver: yupResolver(validationSchema),
-    defaultValues: { firstName: "", lastName: "", photo: undefined },
-  });
-
-  const { handleSubmit, setError, reset, register, control } = methods;
-  const { errors } = useFormState({ control });
-  const liveFirstName = useWatch({ control, name: "firstName" });
-  const liveLastName = useWatch({ control, name: "lastName" });
-
-  useEffect(() => {
-    onLiveChange?.({
-      firstName: liveFirstName ?? "",
-      lastName: liveLastName ?? "",
-    });
-  }, [liveFirstName, liveLastName, onLiveChange]);
-
-  const onSubmit = handleSubmit(async (formData) => {
-    const { data, status } = await fetchAuthPatchMe(formData);
-    if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
-      (Object.keys(data.errors) as Array<keyof BasicInfoFormData>).forEach(
-        (key) => {
-          setError(key, {
-            type: "manual",
-            message: t(
-              `profile:inputs.${key}.validation.server.${data.errors[key]}`
-            ),
-          });
-        }
-      );
-      return;
-    }
-    if (status === HTTP_CODES_ENUM.OK) {
-      setUser(data);
-      enqueueSnackbar(t("profile:alerts.profile.success"), {
-        variant: "success",
-      });
-    }
-  });
-
-  useEffect(() => {
-    reset({
-      firstName: user?.firstName ?? "",
-      lastName: user?.lastName ?? "",
-      photo: user?.photo,
-    });
-  }, [user, reset]);
-
-  return (
-    <FormProvider {...methods}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t("profile:title1")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label={t("profile:inputs.firstName.label")}
-                error={errors.firstName?.message}
-              >
-                <TextInput
-                  data-testid="first-name"
-                  error={!!errors.firstName}
-                  {...register("firstName")}
-                />
-              </Field>
-              <Field
-                label={t("profile:inputs.lastName.label")}
-                error={errors.lastName?.message}
-              >
-                <TextInput
-                  data-testid="last-name"
-                  error={!!errors.lastName}
-                  {...register("lastName")}
-                />
-              </Field>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <BasicInfoActions />
-              <Button
-                type="button"
-                variant="outline"
-                render={<Link href="/profile" />}
-                data-testid="cancel-edit-profile"
-              >
-                {t("profile:actions.cancel")}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </FormProvider>
   );
 }
 
@@ -925,124 +785,31 @@ function FormChangePasswordViaEmail() {
   );
 }
 
-// --- Form: Banner ---
-function FormBanner({
-  onSelectionChange,
+// --- Form: Identidade (nome + banner + username) — modelo rascunho/salvo ---
+type IdentityDraft = { name: string; banner: string; username: string };
+
+function UnsavedBadge() {
+  return (
+    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+      não salvo
+    </span>
+  );
+}
+
+function FormIdentity({
+  onDraftChange,
 }: {
-  onSelectionChange?: (key: string) => void;
+  onDraftChange?: (draft: IdentityDraft, dirty: boolean) => void;
 }) {
+  const { user } = useAuth();
+  const { setUser } = useAuthActions();
+  const fetchAuthPatchMe = useAuthPatchMeService();
   const fetchMyProfile = useGetMyGamificationProfileService();
   const updateMyProfile = useUpdateMyGamificationProfileService();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["my-profile-banner"],
-    queryFn: async () => {
-      const { status, data } = await fetchMyProfile();
-      if (status === HTTP_CODES_ENUM.OK) return data;
-      return null;
-    },
-  });
-
-  const [selected, setSelected] = useState("raiz-verde");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (profile?.bannerPreset) setSelected(profile.bannerPreset);
-  }, [profile?.bannerPreset]);
-
-  useEffect(() => {
-    onSelectionChange?.(selected);
-  }, [selected, onSelectionChange]);
-
-  const handleSave = async () => {
-    if (!profile) return;
-    setSaving(true);
-    try {
-      const { status } = await updateMyProfile({
-        username: profile.username,
-        bannerPreset: selected,
-      });
-      if (status === HTTP_CODES_ENUM.OK) {
-        await queryClient.invalidateQueries({
-          queryKey: ["my-profile-banner"],
-        });
-        await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-        await queryClient.invalidateQueries({
-          queryKey: ["public-profile", profile.username],
-        });
-        enqueueSnackbar("Banner atualizado!", { variant: "success" });
-      } else {
-        enqueueSnackbar("Erro ao salvar.", { variant: "error" });
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (isLoading || !profile) return null;
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Banner do Perfil Público</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Escolha o banner que aparece no topo do seu perfil público.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(BANNER_PRESETS).map(([key, { url, label }]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSelected(key)}
-              className={cn(
-                "relative h-14 rounded-lg overflow-hidden border-2 transition-all",
-                selected === key
-                  ? "border-primary ring-2 ring-primary ring-offset-2"
-                  : "border-border hover:border-muted-foreground"
-              )}
-              title={label}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-medium text-white drop-shadow">
-                {label}
-              </span>
-            </button>
-          ))}
-        </div>
-        <Button
-          onClick={handleSave}
-          disabled={
-            saving || selected === (profile.bannerPreset ?? "raiz-verde")
-          }
-        >
-          {saving ? "Salvando..." : "Salvar banner"}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-// --- Form: Username ---
-function FormUsername({
-  onUsernameChange,
-}: {
-  onUsernameChange?: (username: string) => void;
-}) {
-  const fetchMyProfile = useGetMyGamificationProfileService();
-  const updateMyProfile = useUpdateMyGamificationProfileService();
-  const { enqueueSnackbar } = useSnackbar();
-
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ["my-profile"],
     queryFn: async () => {
       const { status, data } = await fetchMyProfile();
@@ -1051,100 +818,254 @@ function FormUsername({
     },
   });
 
-  const [username, setUsername] = useState("");
+  const [saved, setSaved] = useState<IdentityDraft | null>(null);
+  const [draft, setDraft] = useState<IdentityDraft | null>(null);
+  const [nameError, setNameError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (profile?.username) setUsername(profile.username);
-  }, [profile?.username]);
+    if (saved || !user || !profile) return;
+    const initial: IdentityDraft = {
+      name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
+      banner: profile.bannerPreset || "raiz-verde",
+      username: profile.username,
+    };
+    setSaved(initial);
+    setDraft(initial);
+  }, [saved, user, profile]);
+
+  const nameChanged = !!saved && !!draft && draft.name !== saved.name;
+  const bannerChanged = !!saved && !!draft && draft.banner !== saved.banner;
+  const usernameChanged =
+    !!saved && !!draft && draft.username !== saved.username;
+  const dirty = nameChanged || bannerChanged || usernameChanged;
+
+  useLeavePage(dirty);
 
   useEffect(() => {
-    onUsernameChange?.(username);
-  }, [username, onUsernameChange]);
+    if (draft) onDraftChange?.(draft, dirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, dirty]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    const trimmed = username.trim().toLowerCase();
-    if (!trimmed) return;
-    if (!/^[a-z0-9_-]{3,30}$/.test(trimmed)) {
-      setError(
+  if (!saved || !draft) return null;
+
+  const setField = (patch: Partial<IdentityDraft>) => {
+    setNameError("");
+    setUsernameError("");
+    setDraft((d) => (d ? { ...d, ...patch } : d));
+  };
+
+  const discard = () => {
+    setDraft(saved);
+    setNameError("");
+    setUsernameError("");
+  };
+
+  const save = async () => {
+    const trimmedName = draft.name.trim();
+    if (!trimmedName) {
+      setNameError("Nome é obrigatório.");
+      return;
+    }
+    const trimmedUsername = draft.username.trim().toLowerCase();
+    if (!/^[a-z0-9_-]{3,30}$/.test(trimmedUsername)) {
+      setUsernameError(
         "3–30 caracteres: letras minúsculas, números, underscore e hífen."
       );
       return;
     }
+
     setSaving(true);
     try {
-      const { status, data } = await updateMyProfile({ username: trimmed });
-      if (status === HTTP_CODES_ENUM.OK) {
-        enqueueSnackbar("Username atualizado com sucesso!", {
-          variant: "success",
-        });
-        setUsername((data as { username: string }).username);
-      } else if (status === HTTP_CODES_ENUM.CONFLICT) {
-        setError("Este username já está em uso.");
-      } else {
-        setError("Erro ao atualizar username.");
+      if (nameChanged) {
+        const [firstName, ...rest] = trimmedName.split(/\s+/);
+        const lastName = rest.join(" ");
+        const patchResult = await fetchAuthPatchMe({ firstName, lastName });
+        if (patchResult.status !== HTTP_CODES_ENUM.OK) {
+          enqueueSnackbar("Erro ao salvar nome.", { variant: "error" });
+          return;
+        }
+        setUser(patchResult.data);
       }
+
+      if (bannerChanged || usernameChanged) {
+        const { status } = await updateMyProfile({
+          username: trimmedUsername,
+          bannerPreset: draft.banner,
+        });
+        if (status === HTTP_CODES_ENUM.CONFLICT) {
+          setUsernameError("Este username já está em uso.");
+          return;
+        }
+        if (status !== HTTP_CODES_ENUM.OK) {
+          enqueueSnackbar("Erro ao salvar alterações.", { variant: "error" });
+          return;
+        }
+      }
+
+      const previousUsername = saved.username;
+      const persisted: IdentityDraft = {
+        ...draft,
+        name: trimmedName,
+        username: trimmedUsername,
+      };
+      setSaved(persisted);
+      setDraft(persisted);
+      await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["public-profile", trimmedUsername],
+      });
+      if (previousUsername !== trimmedUsername) {
+        await queryClient.invalidateQueries({
+          queryKey: ["public-profile", previousUsername],
+        });
+      }
+      enqueueSnackbar("Alterações salvas!", { variant: "success" });
     } finally {
       setSaving(false);
     }
   };
 
-  if (isLoading || !profile) return null;
-
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Username da Comunidade</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSave} className="space-y-4">
-          <Field label="@username" error={error}>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                  @
-                </span>
-                <TextInput
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value.toLowerCase());
-                    setError("");
-                  }}
-                  placeholder="seu_username"
-                  className={cn(
-                    "pl-7",
-                    error && "border-destructive focus:ring-destructive/30"
-                  )}
-                  error={!!error}
-                  maxLength={30}
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={saving || username === profile.username}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            Nome
+            {nameChanged && <UnsavedBadge />}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Field label="Nome completo" error={nameError}>
+            <TextInput
+              value={draft.name}
+              onChange={(e) => setField({ name: e.target.value })}
+              placeholder="Seu nome"
+              error={!!nameError}
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            Banner do Perfil Público
+            {bannerChanged && <UnsavedBadge />}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Escolha o banner que aparece no topo do seu perfil público. A prévia
+            ao lado atualiza na hora — nada muda de verdade até você salvar.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            {Object.entries(BANNER_PRESETS).map(([key, { url, label }]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setField({ banner: key })}
+                className={cn(
+                  "relative h-14 rounded-lg overflow-hidden border-2 transition-all",
+                  draft.banner === key
+                    ? "border-primary ring-2 ring-primary ring-offset-2"
+                    : "border-border hover:border-muted-foreground"
+                )}
+                title={label}
               >
-                {saving ? "Salvando..." : "Salvar"}
-              </Button>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-medium text-white drop-shadow">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            Username da Comunidade
+            {usernameChanged && <UnsavedBadge />}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Field label="@username" error={usernameError}>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                @
+              </span>
+              <TextInput
+                value={draft.username}
+                onChange={(e) =>
+                  setField({ username: e.target.value.toLowerCase() })
+                }
+                placeholder="seu_username"
+                className="pl-7"
+                error={!!usernameError}
+                maxLength={30}
+              />
             </div>
             <p className="text-xs text-muted-foreground">
               Aparece no ranking e no seu perfil público (
               <a
-                href={`/u/${profile.username}`}
+                href={`/u/${saved.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                /u/{profile.username}
+                /u/{saved.username}
               </a>
               )
             </p>
           </Field>
-        </form>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <div
+        className={cn(
+          "sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur transition-colors",
+          dirty
+            ? "border-amber-400/50 bg-amber-50/95 dark:bg-amber-950/40"
+            : "border-border bg-card/95"
+        )}
+      >
+        <div className="flex items-center gap-2 text-sm">
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              dirty ? "bg-amber-500" : "bg-emerald-500"
+            )}
+          />
+          <span className="font-medium">
+            {dirty ? "Você tem alterações não salvas" : "Tudo salvo"}
+          </span>
+        </div>
+        {dirty && (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={discard}
+              disabled={saving}
+            >
+              Descartar
+            </Button>
+            <Button type="button" onClick={save} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1156,6 +1077,7 @@ function LivePreviewCard({
   bannerKey,
   photoUrl,
   totalXp,
+  dirty,
 }: {
   firstName: string;
   lastName: string;
@@ -1163,6 +1085,7 @@ function LivePreviewCard({
   bannerKey: string;
   photoUrl?: string | null;
   totalXp: number;
+  dirty?: boolean;
 }) {
   const banner = BANNER_PRESETS[bannerKey] ?? BANNER_PRESETS["raiz-verde"];
   const level = getLevel(totalXp);
@@ -1174,8 +1097,18 @@ function LivePreviewCard({
   return (
     <div className="lg:sticky lg:top-6">
       <p className="mb-2.5 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            dirty ? "bg-amber-500" : "bg-emerald-500"
+          )}
+        />
         Prévia do perfil público
+        {dirty && (
+          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+            prévia · não salvo
+          </span>
+        )}
       </p>
       <div className="overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_6px_0_var(--border)]">
         <div className="relative h-32 w-full overflow-hidden bg-muted">
@@ -1247,9 +1180,20 @@ function EditProfile() {
     },
   });
 
-  const [liveName, setLiveName] = useState({ firstName: "", lastName: "" });
-  const [liveBanner, setLiveBanner] = useState("raiz-verde");
-  const [liveUsername, setLiveUsername] = useState("");
+  const [draft, setDraft] = useState<IdentityDraft | null>(null);
+  const [draftDirty, setDraftDirty] = useState(false);
+
+  const handleDraftChange = useCallback(
+    (nextDraft: IdentityDraft, dirty: boolean) => {
+      setDraft(nextDraft);
+      setDraftDirty(dirty);
+    },
+    []
+  );
+
+  const [previewFirstName, ...previewLastNameParts] = (draft?.name ?? "").split(
+    /\s+/
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
@@ -1257,18 +1201,19 @@ function EditProfile() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <FormBasicInfo onLiveChange={setLiveName} />
           <FormProfilePicture />
-          <FormBanner onSelectionChange={setLiveBanner} />
-          <FormUsername onUsernameChange={setLiveUsername} />
+          <FormIdentity onDraftChange={handleDraftChange} />
         </div>
         <LivePreviewCard
-          firstName={liveName.firstName || (user?.firstName ?? "")}
-          lastName={liveName.lastName || (user?.lastName ?? "")}
-          username={liveUsername || (profile?.username ?? "")}
-          bannerKey={liveBanner}
+          firstName={draft ? previewFirstName || "" : (user?.firstName ?? "")}
+          lastName={
+            draft ? previewLastNameParts.join(" ") : (user?.lastName ?? "")
+          }
+          username={draft?.username || (profile?.username ?? "")}
+          bannerKey={draft?.banner || "raiz-verde"}
           photoUrl={user?.photo?.path}
           totalXp={profile?.totalXp ?? 0}
+          dirty={draftDirty}
         />
       </div>
 

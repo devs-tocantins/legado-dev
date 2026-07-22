@@ -162,12 +162,6 @@ function PodiumCard({
             {profile.username.substring(0, 2).toUpperCase()}
           </div>
         )}
-        <div
-          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-card font-mono text-sm font-extrabold text-white"
-          style={{ background: style.bright }}
-        >
-          {rank}
-        </div>
       </div>
 
       <span className="mt-3.5 font-mono text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
@@ -198,6 +192,83 @@ function PodiumCard({
         <Coins className="h-3 w-3" />
         {profile.gratitudeTokens} reconhecimentos
       </span>
+    </div>
+  );
+}
+
+function ChampionCard({
+  title,
+  champion,
+  when,
+  meta,
+}: {
+  title: string;
+  champion: GamificationProfile;
+  when: string;
+  meta: string;
+}) {
+  const level = getLevel(champion.totalXp);
+
+  return (
+    <div className="relative overflow-hidden rounded-[20px] border bg-card">
+      <div className="relative h-14 w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bannerUrl(champion.bannerPreset)}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-6"
+          style={{
+            background: "linear-gradient(180deg, transparent, var(--card))",
+          }}
+        />
+        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 font-mono text-[10px] font-extrabold uppercase tracking-wide text-amber-950 shadow-sm">
+          🏆 {title}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 pb-4 pt-5">
+        {champion.photo?.path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={champion.photo.path}
+            alt={`@${champion.username}`}
+            className="h-12 w-12 shrink-0 rounded-2xl border-[3px] border-card object-cover"
+          />
+        ) : (
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-[3px] border-card text-sm font-bold text-white"
+            style={{ background: RANK_STYLE[1].bright }}
+          >
+            {champion.username.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/u/${champion.username}`}
+            className="block truncate font-bold text-foreground hover:underline"
+          >
+            @{champion.username}
+          </Link>
+          <p className="mt-0.5 text-xs text-muted-foreground">{when}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[10px] font-bold",
+                LEVEL_PILL[level.name]
+              )}
+            >
+              {level.name}
+            </span>
+            <span className="font-mono text-[10px] font-bold text-muted-foreground">
+              {meta}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -309,6 +380,35 @@ function LeaderboardPageContent() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Mural de Campeões — líderes atuais do mês/ano, independente da aba ativa.
+  const { data: monthlyChampion } = useQuery({
+    queryKey: ["ranking-champion", "monthly"],
+    queryFn: async () => {
+      const { status, data } = await fetchProfiles({
+        page: 1,
+        limit: 1,
+        sort: [{ orderBy: "currentMonthlyXp", order: SortEnum.DESC }],
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data.data[0] ?? null;
+      return null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: yearlyChampion } = useQuery({
+    queryKey: ["ranking-champion", "yearly"],
+    queryFn: async () => {
+      const { status, data } = await fetchProfiles({
+        page: 1,
+        limit: 1,
+        sort: [{ orderBy: "currentYearlyXp", order: SortEnum.DESC }],
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data.data[0] ?? null;
+      return null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const xpField = TAB_FIELD[tab];
   const profiles: GamificationProfile[] = (data ?? [])
     .slice()
@@ -318,6 +418,12 @@ function LeaderboardPageContent() {
   const top3 = profiles.slice(0, 3);
   const rest = profiles.slice(3);
   const myUsername = myProfile?.username;
+
+  const now = new Date();
+  const monthLabel = now
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    .replace(/^\w/, (c) => c.toUpperCase());
+  const yearLabel = String(now.getFullYear());
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
@@ -453,6 +559,33 @@ function LeaderboardPageContent() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Mural de Campeões */}
+            {(monthlyChampion || yearlyChampion) && (
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                  🏛️ Mural de Campeões
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {monthlyChampion && (
+                    <ChampionCard
+                      title="Campeão do mês"
+                      champion={monthlyChampion}
+                      when={monthLabel}
+                      meta={`${formatXp(monthlyChampion.currentMonthlyXp)} XP este mês`}
+                    />
+                  )}
+                  {yearlyChampion && (
+                    <ChampionCard
+                      title="Campeão do ano"
+                      champion={yearlyChampion}
+                      when={yearLabel}
+                      meta={`${formatXp(yearlyChampion.currentYearlyXp)} XP este ano`}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </motion.div>
