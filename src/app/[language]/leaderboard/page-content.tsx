@@ -7,6 +7,7 @@ import {
   useGetGamificationProfilesService,
   useGetMyGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
+import { useGetChampionSnapshotService } from "@/services/api/services/ranking-snapshots";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
@@ -346,11 +347,28 @@ function TableRow({
   );
 }
 
+function formatPeriodKey(periodKey: string): string {
+  if (!periodKey) return "";
+  const [yearStr, monthStr] = periodKey.split("-");
+  if (yearStr && monthStr) {
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (!isNaN(year) && !isNaN(month)) {
+      const date = new Date(year, month - 1, 1);
+      return date
+        .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+        .replace(/^\w/, (c) => c.toUpperCase());
+    }
+  }
+  return periodKey;
+}
+
 function LeaderboardPageContent() {
   const [tab, setTab] = useState<Tab>("monthly");
   const { user } = useAuth();
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchMyProfile = useGetMyGamificationProfileService();
+  const fetchChampionSnapshot = useGetChampionSnapshotService();
 
   const { data, isLoading } = useQuery({
     queryKey: ["leaderboard", tab],
@@ -377,30 +395,26 @@ function LeaderboardPageContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Mural de Campeões — líderes atuais do mês/ano, independente da aba ativa.
-  const { data: monthlyChampion } = useQuery({
+  // Mural de Campeões — campeões do período encerrado (mês/ano passado).
+  const { data: monthlyChampionSnapshot } = useQuery({
     queryKey: ["ranking-champion", "monthly"],
     queryFn: async () => {
-      const { status, data } = await fetchProfiles({
-        page: 1,
-        limit: 1,
-        sort: [{ orderBy: "currentMonthlyXp", order: SortEnum.DESC }],
+      const { status, data } = await fetchChampionSnapshot({
+        type: "monthly",
       });
-      if (status === HTTP_CODES_ENUM.OK) return data.data[0] ?? null;
+      if (status === HTTP_CODES_ENUM.OK) return data ?? null;
       return null;
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: yearlyChampion } = useQuery({
+  const { data: yearlyChampionSnapshot } = useQuery({
     queryKey: ["ranking-champion", "yearly"],
     queryFn: async () => {
-      const { status, data } = await fetchProfiles({
-        page: 1,
-        limit: 1,
-        sort: [{ orderBy: "currentYearlyXp", order: SortEnum.DESC }],
+      const { status, data } = await fetchChampionSnapshot({
+        type: "annual",
       });
-      if (status === HTTP_CODES_ENUM.OK) return data.data[0] ?? null;
+      if (status === HTTP_CODES_ENUM.OK) return data ?? null;
       return null;
     },
     staleTime: 5 * 60 * 1000,
@@ -415,12 +429,6 @@ function LeaderboardPageContent() {
   const top3 = profiles.slice(0, 3);
   const rest = profiles.slice(3);
   const myUsername = myProfile?.username;
-
-  const now = new Date();
-  const monthLabel = now
-    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-    .replace(/^\w/, (c) => c.toUpperCase());
-  const yearLabel = String(now.getFullYear());
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
@@ -560,26 +568,27 @@ function LeaderboardPageContent() {
             )}
 
             {/* Mural de Campeões */}
-            {(monthlyChampion || yearlyChampion) && (
+            {(monthlyChampionSnapshot?.profile ||
+              yearlyChampionSnapshot?.profile) && (
               <div>
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
                   🏛️ Mural de Campeões
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {monthlyChampion && (
+                  {monthlyChampionSnapshot?.profile && (
                     <ChampionCard
                       title="Campeão do mês"
-                      champion={monthlyChampion}
-                      when={monthLabel}
-                      meta={`${formatXp(monthlyChampion.currentMonthlyXp)} XP este mês`}
+                      champion={monthlyChampionSnapshot.profile}
+                      when={formatPeriodKey(monthlyChampionSnapshot.periodKey)}
+                      meta={`${formatXp(monthlyChampionSnapshot.xpAtSnapshot)} XP este mês`}
                     />
                   )}
-                  {yearlyChampion && (
+                  {yearlyChampionSnapshot?.profile && (
                     <ChampionCard
                       title="Campeão do ano"
-                      champion={yearlyChampion}
-                      when={yearLabel}
-                      meta={`${formatXp(yearlyChampion.currentYearlyXp)} XP este ano`}
+                      champion={yearlyChampionSnapshot.profile}
+                      when={formatPeriodKey(yearlyChampionSnapshot.periodKey)}
+                      meta={`${formatXp(yearlyChampionSnapshot.xpAtSnapshot)} XP este ano`}
                     />
                   )}
                 </div>
