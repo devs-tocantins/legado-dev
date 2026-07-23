@@ -156,3 +156,31 @@ export function useCreateCourseReviewService() {
     [fetch]
   );
 }
+
+export function useGetCourseByIdService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (courseId: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/courses/${courseId}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<Course>);
+    },
+    [fetch]
+  );
+}
+
+export function useGetMyCourseReviewService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (courseId: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/course-reviews/my-review/${courseId}`, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CourseReview>);
+    },
+    [fetch]
+  );
+}

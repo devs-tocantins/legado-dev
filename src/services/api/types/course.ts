@@ -17,6 +17,8 @@ export type Course = {
   status: CourseStatusEnum;
   createdAt: string;
   updatedAt: string;
+  averageRating?: number | null;
+  totalReviews?: number | null;
 };
 
 export type CourseReview = {
