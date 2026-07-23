@@ -1304,8 +1304,9 @@ function CompleteMilestonePageContent() {
                                 Já domina esse assunto?
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Pule direto para a moderação, sem comprovante
-                                (test-out).
+                                Declare que já sabe e conclua este marco na
+                                hora, sem enviar comprovante nem esperar
+                                moderação.
                               </p>
                             </div>
                             <Button
@@ -1315,7 +1316,7 @@ function CompleteMilestonePageContent() {
                               className="shrink-0 gap-1.5 rounded-xl"
                             >
                               <ShieldCheck className="h-4 w-4" />
-                              {skipping ? "..." : "Pular esta prova"}
+                              {skipping ? "..." : "Já domino, concluir"}
                             </Button>
                           </div>
                         )}
