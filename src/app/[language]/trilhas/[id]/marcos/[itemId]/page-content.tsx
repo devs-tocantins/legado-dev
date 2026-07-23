@@ -59,6 +59,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
+import { getCoursePalette } from "@/lib/course-colors";
 
 const AUTO_COMPLETABLE_TYPES = new Set<TrackItemType>([
   TrackItemType.RESOURCE,
@@ -711,14 +712,25 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
                   ? reviews.reduce((sum, r) => sum + r.rating, 0) /
                     reviews.length
                   : 0;
+              const style = getCoursePalette(course.id);
+
               return (
                 <div
                   key={course.id}
-                  className="flex flex-col gap-2.5 rounded-2xl border border-border bg-background p-4"
+                  className="relative flex flex-col gap-2.5 rounded-[24px] border bg-background p-5 transition-transform hover:-translate-y-0.5"
+                  style={{
+                    borderColor: style.ring,
+                    boxShadow: `0 9px 0 ${style.shadow}`,
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-bold leading-snug">
-                      {course.title}
+                  <div className="flex items-start justify-between gap-2 relative z-10">
+                    <h3 className="text-base font-bold leading-snug">
+                      <Link
+                        href={`/cursos/${course.id}`}
+                        className="hover:underline text-foreground"
+                      >
+                        {course.title}
+                      </Link>
                     </h3>
                     <span
                       className={cn(
@@ -759,6 +771,14 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
                     </span>
                   </div>
                   <div className="mt-auto flex items-center gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5"
+                      render={<Link href={`/cursos/${course.id}`} />}
+                    >
+                      Ver Detalhes
+                    </Button>
                     <a
                       href={course.url}
                       target="_blank"
@@ -774,15 +794,6 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
                         Acessar
                       </Button>
                     </a>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                      onClick={() => setRatingCourse(course)}
-                    >
-                      <Star className="h-3.5 w-3.5" />
-                      Avaliar
-                    </Button>
                   </div>
                 </div>
               );

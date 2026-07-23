@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
 import Link from "@/components/link";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import {
@@ -23,6 +22,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { GraduationCap, Plus, Star, Coins, Gift } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
+import { getCoursePalette } from "@/lib/course-colors";
 
 function NewCourseDialog({
   open,
@@ -170,39 +170,26 @@ function NewCourseDialog({
 }
 
 function CourseCard({ course }: { course: Course }) {
-  const params = useParams();
-  const lang = params.language as string;
   const averageRating = course.averageRating ? Number(course.averageRating) : 0;
   const totalReviews = course.totalReviews || 0;
-
-  // Um array de cores pra deixar os ícones coloridos baseados no ID do curso (para dar mais vida)
-  const colors = [
-    "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-    "bg-[#f97316]/10 text-[#f97316]",
-  ];
-
-  // Pegar uma cor baseada no ID do curso
-  const colorIndex =
-    course.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-    colors.length;
-  const iconColorClass = colors[colorIndex];
+  const style = getCoursePalette(course.id);
 
   return (
     <Link
-      href={`/${lang}/cursos/${course.id}`}
-      className="group flex h-full flex-col gap-4 rounded-[24px] border border-border/60 bg-card p-6 shadow-sm hover:shadow-xl hover:border-[#f97316]/30 hover:-translate-y-1 transition-all duration-300"
+      href={`/cursos/${course.id}`}
+      className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-[24px] border bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_13px_0_var(--card-shadow)] active:translate-y-1 active:shadow-[0_4px_0_var(--card-shadow)]"
+      style={
+        {
+          borderColor: style.ring,
+          boxShadow: `0 9px 0 ${style.shadow}`,
+          "--card-shadow": style.shadow,
+        } as React.CSSProperties
+      }
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 relative z-10">
         <div
-          className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-            iconColorClass
-          )}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-white"
+          style={{ background: style.bright }}
         >
           <GraduationCap className="h-6 w-6" />
         </div>
@@ -226,8 +213,8 @@ function CourseCard({ course }: { course: Course }) {
           )}
         </span>
       </div>
-      <div className="flex-1">
-        <h3 className="text-[18px] font-bold leading-snug group-hover:text-[#f97316] transition-colors line-clamp-2">
+      <div className="flex-1 relative z-10">
+        <h3 className="text-[18px] font-bold leading-snug group-hover:underline transition-colors line-clamp-2">
           {course.title}
         </h3>
         {course.provider && (
@@ -236,7 +223,7 @@ function CourseCard({ course }: { course: Course }) {
           </p>
         )}
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4">
+      <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4 relative z-10">
         <div className="flex items-center gap-1">
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
           <span className="text-sm font-bold text-foreground">
@@ -246,7 +233,10 @@ function CourseCard({ course }: { course: Course }) {
             ({totalReviews})
           </span>
         </div>
-        <span className="text-xs font-bold text-[#f97316] opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
+        <span
+          className="text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300"
+          style={{ background: style.chipBg, color: style.chipText }}
+        >
           Ver detalhes &rarr;
         </span>
       </div>

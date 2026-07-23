@@ -184,3 +184,39 @@ export function useGetMyCourseReviewService() {
     [fetch]
   );
 }
+
+export type UpdateCourseReviewRequest = {
+  id: string;
+  rating?: number;
+  comment?: string | null;
+};
+
+export function useUpdateCourseReviewService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: UpdateCourseReviewRequest, requestConfig?: RequestConfigType) => {
+      const { id, ...rest } = data;
+      return fetch(`${API_URL}/api/v1/course-reviews/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(rest),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CourseReview>);
+    },
+    [fetch]
+  );
+}
+
+export function useDeleteCourseReviewService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/course-reviews/${id}`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>);
+    },
+    [fetch]
+  );
+}

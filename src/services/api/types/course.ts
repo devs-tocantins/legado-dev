@@ -21,6 +21,8 @@ export type Course = {
   totalReviews?: number | null;
 };
 
+import { User } from "./user";
+
 export type CourseReview = {
   id: string;
   courseId: string;
@@ -30,4 +32,5 @@ export type CourseReview = {
   provenCompletion: boolean;
   createdAt: string;
   updatedAt: string;
+  user?: User | null;
 };
