@@ -10,7 +10,7 @@ export async function apiCreateNewUser(
 ) {
   const createRequestContext = await request.newContext();
   const response = await createRequestContext.post(
-    apiUrl + "/v1/auth/email/register",
+    apiUrl + "/api/v1/auth/email/register",
     {
       data: {
         firstName,
