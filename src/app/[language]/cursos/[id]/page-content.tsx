@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
@@ -9,9 +9,12 @@ import {
   useGetCourseReviewsByCourseService,
   useGetMyCourseReviewService,
   useCreateCourseReviewService,
+  useUpdateCourseReviewService,
+  useDeleteCourseReviewService,
 } from "@/services/api/services/courses";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { Course } from "@/services/api/types/course";
+import { Course, CourseReview } from "@/services/api/types/course";
+import useAuth from "@/services/auth/use-auth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +31,8 @@ import {
   Coins,
   Gift,
   MessageCircle,
+  Trash2,
+  Edit2,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -69,30 +74,57 @@ function RateCourseDialog({
   course,
   open,
   onClose,
+  initialReview,
 }: {
   course: Course;
   open: boolean;
   onClose: () => void;
+  initialReview?: CourseReview | null;
 }) {
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(initialReview?.rating || 0);
+  const [comment, setComment] = useState(initialReview?.comment || "");
   const { enqueueSnackbar } = useSnackbar();
   const createReview = useCreateCourseReviewService();
+  const updateReview = useUpdateCourseReviewService();
   const queryClient = useQueryClient();
+
+  // Reset state when opening/closing or when initialReview changes
+  useEffect(() => {
+    if (open) {
+      setRating(initialReview?.rating || 0);
+      setComment(initialReview?.comment || "");
+    }
+  }, [open, initialReview]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
-      const { status, data } = await createReview({
-        courseId: course.id,
-        rating,
-        comment: comment.trim() || null,
-      });
-      if (status !== HTTP_CODES_ENUM.CREATED) {
-        throw new Error(getApiError(data, "Erro ao enviar avaliação."));
+      if (initialReview) {
+        const { status, data } = await updateReview({
+          id: initialReview.id,
+          rating,
+          comment: comment.trim() || null,
+        });
+        if (status !== HTTP_CODES_ENUM.OK) {
+          throw new Error(getApiError(data, "Erro ao atualizar avaliação."));
+        }
+      } else {
+        const { status, data } = await createReview({
+          courseId: course.id,
+          rating,
+          comment: comment.trim() || null,
+        });
+        if (status !== HTTP_CODES_ENUM.CREATED) {
+          throw new Error(getApiError(data, "Erro ao enviar avaliação."));
+        }
       }
     },
     onSuccess: () => {
-      enqueueSnackbar("Avaliação enviada. Obrigado!", { variant: "success" });
+      enqueueSnackbar(
+        initialReview
+          ? "Avaliação atualizada!"
+          : "Avaliação enviada. Obrigado!",
+        { variant: "success" }
+      );
       setRating(0);
       setComment("");
       queryClient.invalidateQueries({ queryKey: ["course", course.id] });
@@ -154,10 +186,33 @@ function CoursePageContent() {
   const params = useParams();
   const courseId = params.id as string;
   const [isRateOpen, setIsRateOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdminOrMod = user?.role?.id === 1 || user?.role?.id === 3;
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const fetchCourse = useGetCourseByIdService();
   const fetchReviews = useGetCourseReviewsByCourseService();
   const fetchMyReview = useGetMyCourseReviewService();
+  const deleteReview = useDeleteCourseReviewService();
+
+  const { mutate: handleDeleteReview, isPending: isDeleting } = useMutation({
+    mutationFn: async (id: string) => {
+      const { status, data } = await deleteReview(id);
+      if (status !== HTTP_CODES_ENUM.OK) {
+        throw new Error(getApiError(data, "Erro ao remover avaliação."));
+      }
+    },
+    onSuccess: () => {
+      enqueueSnackbar("Avaliação removida.", { variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["course-reviews", courseId] });
+      queryClient.invalidateQueries({
+        queryKey: ["my-course-review", courseId],
+      });
+    },
+    onError: (e: Error) => enqueueSnackbar(e.message, { variant: "error" }),
+  });
 
   const { data: course, isLoading: isCourseLoading } = useQuery({
     queryKey: ["course", courseId],
@@ -331,11 +386,18 @@ function CoursePageContent() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-bold text-muted-foreground">
-                          {/* Placeholder avatar initial */}
-                          {review.profileId ? "U" : "?"}
+                          {/* Avatar initial */}
+                          {review.user?.firstName
+                            ? review.user.firstName.charAt(0).toUpperCase()
+                            : review.profileId
+                              ? "U"
+                              : "?"}
                         </div>
                         <div>
-                          <div className="font-semibold">Usuário Anônimo</div>
+                          <div className="font-semibold">
+                            {review.user?.firstName} {review.user?.lastName}
+                            {!review.user?.firstName && "Usuário Anônimo"}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {format(
                               new Date(review.createdAt),
@@ -345,18 +407,38 @@ function CoursePageContent() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <Star
-                            key={n}
-                            className={cn(
-                              "h-4 w-4",
-                              n <= review.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "fill-muted text-muted"
-                            )}
-                          />
-                        ))}
+                      <div className="flex gap-2">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <Star
+                              key={n}
+                              className={cn(
+                                "h-4 w-4",
+                                n <= review.rating
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "fill-muted text-muted"
+                              )}
+                            />
+                          ))}
+                        </div>
+                        {isAdminOrMod && (
+                          <button
+                            onClick={() => {
+                              // eslint-disable-next-line no-alert
+                              const confirmed = window.confirm(
+                                "Deseja realmente remover esta avaliação?"
+                              );
+                              if (confirmed) {
+                                handleDeleteReview(review.id);
+                              }
+                            }}
+                            disabled={isDeleting}
+                            className="ml-2 text-destructive hover:text-destructive/80 transition-colors"
+                            title="Remover avaliação (Moderação)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     {review.comment && (
@@ -408,6 +490,32 @@ function CoursePageContent() {
                   Avaliado em{" "}
                   {format(new Date(myReview.createdAt), "dd/MM/yyyy")}
                 </div>
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => setIsRateOpen(true)}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      // eslint-disable-next-line no-alert
+                      if (window.confirm("Deseja remover sua avaliação?")) {
+                        handleDeleteReview(myReview.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remover
+                  </Button>
+                </div>
               </div>
             ) : (
               <div>
@@ -433,6 +541,7 @@ function CoursePageContent() {
         course={course}
         open={isRateOpen}
         onClose={() => setIsRateOpen(false)}
+        initialReview={myReview}
       />
     </div>
   );
