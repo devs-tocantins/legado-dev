@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
 import Link from "@/components/link";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import {
@@ -170,8 +169,6 @@ function NewCourseDialog({
 }
 
 function CourseCard({ course }: { course: Course }) {
-  const params = useParams();
-  const lang = params.language as string;
   const averageRating = course.averageRating ? Number(course.averageRating) : 0;
   const totalReviews = course.totalReviews || 0;
 
@@ -194,7 +191,7 @@ function CourseCard({ course }: { course: Course }) {
 
   return (
     <Link
-      href={`/${lang}/cursos/${course.id}`}
+      href={`/cursos/${course.id}`}
       className="group flex h-full flex-col gap-4 rounded-[24px] border border-border/60 bg-card p-6 shadow-sm hover:shadow-xl hover:border-[#f97316]/30 hover:-translate-y-1 transition-all duration-300"
     >
       <div className="flex items-start justify-between gap-3">

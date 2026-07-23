@@ -152,7 +152,6 @@ function RateCourseDialog({
 
 function CoursePageContent() {
   const params = useParams();
-  const lang = params.language as string;
   const courseId = params.id as string;
   const [isRateOpen, setIsRateOpen] = useState(false);
 
@@ -205,7 +204,7 @@ function CoursePageContent() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 text-center pb-20">
         <h1 className="text-2xl font-bold">Curso não encontrado.</h1>
-        <Link href={`/${lang}/cursos`}>
+        <Link href={`/cursos`}>
           <Button className="mt-4 gap-2">
             <ArrowLeft className="h-4 w-4" /> Voltar ao catálogo
           </Button>
@@ -220,7 +219,7 @@ function CoursePageContent() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 pb-20">
       <Link
-        href={`/${lang}/cursos`}
+        href={`/cursos`}
         className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
