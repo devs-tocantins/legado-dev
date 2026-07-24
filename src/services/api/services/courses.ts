@@ -220,3 +220,46 @@ export function useDeleteCourseReviewService() {
     [fetch]
   );
 }
+
+export type UpdateCourseRequest = {
+  id: string;
+  title?: string;
+  description?: string | null;
+  provider?: string | null;
+  url?: string;
+  isFree?: boolean;
+  price?: number | null;
+  language?: string | null;
+  trackItemId?: string | null;
+  status?: "PENDING" | "VERIFIED" | "REJECTED";
+};
+
+export function useUpdateCourseService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: UpdateCourseRequest, requestConfig?: RequestConfigType) => {
+      const { id, ...rest } = data;
+      return fetch(`${API_URL}/api/v1/courses/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(rest),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<Course>);
+    },
+    [fetch]
+  );
+}
+
+export function useDeleteCourseService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (id: string, requestConfig?: RequestConfigType) => {
+      return fetch(`${API_URL}/api/v1/courses/${id}`, {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<void>);
+    },
+    [fetch]
+  );
+}
