@@ -8,6 +8,10 @@ import {
   useGetCoursesService,
   useCreateCourseService,
 } from "@/services/api/services/courses";
+import {
+  useGetLearningTracksService,
+  useGetLearningTrackOverviewService,
+} from "@/services/api/services/learning-tracks";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { Course } from "@/services/api/types/course";
@@ -39,9 +43,34 @@ function NewCourseDialog({
   const [isFree, setIsFree] = useState(true);
   const [price, setPrice] = useState("");
   const [language, setLanguage] = useState("pt-BR");
+  const [selectedTrackId, setSelectedTrackId] = useState("");
+  const [selectedTrackItemId, setSelectedTrackItemId] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const createCourse = useCreateCourseService();
   const fetchMyProfile = useGetMyGamificationProfileService();
+  const fetchTracks = useGetLearningTracksService();
+  const fetchOverview = useGetLearningTrackOverviewService();
+
+  const { data: tracksData } = useQuery({
+    queryKey: ["learning-tracks", "all"],
+    queryFn: async () => {
+      const { status, data } = await fetchTracks({ page: 1, limit: 100 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data;
+      return [];
+    },
+  });
+
+  const { data: overview } = useQuery({
+    queryKey: ["learning-track-overview", selectedTrackId],
+    queryFn: async () => {
+      const { status, data } = await fetchOverview({ id: selectedTrackId });
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+    enabled: !!selectedTrackId,
+  });
+
+  const trackItems = overview?.sections.flatMap((s) => s.items) ?? [];
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
@@ -56,6 +85,7 @@ function NewCourseDialog({
         price: isFree ? null : Number(price) || null,
         language: language.trim() || null,
         submittedByProfileId: myProfile?.id ?? null,
+        trackItemId: selectedTrackItemId,
       });
       if (status !== HTTP_CODES_ENUM.CREATED) {
         throw new Error(getApiError(data, "Erro ao cadastrar curso."));
@@ -71,13 +101,19 @@ function NewCourseDialog({
       setUrl("");
       setIsFree(true);
       setPrice("");
+      setSelectedTrackId("");
+      setSelectedTrackItemId("");
       onCreated();
       onClose();
     },
     onError: (e: Error) => enqueueSnackbar(e.message, { variant: "error" }),
   });
 
-  const canSubmit = title.trim().length > 0 && url.trim().length > 0;
+  const canSubmit =
+    title.trim().length > 0 &&
+    url.trim().length > 0 &&
+    selectedTrackId !== "" &&
+    selectedTrackItemId !== "";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -93,6 +129,43 @@ function NewCourseDialog({
           verificado pela moderação.
         </p>
         <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium">Trilha *</label>
+            <select
+              value={selectedTrackId}
+              onChange={(e) => {
+                setSelectedTrackId(e.target.value);
+                setSelectedTrackItemId("");
+              }}
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+            >
+              <option value="">Selecione uma trilha...</option>
+              {tracksData?.map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedTrackId && (
+            <div>
+              <label className="text-xs font-medium">
+                Aula/Marco da trilha *
+              </label>
+              <select
+                value={selectedTrackItemId}
+                onChange={(e) => setSelectedTrackItemId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+              >
+                <option value="">Selecione um marco...</option>
+                {trackItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-xs font-medium">Título *</label>
             <input
