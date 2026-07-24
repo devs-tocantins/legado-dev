@@ -139,6 +139,19 @@ function TrackDetailPageContent() {
     enabled: !!id,
   });
 
+  const { data: reqProgress, isLoading: isLoadingReqProgress } = useQuery({
+    queryKey: ["learning-track-progress", overview?.track.requiresTrackId],
+    queryFn: async () => {
+      if (!overview?.track.requiresTrackId) return null;
+      const { status, data } = await fetchProgress({
+        id: overview.track.requiresTrackId,
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+    enabled: !!overview?.track.requiresTrackId,
+  });
+
   const items = useMemo(
     () => overview?.sections.flatMap((s) => s.items) ?? [],
     [overview]
@@ -161,7 +174,12 @@ function TrackDetailPageContent() {
     );
   }, [overview, progress]);
 
-  const isLoading = isLoadingOverview || isLoadingProgress;
+  const isLoading =
+    isLoadingOverview || isLoadingProgress || isLoadingReqProgress;
+
+  const isLockedByReq = overview?.track.requiresTrackId
+    ? !reqProgress?.isCompleted
+    : false;
 
   const currentItem = useMemo(
     () => (currentIndex >= 0 ? items[currentIndex] : null),
@@ -269,14 +287,25 @@ function TrackDetailPageContent() {
         </div>
         <div className="flex flex-col items-start justify-center gap-1.5 sm:items-end sm:text-right">
           {!progress?.enrollment ? (
-            <Button
-              onClick={handleEnroll}
-              disabled={enrolling}
-              className="gap-2 rounded-2xl bg-white px-6 py-6 text-[15px] font-bold text-primary shadow-[0_5px_0_rgba(20,20,20,0.25)] hover:bg-white/90"
-            >
-              <PlayCircle className="h-4 w-4" />
-              {enrolling ? "Iniciando..." : "Começar"}
-            </Button>
+            <div className="flex flex-col items-center sm:items-end gap-2">
+              <Button
+                onClick={handleEnroll}
+                disabled={enrolling || isLockedByReq}
+                className="gap-2 rounded-2xl bg-white px-6 py-6 text-[15px] font-bold text-primary shadow-[0_5px_0_rgba(20,20,20,0.25)] hover:bg-white/90 disabled:opacity-50"
+              >
+                {isLockedByReq ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <PlayCircle className="h-4 w-4" />
+                )}
+                {enrolling ? "Iniciando..." : "Começar"}
+              </Button>
+              {isLockedByReq && (
+                <p className="text-xs font-semibold text-white/80 bg-black/20 px-3 py-1.5 rounded-lg max-w-[200px] text-center">
+                  Você precisa concluir a trilha anterior para começar.
+                </p>
+              )}
+            </div>
           ) : !isCompleted && currentItem ? (
             <Button
               className="gap-2 rounded-2xl bg-white px-6 py-6 text-[15px] font-bold text-primary shadow-[0_5px_0_rgba(20,20,20,0.25)] hover:bg-white/90"
