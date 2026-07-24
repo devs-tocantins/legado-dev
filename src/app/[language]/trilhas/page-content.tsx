@@ -183,14 +183,6 @@ function TrackCard({
   );
   const style = { "--card-shadow": "var(--border)" } as React.CSSProperties;
 
-  if (locked) {
-    return (
-      <div className={className} style={style}>
-        {cardBody}
-      </div>
-    );
-  }
-
   return (
     <Link href={`/trilhas/${track.id}`} className={className} style={style}>
       {cardBody}
