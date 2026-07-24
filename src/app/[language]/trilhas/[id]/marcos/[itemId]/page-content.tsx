@@ -1051,22 +1051,6 @@ function CompleteMilestonePageContent() {
     );
   }
 
-  if (isLocked) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <EmptyState
-          icon={Map}
-          title="Este marco ainda não foi liberado"
-          description="Conclua os marcos anteriores da trilha para chegar até aqui."
-          action={{
-            label: "Voltar para a trilha",
-            href: `/trilhas/${trackId}`,
-          }}
-        />
-      </div>
-    );
-  }
-
   const isAutoCompletable = AUTO_COMPLETABLE_TYPES.has(item.type);
   const alreadyDone = isDone || justCompleted !== null;
   const badge = TRACK_ITEM_TYPE_BADGE[item.type];
@@ -1207,15 +1191,22 @@ function CompleteMilestonePageContent() {
                     <CourseTopicSection item={item} />
                   </div>
 
-                  <div className="mt-6">
-                    <Button
-                      onClick={handleComplete}
-                      disabled={!quizPassed || completing}
-                      className="w-full rounded-2xl py-6 text-[15px] font-bold"
-                    >
-                      {completing ? "Concluindo..." : "Concluir marco"}
-                    </Button>
-                  </div>
+                  {isLocked ? (
+                    <div className="mt-6 rounded-2xl border-2 border-border p-4 text-center text-sm text-muted-foreground">
+                      Conclua os marcos anteriores para liberar a conclusão
+                      deste questionário.
+                    </div>
+                  ) : (
+                    <div className="mt-6">
+                      <Button
+                        onClick={handleComplete}
+                        disabled={!quizPassed || completing}
+                        className="w-full rounded-2xl py-6 text-[15px] font-bold"
+                      >
+                        {completing ? "Concluindo..." : "Concluir marco"}
+                      </Button>
+                    </div>
+                  )}
                 </>
               ) : isAutoCompletable ? (
                 <>
@@ -1223,40 +1214,47 @@ function CompleteMilestonePageContent() {
                     <CourseTopicSection item={item} />
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
-                    <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold">
-                        Já estudei este conteúdo
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {canSkipToProof
-                          ? "Marque quando concluir para seguir na trilha, ou pule direto para o próximo marco se já domina o assunto."
-                          : "Marque quando concluir para seguir na trilha."}
-                      </p>
+                  {isLocked ? (
+                    <div className="mt-6 rounded-2xl border-2 border-border p-4 text-center text-sm text-muted-foreground">
+                      Conclua os marcos anteriores para poder marcar este
+                      conteúdo como concluído.
                     </div>
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                      {canSkipToProof && (
+                  ) : (
+                    <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
+                      <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold">
+                          Já estudei este conteúdo
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {canSkipToProof
+                            ? "Marque quando concluir para seguir na trilha, ou pule direto para o próximo marco se já domina o assunto."
+                            : "Marque quando concluir para seguir na trilha."}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        {canSkipToProof && (
+                          <Button
+                            variant="outline"
+                            onClick={handleSkipToNextProof}
+                            disabled={completing || skipping}
+                            className="gap-1.5 rounded-xl"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                            {skipping ? "..." : "Já domino esse assunto"}
+                          </Button>
+                        )}
                         <Button
-                          variant="outline"
-                          onClick={handleSkipToNextProof}
+                          onClick={handleComplete}
                           disabled={completing || skipping}
                           className="gap-1.5 rounded-xl"
                         >
-                          <ShieldCheck className="h-4 w-4" />
-                          {skipping ? "..." : "Já domino esse assunto"}
+                          <CheckCircle2 className="h-4 w-4" />
+                          {completing ? "..." : "Concluir"}
                         </Button>
-                      )}
-                      <Button
-                        onClick={handleComplete}
-                        disabled={completing || skipping}
-                        className="gap-1.5 rounded-xl"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        {completing ? "..." : "Concluir"}
-                      </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               ) : item.type === TrackItemType.PROOF ? (
                 <>
@@ -1293,8 +1291,13 @@ function CompleteMilestonePageContent() {
                   </div>
 
                   <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/[0.03] p-5">
-                    {myItemSubmission?.status ===
-                    SubmissionStatusEnum.PENDING ? (
+                    {isLocked ? (
+                      <div className="text-center text-sm text-muted-foreground">
+                        Conclua os marcos anteriores para liberar o envio desta
+                        prova.
+                      </div>
+                    ) : myItemSubmission?.status ===
+                      SubmissionStatusEnum.PENDING ? (
                       <div className="flex items-center gap-2.5 rounded-2xl border-2 border-border bg-muted/40 p-4">
                         <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <div>

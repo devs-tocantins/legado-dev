@@ -374,29 +374,26 @@ function TrackDetailPageContent() {
                   </span>
                 </div>
 
-                {state === "locked" ? (
+                {state === "locked" && (
                   <p className="flex items-center gap-1.5 px-5 pb-4 font-mono text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />
-                    conclua a etapa anterior para desbloquear
+                    conclua a etapa anterior para desbloquear a conclusão
                   </p>
-                ) : (
-                  <div className="border-t border-border/70">
-                    {sectionItems.map((item) => {
-                      const globalIdx = items.findIndex(
-                        (i) => i.id === item.id
-                      );
-                      return (
-                        <MarcoRow
-                          key={item.id}
-                          item={item}
-                          trackId={id}
-                          isDone={globalIdx < currentIndex}
-                          isCurrent={globalIdx === currentIndex}
-                        />
-                      );
-                    })}
-                  </div>
                 )}
+                <div className="border-t border-border/70">
+                  {sectionItems.map((item) => {
+                    const globalIdx = items.findIndex((i) => i.id === item.id);
+                    return (
+                      <MarcoRow
+                        key={item.id}
+                        item={item}
+                        trackId={id}
+                        isDone={globalIdx < currentIndex}
+                        isCurrent={globalIdx === currentIndex}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
