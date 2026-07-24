@@ -413,7 +413,7 @@ function SectionDialog({
 
   return (
     <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {state?.mode === "create" ? "Nova seção" : "Editar seção"}
@@ -643,7 +643,7 @@ function ItemDialog({
 
   return (
     <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {state?.mode === "create" ? "Novo marco" : "Editar marco"}

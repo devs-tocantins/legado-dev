@@ -125,7 +125,7 @@ function FormEditGamificationProfile() {
 
   return (
     <FormProvider {...methods}>
-      <div className="mx-auto max-w-md p-6">
+      <div className="mx-auto max-w-3xl p-6">
         <div className="mb-4">
           <Button
             variant="ghost"
