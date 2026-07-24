@@ -34,6 +34,7 @@ import {
   MessageCircle,
   Map,
   Lightbulb,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -358,6 +359,12 @@ function AdminDashboardPageContent() {
             icon={CalendarDays}
             label="Eventos"
             description="Moderar eventos divulgados pela comunidade"
+          />
+          <NavCard
+            href="/admin-panel/courses"
+            icon={BookOpen}
+            label="Cursos"
+            description="Moderar cursos enviados pela comunidade"
           />
           <NavCard
             href="/admin-panel/badges"

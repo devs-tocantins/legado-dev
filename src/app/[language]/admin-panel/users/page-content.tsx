@@ -29,7 +29,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, Ban, MoreHorizontal, ShieldOff } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ArrowUpDown,
+  Ban,
+  MoreHorizontal,
+  ShieldOff,
+  Info,
+} from "lucide-react";
 
 type UsersKeys = keyof User;
 
@@ -58,6 +71,7 @@ function SortableHeader(
 }
 
 function Actions({ user }: { user: User }) {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { user: authUser } = useAuth();
   const { confirmDialog } = useConfirmDialog();
   const fetchDelete = useDeleteUsersService();
@@ -167,6 +181,10 @@ function Actions({ user }: { user: User }) {
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setIsDetailsOpen(true)}>
+              <Info className="mr-2 h-4 w-4" />
+              Ver detalhes
+            </DropdownMenuItem>
             {canBan && (
               <DropdownMenuItem
                 className={
@@ -200,6 +218,24 @@ function Actions({ user }: { user: User }) {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuário</DialogTitle>
+            <DialogDescription>
+              Informações completas do usuário vindas do servidor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="bg-muted p-4 rounded-md">
+              <pre className="text-xs whitespace-pre-wrap overflow-x-auto">
+                {JSON.stringify(user, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -345,6 +381,16 @@ function Users() {
                     <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-destructive/10 text-destructive">
                       <Ban className="h-2.5 w-2.5" />
                       BANIDO
+                    </span>
+                  )}
+                  {user?.status?.id === 1 && (
+                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      Ativo
+                    </span>
+                  )}
+                  {user?.status?.id === 2 && (
+                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                      Inativo
                     </span>
                   )}
                 </div>

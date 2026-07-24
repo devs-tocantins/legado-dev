@@ -16,5 +16,13 @@ export type User = {
   provider?: UserProviderEnum;
   socialId?: string;
   role?: Role;
+  status?: {
+    id: number | string;
+    name?: string;
+  };
   isBanned?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string;
+  lastNotifiedLegalVersion?: number;
 };
