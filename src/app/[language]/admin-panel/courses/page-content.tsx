@@ -114,7 +114,7 @@ function CourseDialog({
       setPrice(c.price ? String(c.price) : "");
       setLanguage(c.language ?? "");
       setStatus(c.status);
-      setTrackItemId(c.trackItemId ?? "");
+      setTrackItemId((c as any).trackItemId ?? "");
       // If we had trackId on the course we could set it, but we only have trackItemId.
       // For simplicity, we just leave trackId empty if editing and let user select if they want to change.
     } else {
@@ -143,7 +143,7 @@ function CourseDialog({
         isFree,
         price: isFree || !price ? null : Number(price),
         language: language || null,
-        trackItemId: trackItemId || null,
+        trackItemId: trackItemId || undefined,
         status,
       };
 
@@ -266,7 +266,7 @@ function CourseDialog({
             <Select
               value={trackId || "none"}
               onValueChange={(v) => {
-                setTrackId(v === "none" ? "" : v);
+                setTrackId(v === "none" || !v ? "" : (v as string));
                 setTrackItemId("");
               }}
             >
@@ -289,7 +289,9 @@ function CourseDialog({
               <Label>Vincular a um Marco / Aula</Label>
               <Select
                 value={trackItemId || "none"}
-                onValueChange={(v) => setTrackItemId(v === "none" ? "" : v)}
+                onValueChange={(v) =>
+                  setTrackItemId(v === "none" || !v ? "" : (v as string))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o marco" />
