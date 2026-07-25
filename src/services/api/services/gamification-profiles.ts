@@ -167,6 +167,7 @@ export function useGetGamificationProfileByUsernameService() {
 export type ApprovedSubmissionsResponse = InfinityPaginationType<{
   id: string;
   activityId: string;
+  trackItemId?: string | null;
   awardedXp: number;
   createdAt: string;
 }>;

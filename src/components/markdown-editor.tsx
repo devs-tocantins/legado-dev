@@ -119,10 +119,15 @@ export function MarkdownEditor({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
+          onInput={(e) => {
+            e.currentTarget.style.height = "auto";
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
+          style={{ fieldSizing: "content" }}
           className={cn(
-            "w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+            "w-full min-h-[120px] field-sizing-content rounded-md border border-input bg-background px-3 py-2 text-sm",
             "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-            "resize-y font-mono",
+            "font-mono",
             error && "border-destructive"
           )}
         />

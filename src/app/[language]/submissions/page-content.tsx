@@ -86,11 +86,14 @@ function SubmissionRow({
         <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">
-            {activityTitle ?? (
-              <span className="font-mono text-xs text-muted-foreground">
-                {sub.activityId.substring(0, 8)}…
-              </span>
-            )}
+            {activityTitle ??
+              (sub.trackItemId ? (
+                "Marco de trilha concluído"
+              ) : (
+                <span className="font-mono text-xs text-muted-foreground">
+                  {sub.activityId.substring(0, 8)}…
+                </span>
+              ))}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className={cn("text-xs", meta.color)}>{meta.label}</span>

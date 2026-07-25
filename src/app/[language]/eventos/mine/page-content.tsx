@@ -123,7 +123,7 @@ function MyEventsPageContent() {
   const { confirmDialog } = useConfirmDialog();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["my-events", page],
     queryFn: async () => {
       const { status, data } = await fetchMyEvents({ page, limit: 20 });
@@ -157,8 +157,10 @@ function MyEventsPageContent() {
       enqueueSnackbar("Evento cancelado. Quem se inscreveu foi avisado.", {
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["my-events"] });
-      refetch();
+      queryClient.setQueryData<Event[] | undefined>(["my-events"], (old) => {
+        if (!old) return old;
+        return old.map((evt) => (evt.id === id ? data : evt));
+      });
     } else {
       enqueueSnackbar("Erro ao cancelar o evento.", { variant: "error" });
       void data;

@@ -150,7 +150,12 @@ function ModerationCard({
             placeholder="Explique o motivo da rejeição (ex: fora do foco de TI, informações incompletas...)"
             rows={3}
             maxLength={500}
-            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] resize-none"
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] field-sizing-content min-h-[70px]"
           />
           <div className="flex justify-end gap-2">
             <Button

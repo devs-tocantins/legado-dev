@@ -34,7 +34,7 @@ import {
   Trash2,
   Edit2,
 } from "lucide-react";
-import { cn, getApiError } from "@/lib/utils";
+import { cn, getApiError, formatCurrency } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import Link from "@/components/link";
 import { format } from "date-fns";
@@ -162,7 +162,12 @@ function RateCourseDialog({
             rows={4}
             maxLength={1000}
             placeholder="O que achou do curso? Conte para a comunidade... (opcional)"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="w-full field-sizing-content min-h-[90px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="flex gap-2 pt-4">
@@ -298,7 +303,7 @@ function CoursePageContent() {
                 ) : (
                   <>
                     <Coins className="h-3.5 w-3.5" />
-                    {course.price ? `R$ ${course.price}` : "Pago"}
+                    {course.price ? formatCurrency(course.price) : "Pago"}
                   </>
                 )}
               </span>

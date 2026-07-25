@@ -128,7 +128,12 @@ function ReportModal({
             rows={4}
             maxLength={2000}
             placeholder="Ex: Esta contribuição não foi feita por esta pessoa. Tenho evidências de que foi realizada por outra conta..."
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="w-full field-sizing-content min-h-[90px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="flex gap-2 pt-1">
@@ -365,9 +370,15 @@ export function ProfileHistoryTimeline({
     // 2. Voluntariado: submissões aprovadas
     if (submissionsData) {
       for (const sub of submissionsData) {
+        const portfolioMatch = sub.trackItemId
+          ? proofPortfolio?.find((item) => item.itemId === sub.trackItemId)
+          : null;
         const title =
           activityMap.get(sub.activityId) ??
-          sub.activityId.substring(0, 8) + "…";
+          portfolioMatch?.itemTitle ??
+          (sub.trackItemId
+            ? "Marco de trilha concluído"
+            : sub.activityId.substring(0, 8) + "…");
         events.push({
           id: `voluntariado-${sub.id}`,
           type: "voluntariado",

@@ -900,7 +900,7 @@ function FormIdentity({
       }
 
       if (bannerChanged || usernameChanged || showFullNameChanged) {
-        const { status } = await updateMyProfile({
+        const { status, data: updatedProfile } = await updateMyProfile({
           username: trimmedUsername,
           bannerPreset: draft.banner,
           showFullName: draft.showFullName,
@@ -913,6 +913,13 @@ function FormIdentity({
           enqueueSnackbar("Erro ao salvar alterações.", { variant: "error" });
           return;
         }
+        if (updatedProfile) {
+          queryClient.setQueryData(["my-profile"], updatedProfile);
+          queryClient.setQueryData(
+            ["public-profile", trimmedUsername],
+            updatedProfile
+          );
+        }
       }
 
       const previousUsername = saved.username;
@@ -923,10 +930,6 @@ function FormIdentity({
       };
       setSaved(persisted);
       setDraft(persisted);
-      await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      await queryClient.invalidateQueries({
-        queryKey: ["public-profile", trimmedUsername],
-      });
       if (previousUsername !== trimmedUsername) {
         await queryClient.invalidateQueries({
           queryKey: ["public-profile", previousUsername],

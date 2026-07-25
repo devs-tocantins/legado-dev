@@ -28,7 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { getApiError } from "@/lib/utils";
+import { getApiError, formatCurrency } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
@@ -371,7 +371,7 @@ function CourseCard({
           {course.isFree
             ? "Gratuito"
             : course.price
-              ? `R$ ${course.price}`
+              ? formatCurrency(course.price)
               : "Pago"}
         </span>
         {course.language && (
