@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GraduationCap, Plus, Star, Coins, Gift } from "lucide-react";
-import { cn, getApiError } from "@/lib/utils";
+import { cn, getApiError, formatCurrency } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { getCoursePalette } from "@/lib/course-colors";
 
@@ -281,7 +281,7 @@ function CourseCard({ course }: { course: Course }) {
           ) : (
             <>
               <Coins className="h-3 w-3" />
-              {course.price ? `R$ ${course.price}` : "Pago"}
+              {course.price ? formatCurrency(course.price) : "Pago"}
             </>
           )}
         </span>

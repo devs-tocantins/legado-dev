@@ -47,18 +47,16 @@ import {
   ExternalLink,
   Gift,
   GraduationCap,
-  Loader2,
   Map,
   Plus,
   ShieldCheck,
   Sparkles,
   Star,
   Trophy,
-  Upload,
-  X,
   XCircle,
 } from "lucide-react";
-import { cn, getApiError } from "@/lib/utils";
+import { cn, getApiError, formatCurrency } from "@/lib/utils";
+import { FileUploadDropzone } from "@/components/file-upload-dropzone";
 import { getCoursePalette } from "@/lib/course-colors";
 
 const AUTO_COMPLETABLE_TYPES = new Set<TrackItemType>([
@@ -176,9 +174,7 @@ function ProofSubmissionForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processProofSelect = async (file: File) => {
     if (file.size > MAX_PROOF_FILE_SIZE) {
       setError("O arquivo deve ter no máximo 5 MB.");
       return;
@@ -270,43 +266,16 @@ function ProofSubmissionForm({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-muted-foreground">
-          ou anexe um print (opcional)
-        </label>
-        {proofFile ? (
-          <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
-            {uploading ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-              <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
-            )}
-            <span className="flex-1 truncate text-sm">{proofFile.name}</span>
-            {!uploading && (
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                className="shrink-0 text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        ) : (
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
-            <Upload className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
-              JPG, PNG ou GIF · Máx. 5 MB
-            </span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif"
-              className="sr-only"
-              onChange={handleFileChange}
-            />
-          </label>
-        )}
-      </div>
+      <FileUploadDropzone
+        label="ou anexe um print (opcional)"
+        file={proofFile}
+        fileUrl={uploadedUrl}
+        onFileSelect={processProofSelect}
+        onFileRemove={handleRemoveFile}
+        uploading={uploading}
+        accept="image/jpeg,image/png,image/gif"
+        hintText="JPG, PNG ou GIF · Máx. 5 MB"
+      />
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-muted-foreground">
@@ -318,7 +287,12 @@ function ProofSubmissionForm({
           rows={3}
           maxLength={2000}
           placeholder="Algo que ajude na avaliação..."
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          onInput={(e) => {
+            e.currentTarget.style.height = "auto";
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
+          style={{ fieldSizing: "content" }}
+          className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
@@ -443,7 +417,12 @@ function RateMaterialDialog({
             rows={3}
             maxLength={1000}
             placeholder="O que achou deste material? (opcional)"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="flex gap-2 pt-1">
@@ -555,7 +534,12 @@ function SuggestMaterialDialog({
               rows={3}
               maxLength={1000}
               placeholder="Resumo curto do que o material aborda..."
-              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              onInput={(e) => {
+                e.currentTarget.style.height = "auto";
+                e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+              }}
+              style={{ fieldSizing: "content" }}
+              className="mt-1 w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -747,7 +731,7 @@ function CourseTopicSection({ item }: { item: TrackItem }) {
                       ) : (
                         <>
                           <Coins className="h-3 w-3" />
-                          {course.price ? `R$ ${course.price}` : "Pago"}
+                          {course.price ? formatCurrency(course.price) : "Pago"}
                         </>
                       )}
                     </span>
@@ -1220,9 +1204,9 @@ function CompleteMilestonePageContent() {
                       conteúdo como concluído.
                     </div>
                   ) : (
-                    <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 sm:flex-row sm:items-center">
-                      <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
-                      <div className="flex-1">
+                    <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-border p-4 md:flex-row md:items-center">
+                      <Circle className="hidden h-6 w-6 shrink-0 text-muted-foreground md:block" />
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold">
                           Já estudei este conteúdo
                         </p>
@@ -1232,13 +1216,13 @@ function CompleteMilestonePageContent() {
                             : "Marque quando concluir para seguir na trilha."}
                         </p>
                       </div>
-                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                      <div className="flex w-full shrink-0 flex-col gap-2 md:w-auto md:flex-row">
                         {canSkipToProof && (
                           <Button
                             variant="outline"
                             onClick={handleSkipToNextProof}
                             disabled={completing || skipping}
-                            className="gap-1.5 rounded-xl"
+                            className="w-full md:w-auto gap-1.5 rounded-xl"
                           >
                             <ShieldCheck className="h-4 w-4" />
                             {skipping ? "..." : "Já domino esse assunto"}
@@ -1247,7 +1231,7 @@ function CompleteMilestonePageContent() {
                         <Button
                           onClick={handleComplete}
                           disabled={completing || skipping}
-                          className="gap-1.5 rounded-xl"
+                          className="w-full md:w-auto gap-1.5 rounded-xl"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           {completing ? "..." : "Concluir"}

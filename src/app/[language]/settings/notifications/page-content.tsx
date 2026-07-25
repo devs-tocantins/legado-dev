@@ -82,8 +82,17 @@ function NotificationSettingsPageContent() {
     },
   });
 
+  const formatPhoneInput = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10)
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
   const { mutate: update, isPending } = useMutation({
-    mutationFn: (
+    mutationFn: async (
       data: Partial<
         Pick<
           NotificationPreference,
@@ -94,9 +103,15 @@ function NotificationSettingsPageContent() {
           | "whatsappOnEventChanges"
         >
       >
-    ) => updatePrefs(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+    ) => {
+      const res = await updatePrefs(data);
+      if (res.status === HTTP_CODES_ENUM.OK) return res.data;
+      throw new Error("Erro ao salvar.");
+    },
+    onSuccess: (updatedPrefs) => {
+      if (updatedPrefs) {
+        queryClient.setQueryData(["notification-preferences"], updatedPrefs);
+      }
       enqueueSnackbar("Preferências salvas.", { variant: "success" });
     },
     onError: () => enqueueSnackbar("Erro ao salvar.", { variant: "error" }),
@@ -115,8 +130,8 @@ function NotificationSettingsPageContent() {
         }
         return data;
       },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      onSuccess: (updatedProfile) => {
+        queryClient.setQueryData(["my-profile"], updatedProfile);
         enqueueSnackbar("Número de WhatsApp salvo!", { variant: "success" });
       },
       onError: (err: Error) =>
@@ -127,13 +142,14 @@ function NotificationSettingsPageContent() {
 
   const handleSaveWhatsapp = () => {
     const digits = whatsappInput.replace(/\D/g, "");
-    if (digits.length < 10 || digits.length > 13) {
+    if (digits.length < 10 || digits.length > 11) {
       enqueueSnackbar("Informe um número válido com DDD.", {
         variant: "error",
       });
       return;
     }
-    const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
+    const withCountryCode =
+      digits.startsWith("55") && digits.length >= 12 ? digits : `55${digits}`;
     saveWhatsappNumber(withCountryCode);
   };
 
@@ -232,7 +248,9 @@ function NotificationSettingsPageContent() {
                 type="tel"
                 placeholder="(63) 99999-9999"
                 value={whatsappInput}
-                onChange={(e) => setWhatsappInput(e.target.value)}
+                onChange={(e) =>
+                  setWhatsappInput(formatPhoneInput(e.target.value))
+                }
                 disabled={isSavingWhatsapp}
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
               />

@@ -623,7 +623,12 @@ function Profile() {
                 onChange={(e) => setTokenMessage(e.target.value)}
                 placeholder="Obrigado pela ajuda..."
                 rows={3}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                onInput={(e) => {
+                  e.currentTarget.style.height = "auto";
+                  e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                }}
+                style={{ fieldSizing: "content" }}
+                className="w-full field-sizing-content min-h-[75px] rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>

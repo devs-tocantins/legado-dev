@@ -13,16 +13,9 @@ import {
   EventModality,
 } from "@/services/api/types/event";
 import { FileEntity } from "@/services/api/types/file-entity";
+import { FileUploadDropzone } from "@/components/file-upload-dropzone";
 import { Button } from "@/components/ui/button";
-import {
-  Upload,
-  X,
-  Loader2,
-  Check,
-  MapPin,
-  Video,
-  Shuffle,
-} from "lucide-react";
+import { Check, MapPin, Video, Shuffle } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import {
@@ -124,7 +117,6 @@ export function EventForm({
     buildInitialValues(event)
   );
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -149,37 +141,6 @@ export function EventForm({
       }
     } finally {
       setUploadingCover(false);
-    }
-  };
-
-  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await processFileUpload(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        enqueueSnackbar("Por favor, envie apenas arquivos de imagem.", {
-          variant: "error",
-        });
-        return;
-      }
-      await processFileUpload(file);
     }
   };
 
@@ -366,74 +327,17 @@ export function EventForm({
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-muted-foreground">
-            Capa (opcional)
-          </label>
-          {values.coverImage ? (
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-secondary px-3 py-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={values.coverImage.path}
-                alt=""
-                className="h-10 w-10 rounded object-cover"
-              />
-              <span className="text-sm flex-1 truncate">
-                Imagem selecionada
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setValues((prev) => ({ ...prev, coverImage: null }))
-                }
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <label
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={cn(
-                "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed px-3 py-6 text-center transition-colors",
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-secondary hover:border-primary/50"
-              )}
-            >
-              {uploadingCover ? (
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              ) : (
-                <Upload
-                  className={cn(
-                    "h-5 w-5",
-                    isDragging ? "text-primary" : "text-muted-foreground"
-                  )}
-                />
-              )}
-              <span
-                className={cn(
-                  "text-xs",
-                  isDragging
-                    ? "text-primary font-medium"
-                    : "text-muted-foreground"
-                )}
-              >
-                Arraste uma imagem ou clique para enviar · 1200×630px
-                recomendado
-              </span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={handleCoverChange}
-                disabled={uploadingCover}
-              />
-            </label>
-          )}
-        </div>
+        <FileUploadDropzone
+          label="Capa (opcional)"
+          fileUrl={values.coverImage?.path}
+          onFileSelect={processFileUpload}
+          onFileRemove={() =>
+            setValues((prev) => ({ ...prev, coverImage: null }))
+          }
+          uploading={uploadingCover}
+          accept="image/jpeg,image/png,image/webp"
+          hintText="Arraste uma imagem ou clique para enviar · 1200×630px recomendado"
+        />
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 

@@ -74,7 +74,7 @@ import {
   Video,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { cn, getApiError, formatTimeAgo } from "@/lib/utils";
+import { cn, getApiError, formatTimeAgo, formatCurrency } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "@/components/link";
 
@@ -389,7 +389,12 @@ function DetailModal({
                   placeholder="Explique o motivo da rejeição..."
                   rows={3}
                   maxLength={500}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  onInput={(e) => {
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                  }}
+                  style={{ fieldSizing: "content" }}
+                  className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <Button
                   variant="destructive"
@@ -701,7 +706,12 @@ function TrilhaDetailModal({
                   placeholder="Explique o que precisa ser corrigido ou complementado..."
                   rows={3}
                   maxLength={500}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  onInput={(e) => {
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                  }}
+                  style={{ fieldSizing: "content" }}
+                  className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <Button
                   variant="destructive"
@@ -1344,7 +1354,7 @@ function CourseRow({
             ) : (
               <>
                 <Coins className="h-3 w-3" />
-                {course.price ? `R$ ${course.price}` : "Pago"}
+                {course.price ? formatCurrency(course.price) : "Pago"}
               </>
             )}
           </span>
@@ -1579,7 +1589,12 @@ function EventRow({
             placeholder="Explique o motivo da rejeição (ex: fora do foco de TI, informações incompletas...)"
             rows={3}
             maxLength={500}
-            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] resize-none"
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] field-sizing-content min-h-[70px]"
           />
           <div className="flex justify-end gap-2">
             <Button

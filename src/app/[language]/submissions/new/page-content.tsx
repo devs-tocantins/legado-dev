@@ -21,9 +21,6 @@ import {
   CheckCircle2,
   RotateCcw,
   ClipboardList,
-  Upload,
-  X,
-  Loader2,
   ArrowRight,
   CalendarDays,
 } from "lucide-react";
@@ -33,6 +30,7 @@ import useLanguage from "@/services/i18n/use-language";
 import { useFileUploadService } from "@/services/api/services/files";
 import { MarkdownContent, MarkdownEditor } from "@/components/markdown-editor";
 import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
+import { FileUploadDropzone } from "@/components/file-upload-dropzone";
 
 function formatRewardLabel(activity: Activity): string {
   if (activity.effortTiers && activity.effortTiers.length > 0) {
@@ -115,12 +113,7 @@ function NewSubmissionPageContent() {
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-  const handleProofFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processProofSelect = async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
       setProofError("O arquivo deve ter no máximo 5 MB.");
       return;
@@ -504,60 +497,22 @@ function NewSubmissionPageContent() {
 
         {/* Proof file upload (required) */}
         {selectedActivity?.requiresProof && (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4 text-amber-500" />
-              Comprovante <span className="text-destructive">*</span>
-            </label>
-            {proofFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
-                {uploadingProof ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
-                )}
-                <span className="text-sm truncate flex-1">
-                  {proofFile.name}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-                {!uploadingProof && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveProof}
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <label
-                className={cn(
-                  "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
-                  proofError && "border-destructive"
-                )}
-              >
-                <Upload className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">
-                  Clique para selecionar um arquivo
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  JPG, PNG ou GIF · Máx. 5 MB
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif"
-                  className="sr-only"
-                  onChange={handleProofFileChange}
-                />
-              </label>
-            )}
-            {proofError && (
-              <p className="text-xs text-destructive">{proofError}</p>
-            )}
-          </div>
+          <FileUploadDropzone
+            label={
+              <span className="flex items-center gap-1.5 font-medium text-sm">
+                <FileCheck className="h-4 w-4 text-amber-500" />
+                Comprovante <span className="text-destructive">*</span>
+              </span>
+            }
+            file={proofFile}
+            fileUrl={proofUploadedUrl}
+            onFileSelect={processProofSelect}
+            onFileRemove={handleRemoveProof}
+            uploading={uploadingProof}
+            accept="image/jpeg,image/png,image/gif"
+            hintText="Arraste ou clique para selecionar (JPG, PNG ou GIF · Máx. 5 MB)"
+            error={proofError}
+          />
         )}
 
         {/* Activity date (required) */}
@@ -645,52 +600,22 @@ function NewSubmissionPageContent() {
 
         {/* Proof file upload (optional) */}
         {selectedActivity && !selectedActivity.requiresProof && (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4" />
-              Comprovante (opcional)
-            </label>
-            {proofFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
-                {uploadingProof ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
-                )}
-                <span className="text-sm truncate flex-1">
-                  {proofFile.name}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-                {!uploadingProof && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveProof}
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  JPG, PNG ou GIF · Máx. 5 MB (opcional)
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif"
-                  className="sr-only"
-                  onChange={handleProofFileChange}
-                />
-              </label>
-            )}
-            {proofError && (
-              <p className="text-xs text-destructive">{proofError}</p>
-            )}
-          </div>
+          <FileUploadDropzone
+            label={
+              <span className="flex items-center gap-1.5 font-medium text-sm text-muted-foreground">
+                <FileCheck className="h-4 w-4" />
+                Comprovante (opcional)
+              </span>
+            }
+            file={proofFile}
+            fileUrl={proofUploadedUrl}
+            onFileSelect={processProofSelect}
+            onFileRemove={handleRemoveProof}
+            uploading={uploadingProof}
+            accept="image/jpeg,image/png,image/gif"
+            hintText="Arraste ou clique para selecionar (JPG, PNG ou GIF · Máx. 5 MB)"
+            error={proofError}
+          />
         )}
 
         {/* Actions */}
