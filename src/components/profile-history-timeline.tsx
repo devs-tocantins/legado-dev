@@ -2,7 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useGetProofPortfolioService } from "@/services/api/services/learning-tracks";
+import {
+  useGetProofPortfolioService,
+  useGetModerationHistoryService,
+} from "@/services/api/services/learning-tracks";
 import { useGetProfileApprovedSubmissionsService } from "@/services/api/services/gamification-profiles";
 import { useGetProfileRankingHistoryService } from "@/services/api/services/ranking-snapshots";
 import { useGetActivitiesService } from "@/services/api/services/activities";
@@ -32,7 +35,11 @@ import {
   Flag,
 } from "lucide-react";
 
-export type HistoryEventType = "trilha" | "voluntariado" | "ranking";
+export type HistoryEventType =
+  | "trilha"
+  | "voluntariado"
+  | "ranking"
+  | "moderation";
 
 export interface HistoryEventItem {
   id: string;
@@ -300,6 +307,7 @@ export function ProfileHistoryTimeline({
   const fetchApprovedSubmissions = useGetProfileApprovedSubmissionsService();
   const fetchRankingHistory = useGetProfileRankingHistoryService();
   const fetchActivities = useGetActivitiesService();
+  const fetchModerationHistory = useGetModerationHistoryService();
 
   const { data: proofPortfolio, isLoading: loadingPortfolio } = useQuery({
     queryKey: ["public-profile-portfolio", profileId],
@@ -333,6 +341,17 @@ export function ProfileHistoryTimeline({
     },
     enabled: !!profileId,
   });
+
+  const { data: moderationHistoryData, isLoading: loadingModeration } =
+    useQuery({
+      queryKey: ["public-profile-moderation", profileId],
+      queryFn: async () => {
+        const { status, data } = await fetchModerationHistory(profileId);
+        if (status === HTTP_CODES_ENUM.OK && Array.isArray(data)) return data;
+        return [];
+      },
+      enabled: !!profileId,
+    });
 
   const { data: activitiesData } = useQuery({
     queryKey: ["activities-map"],
@@ -409,20 +428,45 @@ export function ProfileHistoryTimeline({
       }
     }
 
+    // 4. Moderação
+    if (moderationHistoryData) {
+      for (const mod of moderationHistoryData) {
+        events.push({
+          id: `moderation-${mod.id}`,
+          type: "moderation",
+          date: mod.createdAt,
+          title: mod.description,
+          subtitle: "Recompensa de Moderação",
+          xp: mod.amount,
+        });
+      }
+    }
+
     // Ordenar por data decrescente (mais recente primeiro)
     events.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     return events;
-  }, [proofPortfolio, submissionsData, rankingHistoryData, activityMap]);
+  }, [
+    proofPortfolio,
+    submissionsData,
+    rankingHistoryData,
+    moderationHistoryData,
+    activityMap,
+  ]);
 
-  const isLoading = loadingPortfolio || loadingSubmissions || loadingRanking;
+  const isLoading =
+    loadingPortfolio ||
+    loadingSubmissions ||
+    loadingRanking ||
+    loadingModeration;
 
   const EVENT_ICON: Record<HistoryEventType, string> = {
     trilha: "🎓",
     voluntariado: "🙌",
     ranking: "🏆",
+    moderation: "🛡️",
   };
 
   return (

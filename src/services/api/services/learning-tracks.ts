@@ -184,6 +184,30 @@ export function useGetProofPortfolioService() {
   );
 }
 
+export type ModerationHistoryItem = {
+  id: string;
+  amount: number;
+  description: string;
+  createdAt: string;
+};
+
+export function useGetModerationHistoryService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (profileId: string, requestConfig?: RequestConfigType) => {
+      return fetch(
+        `${API_URL}/api/v1/profile-portfolio/${profileId}/moderation-history`,
+        {
+          method: "GET",
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<ModerationHistoryItem[]>);
+    },
+    [fetch]
+  );
+}
+
 // ─── Admin: Learning Track CRUD ────────────────────────────────────────────
 
 export type CreateLearningTrackRequest = {
