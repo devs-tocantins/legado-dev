@@ -12,6 +12,11 @@ import {
   useGetMySubmissionsService,
   useCancelSubmissionService,
 } from "@/services/api/services/submissions";
+import {
+  useGetModerationHistoryService,
+  ModerationHistoryItem,
+} from "@/services/api/services/learning-tracks";
+import useAuth from "@/services/auth/use-auth";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import {
@@ -30,6 +35,7 @@ import {
   XCircle,
   ChevronRight,
   Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -179,6 +185,34 @@ function SubmissionRow({
   );
 }
 
+function ModerationHistoryRow({ item }: { item: ModerationHistoryItem }) {
+  return (
+    <div className="flex flex-col gap-0 py-3 border-b last:border-0">
+      <div className="flex items-center gap-3">
+        <ShieldCheck className="h-4 w-4 shrink-0 text-indigo-500" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.description}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-indigo-500 font-medium">
+              Recompensa de Moderação
+            </span>
+            <span className="text-xs font-semibold font-mono text-emerald-500">
+              +{item.amount} XP
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {new Date(item.createdAt).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const FILTER_LABELS: Record<StatusFilter, string> = {
   ALL: "Todas",
   PENDING: "Pendentes",
@@ -187,7 +221,9 @@ const FILTER_LABELS: Record<StatusFilter, string> = {
 };
 
 function SubmissionsPageContent() {
+  const { user } = useAuth();
   const fetch = useGetMySubmissionsService();
+  const fetchModerationHistory = useGetModerationHistoryService();
   const fetchActivities = useGetActivitiesService();
   const cancelSubmission = useCancelSubmissionService();
   const queryClient = useQueryClient();
@@ -246,11 +282,48 @@ function SubmissionsPageContent() {
     () => data?.pages.flatMap((p) => p?.data ?? []) ?? [],
     [data]
   );
+  const { data: moderationHistoryData } = useQuery({
+    queryKey: ["moderation-history", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { status, data } = await fetchModerationHistory(user.id.toString());
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return [];
+    },
+    enabled: !!user?.id,
+  });
 
-  const filtered = useMemo(() => {
-    if (statusFilter === "ALL") return allSubmissions;
-    return allSubmissions.filter((s) => s.status === statusFilter);
-  }, [allSubmissions, statusFilter]);
+  const mixedFiltered = useMemo(() => {
+    let baseFiltered = allSubmissions;
+    if (statusFilter !== "ALL") {
+      baseFiltered = allSubmissions.filter((s) => s.status === statusFilter);
+    }
+
+    type MixedItem =
+      | { type: "submission"; data: Submission }
+      | { type: "moderation"; data: ModerationHistoryItem };
+
+    const arr: MixedItem[] = baseFiltered.map((s) => ({
+      type: "submission",
+      data: s,
+    }));
+
+    if (
+      (statusFilter === "ALL" || statusFilter === "APPROVED") &&
+      moderationHistoryData
+    ) {
+      for (const m of moderationHistoryData) {
+        arr.push({ type: "moderation", data: m });
+      }
+    }
+
+    arr.sort(
+      (a, b) =>
+        new Date(b.data.createdAt).getTime() -
+        new Date(a.data.createdAt).getTime()
+    );
+    return arr;
+  }, [allSubmissions, statusFilter, moderationHistoryData]);
 
   const counts = useMemo(
     () => ({
@@ -322,7 +395,7 @@ function SubmissionsPageContent() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : mixedFiltered.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
             title={
@@ -343,15 +416,19 @@ function SubmissionsPageContent() {
           />
         ) : (
           <div className="px-4">
-            {filtered.map((sub) => (
-              <SubmissionRow
-                key={sub.id}
-                sub={sub}
-                activityTitle={activityMap.get(sub.activityId)}
-                onCancel={doCancel}
-                canceling={canceling}
-              />
-            ))}
+            {mixedFiltered.map((item) =>
+              item.type === "submission" ? (
+                <SubmissionRow
+                  key={item.data.id}
+                  sub={item.data}
+                  activityTitle={activityMap.get(item.data.activityId)}
+                  onCancel={doCancel}
+                  canceling={canceling}
+                />
+              ) : (
+                <ModerationHistoryRow key={item.data.id} item={item.data} />
+              )
+            )}
           </div>
         )}
       </div>
