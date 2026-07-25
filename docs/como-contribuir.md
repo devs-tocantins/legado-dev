@@ -1,6 +1,6 @@
 # Como Contribuir
 
-Bem-vindo, dev! Este guia define o fluxo de trabalho para contribuir com o frontend do Motor de Engajamento.
+Bem-vindo, dev! Este guia define o fluxo de trabalho para contribuir com o frontend do legado.dev.
 
 ---
 
@@ -81,8 +81,8 @@ Ao puxar uma issue, abra um chat com sua IA de preferência e use este prompt:
 Você é meu par de programação Sênior especializado em Next.js e React.
 
 Contexto do Projeto:
-Estamos desenvolvendo o frontend do Motor de Engajamento da comunidade Devs Tocantins.
-Stack: Next.js (App Router), TypeScript, Material UI, React Hook Form, React Query, i18n (pt-BR padrão).
+Estamos desenvolvendo o frontend do legado.dev da comunidade Devs Tocantins.
+Stack: Next.js (App Router), TypeScript, shadcn/ui + Tailwind CSS, React Hook Form, React Query, i18n (pt-BR padrão).
 
 INSTRUÇÃO OBRIGATÓRIA:
 Antes de escrever código, leia os arquivos na pasta docs/ deste repositório:

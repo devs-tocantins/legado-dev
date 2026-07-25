@@ -1,3 +1,5 @@
+> **Nota de Arquivamento (25/07/2026):** Checklist do MVP inicial, já 100% concluído; o tracker vivo atual é TASKS.md.
+
 # Plano de Implementação do Design — Legado Tech Frontend
 
 > **Como funciona este documento:**

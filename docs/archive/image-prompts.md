@@ -1,3 +1,5 @@
+> **Nota de Arquivamento (25/07/2026):** Prompts de uma paleta de cores antiga (azul/roxo) que contradiz a paleta real atual documentada em design-manual.md (azul Tocantins + âmbar); sem uso ativo.
+
 # Prompts de Imagem — Legado Tech / Devs Tocantins
 
 > **Como usar este documento:**

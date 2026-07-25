@@ -32,7 +32,7 @@ URL base local: `http://localhost:3000/api/v1`
 
 ---
 
-## Perfil de Gamificação
+## Perfil de Gamificação e Rankings
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
@@ -43,22 +43,22 @@ URL base local: `http://localhost:3000/api/v1`
 | `GET` | `/gamification-profiles/:id` | `[PÚBLICO]` Perfil público por ID |
 | `GET` | `/gamification-profiles/:id/approved-submissions` | `[PÚBLICO]` Submissões aprovadas de um perfil (paginado) |
 | `POST` | `/gamification-profiles/transfer` | Transfere tokens de gratidão para outro membro |
-| `GET` | `/gamification-profiles` | `[ADMIN]` Lista todos os perfis (paginado, filtrado, ordenado) |
+| `GET` | `/gamification-profiles` | `[PÚBLICO]` Lista/ordena perfis para o ranking (parâmetros `page`, `limit`, `sort`) |
 | `POST` | `/gamification-profiles` | `[ADMIN]` Cria perfil manualmente |
 | `PATCH` | `/gamification-profiles/:id` | `[ADMIN]` Edita perfil de gamificação |
-| `POST` | `/gamification-profiles/:id/penalty` | `[ADMIN]` Aplica penalidade (deduz XP) |
+| `POST` | `/gamification-profiles/:profileId/penalty` | `[ADMIN]` Aplica penalidade (deduz XP) |
 | `DELETE` | `/gamification-profiles/:id` | `[ADMIN]` Remove perfil |
 
 **Body de `POST /gamification-profiles/transfer`:**
 ```json
 {
-  "toUsername": "handle-do-destinatario",
+  "recipientProfileId": "uuid-do-destinatario",
   "amount": 2,
-  "feedbackMessage": "Valeu pela ajuda com o TypeScript!"
+  "message": "Valeu pela ajuda com o TypeScript!"
 }
 ```
 
-**Body de `POST /gamification-profiles/:id/penalty`:**
+**Body de `POST /gamification-profiles/:profileId/penalty`:**
 ```json
 {
   "amount": 50,
@@ -80,7 +80,83 @@ URL base local: `http://localhost:3000/api/v1`
   "currentLevel": "Contribuidor"
 }
 ```
-> Nota: `gratitudeTokens` são renovados diariamente para o valor padrão (ex: 5).
+> Nota: `gratitudeTokens` são renovados mensalmente no dia 1 de cada mês.
+
+---
+
+## Ranking Snapshots (Mural de Campeões)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/ranking-snapshots/champion` | `[PÚBLICO]` Retorna o campeão do período encerrado (`type: "monthly"` ou `"yearly"`) |
+| `GET` | `/ranking-snapshots/profile/:profileId` | `[PÚBLICO]` Histórico de posições e campeonatos de um perfil |
+
+---
+
+## Trilhas de Aprendizado (`learning-tracks`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/learning-tracks` | `[PÚBLICO]` Lista trilhas de aprendizado ativas |
+| `GET` | `/learning-tracks/:id` | `[PÚBLICO]` Detalhes da trilha |
+| `GET` | `/learning-tracks/:id/overview` | `[PÚBLICO]` Visão geral das seções e itens da trilha |
+| `GET` | `/learning-tracks/:id/progress` | Progresso do usuário autenticado na trilha |
+| `POST` | `/track-enrollments` | Matricular-se em uma trilha |
+| `POST` | `/track-items/:id/complete` | Marcar item/marco da trilha como concluído |
+| `GET` | `/track-items/:id` | Detalhes de um item da trilha |
+| `GET` | `/profile-portfolio/:profileId` | `[PÚBLICO]` Portfólio de comprovação de itens e marcos concluídos |
+| `POST` | `/learning-tracks` | `[ADMIN]` Criar nova trilha |
+| `PATCH` | `/learning-tracks/:id` | `[ADMIN]` Atualizar trilha |
+| `DELETE` | `/learning-tracks/:id` | `[ADMIN]` Remover trilha |
+| `POST` | `/track-sections` | `[ADMIN]` Criar seção da trilha |
+| `PATCH` | `/track-sections/:id` | `[ADMIN]` Editar seção da trilha |
+| `DELETE` | `/track-sections/:id` | `[ADMIN]` Deletar seção da trilha |
+| `POST` | `/track-items` | `[ADMIN]` Criar item de trilha |
+| `PATCH` | `/track-items/:id` | `[ADMIN]` Editar item de trilha |
+| `DELETE` | `/track-items/:id` | `[ADMIN]` Deletar item de trilha |
+| `POST` | `/track-suggestions` | Enviar sugestão de nova trilha |
+| `GET` | `/track-suggestions` | `[ADMIN]` Listar sugestões de trilhas |
+| `PATCH` | `/track-suggestions/:id/review` | `[ADMIN]` Marcar sugestão como revisada |
+
+---
+
+## Eventos
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/events` | `[PÚBLICO]` Lista eventos com suporte a filtros (`category`, `modality`) |
+| `GET` | `/events/mine` | Eventos criados pelo usuário logado ou que se inscreveu |
+| `GET` | `/events/pending` | `[ADMIN/MODERADOR]` Eventos aguardando aprovação |
+| `GET` | `/events/all` | `[ADMIN/MODERADOR]` Todos os eventos cadastrados |
+| `GET` | `/events/:id` | `[PÚBLICO]` Detalhes de um evento |
+| `GET` | `/events/:id/manage` | Painel de gestão do evento |
+| `POST` | `/events` | Propor / criar novo evento |
+| `PATCH` | `/events/:id` | Editar dados do evento |
+| `PATCH` | `/events/:id/review` | `[ADMIN/MODERADOR]` Aprovar ou rejeitar evento proposto |
+| `DELETE` | `/events/:id` | Excluir evento |
+| `PATCH` | `/events/:id/cancel` | Cancelar evento |
+| `POST` | `/events/:id/subscribe` | Inscrever-se em um evento |
+| `DELETE` | `/events/:id/subscribe` | Cancelar inscrição em um evento |
+| `GET` | `/events/:id/subscription` | Verificar status da inscrição no evento (`{ subscribed: boolean }`) |
+
+---
+
+## Cursos Comunitários e Avaliações
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/courses` | `[PÚBLICO]` Lista cursos aprovados |
+| `GET` | `/courses/pending` | `[ADMIN/MODERADOR]` Cursos pendentes de revisão |
+| `GET` | `/courses/:courseId` | `[PÚBLICO]` Detalhes de um curso |
+| `POST` | `/courses` | Submeter / sugerir um novo curso |
+| `PATCH` | `/courses/:id` | `[ADMIN]` Editar curso |
+| `PATCH` | `/courses/:id/review` | `[ADMIN/MODERADOR]` Aprovar (`VERIFIED`) ou rejeitar curso |
+| `DELETE` | `/courses/:id` | `[ADMIN]` Remover curso |
+| `GET` | `/course-reviews/by-course/:courseId` | `[PÚBLICO]` Lista avaliações de um curso |
+| `GET` | `/course-reviews/my-review/:courseId` | Minha avaliação neste curso |
+| `POST` | `/course-reviews` | Enviar avaliação e nota (1 a 5 estrelas) |
+| `PATCH` | `/course-reviews/:id` | Atualizar minha avaliação |
+| `DELETE` | `/course-reviews/:id` | Excluir minha avaliação |
 
 ---
 
@@ -144,6 +220,16 @@ URL base local: `http://localhost:3000/api/v1`
 
 ---
 
+## Denúncias de Submissões (`contribution-reports`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/contribution-reports` | Envia uma denúncia sobre submissão inadequada ou suspeita |
+| `GET` | `/contribution-reports/admin/pending` | `[ADMIN/MODERADOR]` Lista denúncias pendentes de análise |
+| `PATCH` | `/contribution-reports/admin/:id/review` | `[ADMIN/MODERADOR]` Revisa denúncia (`DISMISSED` ou `UPHELD`) |
+
+---
+
 ## Missões
 
 | Método | Rota | Descrição |
@@ -159,33 +245,6 @@ URL base local: `http://localhost:3000/api/v1`
 | `GET` | `/missions/:id/submissions` | `[ADMIN/MODERADOR]` Lista submissões de uma missão |
 | `PATCH` | `/missions/:id/submissions/:submissionId/review` | `[ADMIN/MODERADOR]` Aprova (define vencedor) ou rejeita submissão |
 
-**Campos de uma Mission:**
-- `title` — Nome da missão
-- `description` — Descrição em markdown (nullable)
-- `requirements` — Critérios detalhados em markdown (nullable)
-- `xpReward` — XP concedido ao vencedor
-- `status` — `OPEN` | `CLOSED`
-- `winnerId` — profileId do vencedor (definido ao aprovar; as demais submissões são rejeitadas automaticamente)
-- `isSecret` — Se true, não aparece na lista pública
-
-**Body de `POST /missions/:id/submit`:**
-```json
-{
-  "proofUrl": "https://link-para-comprovante.com",
-  "description": "Explicação do que foi entregue em markdown"
-}
-```
-
-**Body de `PATCH /missions/:id/submissions/:submissionId/review`:**
-```json
-{
-  "status": "APPROVED",
-  "feedback": "Melhor solução entregue!"
-}
-```
-
-> Ao aprovar uma submissão de missão, o sistema fecha a missão (`status: CLOSED`), define o `winnerId`, concede o `xpReward` e rejeita todas as outras submissões pendentes automaticamente.
-
 ---
 
 ## Badges
@@ -200,15 +259,6 @@ URL base local: `http://localhost:3000/api/v1`
 | `DELETE` | `/badges/:id` | `[ADMIN]` Remove badge |
 | `POST` | `/badges/grant` | `[ADMIN]` Concede badge manualmente a um perfil |
 
-**Campos de um Badge:**
-- `name` — Nome do badge
-- `description` — Descrição do critério
-- `imageUrl` — URL da imagem (nullable)
-- `category` — `MILESTONE` | `RANKING` | `PARTICIPATION` | `SPECIAL`
-- `criteriaType` — `AUTOMATIC` | `MANUAL`
-- `criteriaConfig` — Configuração do critério automático (ex: `{ "type": "submissions_approved", "threshold": 10 }`)
-- `isActive` — Se aparece no catálogo público
-
 ---
 
 ## Transações
@@ -222,21 +272,9 @@ URL base local: `http://localhost:3000/api/v1`
 | `PATCH` | `/transactions/:id` | `[ADMIN]` Edita transação |
 | `DELETE` | `/transactions/:id` | `[ADMIN]` Remove transação |
 
-**Tipos de transação (`type`):** `SUBMISSION_APPROVED` | `GRATITUDE_RECEIVED` | `GRATITUDE_SENT` | `AUDIT_REWARD` | `PENALTY` | `MONTHLY_RESET` | `MISSION_WON`
-
 ---
 
-## Rankings
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| `GET` | `/rankings/monthly` | `[PÚBLICO]` Top membros do mês (por `currentMonthlyXp`) |
-| `GET` | `/rankings/yearly` | `[PÚBLICO]` Top membros do ano (por `currentYearlyXp`) |
-| `GET` | `/rankings/global` | `[PÚBLICO]` Hall da Fama (por `totalXp`) |
-
----
-
-## Notificações
+## Notificações e Preferências
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
@@ -245,7 +283,18 @@ URL base local: `http://localhost:3000/api/v1`
 | `PATCH` | `/notifications/read-all` | Marca todas como lidas |
 | `PATCH` | `/notifications/:id/read` | Marca uma como lida |
 | `GET` | `/notifications/preferences` | Minhas preferências de notificação |
-| `PATCH` | `/notifications/preferences` | Atualiza preferências de notificação |
+| `PATCH` | `/notifications/preferences` | Atualiza preferências de notificação (e-mail / WhatsApp) |
+
+---
+
+## Gestão de WhatsApp (`[ADMIN]`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/whatsapp/admin/status` | `[ADMIN]` Obtém o status da conexão do bot de WhatsApp |
+| `GET` | `/whatsapp/admin/qrcode` | `[ADMIN]` Obtém QR Code para vincular WhatsApp |
+| `POST` | `/whatsapp/admin/logout` | `[ADMIN]` Desconecta o bot |
+| `POST` | `/whatsapp/admin/send-test` | `[ADMIN]` Envia mensagem de teste via WhatsApp |
 
 ---
 
@@ -267,30 +316,7 @@ URL base local: `http://localhost:3000/api/v1`
 | `GET` | `/admin/metrics` | `[ADMIN]` Métricas gerais da plataforma |
 | `GET` | `/admin/health` | `[ADMIN]` Status dos serviços externos (DB, SMTP, Storage) |
 
-**Resposta de `/admin/metrics`:**
-```json
-{
-  "totalUsers": 120,
-  "activeUsers": 98,
-  "bannedUsers": 2,
-  "submissionsPending": 5,
-  "submissionsApprovedThisMonth": 42,
-  "submissionsRejectedThisMonth": 8,
-  "totalXpDistributed": 18500,
-  "tokensInCirculation": 230
-}
-```
-
-**Resposta de `/admin/health`:**
-```json
-{
-  "database": { "ok": true },
-  "smtp": { "ok": true },
-  "storage": { "ok": false, "error": "NoSuchBucket" },
-  "allOk": false
-}
-```
-
 ---
 
 Anterior: [Autenticação](autenticacao.md) | Próximo: [Formulários](formularios.md)
+
