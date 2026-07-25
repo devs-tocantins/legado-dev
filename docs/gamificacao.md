@@ -42,7 +42,7 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 |-------|----|------------|
 | Atividade aprovada | `activity.fixedReward` | Definido pelo admin por atividade (XP de Comunidade) |
 | Token de gratidão recebido | +1 XP por token | Afeta `totalXp` e `currentMonthlyXp` |
-| Revisão de submissão (moderador) | `activity.auditorReward` | Recompensa customizável por atividade |
+| Revisão de submissão aprovada (moderador) | `MODERATOR_REWARD_XP` (fixo, 3 XP) | Paga só quando o moderador **aprova**; rejeição não gera XP. Aparece no Histórico (privado e público) identificado como recompensa de moderação, para transparência |
 | Missão vencida | `mission.xpReward` | Definido pelo admin por missão |
 | Conclusão de item de Trilha | `item.journeyXp` | Concede XP de Jornada (contador separado de aprendizado) |
 | Penalidade (admin) | Negativo (configurável) | Deduz XP por abuso |
