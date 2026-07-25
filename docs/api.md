@@ -175,7 +175,7 @@ URL base local: `http://localhost:3000/api/v1`
 - `title` — Nome da atividade (ex: "Artigo Publicado")
 - `description` — Descrição em markdown
 - `fixedReward` — XP concedido ao aprovado
-- `auditorReward` — XP concedido ao auditor (moderador) ao revisar
+- `effortTiers` — Faixas de esforço opcionais (Pequeno/Médio/Grande/Épico), cada uma com seu próprio XP; se ausente, usa `fixedReward`
 - `requiresProof` — Se exige envio de comprovante (URL ou arquivo)
 - `isHidden` — Se não aparece no catálogo público (apenas via secretCode)
 - `secretCode` — Slug para acesso oculto (eventos/QR Code)
