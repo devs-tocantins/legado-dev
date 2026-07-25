@@ -46,3 +46,6 @@ next-env.d.ts
 docs-backend
 tmp/
 lighthouse*.html
+
+# Local design/screenshot working files - never commit (may contain session data)
+design-reference/
