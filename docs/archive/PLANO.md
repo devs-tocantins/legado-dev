@@ -1,3 +1,5 @@
+> **Nota de Arquivamento (25/07/2026):** Snapshot operacional de abril de 2026, já resolvido; histórico apenas.
+
 # Plano de Pendências — legado.dev
 
 ## Estado atual (2026-04-17)

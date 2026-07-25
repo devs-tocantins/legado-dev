@@ -40,15 +40,24 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 
 | Fonte | XP | Observação |
 |-------|----|------------|
-| Atividade aprovada | `activity.fixedReward` | Definido pelo admin por atividade |
+| Atividade aprovada | `activity.fixedReward` | Definido pelo admin por atividade (XP de Comunidade) |
 | Token de gratidão recebido | +1 XP por token | Afeta `totalXp` e `currentMonthlyXp` |
 | Revisão de submissão (moderador) | `activity.auditorReward` | Recompensa customizável por atividade |
 | Missão vencida | `mission.xpReward` | Definido pelo admin por missão |
+| Conclusão de item de Trilha | `item.journeyXp` | Concede XP de Jornada (contador separado de aprendizado) |
 | Penalidade (admin) | Negativo (configurável) | Deduz XP por abuso |
 
 ---
 
-## Rankings
+## XP de Comunidade vs. XP de Jornada
+
+O sistema diferencia dois tipos de experiência:
+- **XP de Comunidade** (`totalXp`, `currentMonthlyXp`, `currentYearlyXp`): obtido via atividades de voluntariado, missões, moderação e recebimento de tokens de gratidão. Alimenta os níveis e o Leaderboard da comunidade.
+- **XP de Jornada** (`journeyXp`): obtido exclusivamente ao progredir e concluir itens nas **Trilhas de Aprendizado**. É um indicador de evolução técnica individual que não entra nos rankings competitivos da comunidade.
+
+---
+
+## Rankings e Mural de Campeões
 
 | Tipo | Campo base | Reset |
 |------|-----------|-------|
@@ -56,16 +65,21 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 | Anual | `currentYearlyXp` | Dia 1 de janeiro (cron) |
 | Global (Hall da Fama) | `totalXp` | Nunca |
 
-O reset mensal zera `currentMonthlyXp` e o reset diário renova os `gratitudeTokens`. O reset anual zera `currentYearlyXp`. Ambos são executados por cron jobs do NestJS (`@nestjs/schedule`).
+Ao final de cada ciclo (mensal ou anual), o cron armazena um **Ranking Snapshot** imutável com o campeão do período (`xpAtSnapshot`, `periodKey`).
+
+### 🏛️ Mural de Campeões
+No Leaderboard, o **Mural de Campeões** exibe em destaque o campeão do período **JÁ FECHADO** (ex: o vencedor de `2026-06` ou do ano anterior), diferenciando-se da tabela em tempo real que mostra a disputa do período corrente.
+
+O reset mensal zera `currentMonthlyXp` e renova a cota de `gratitudeTokens`. O reset anual zera `currentYearlyXp`. Ambos são executados por cron jobs do NestJS (`@nestjs/schedule`).
 
 ---
 
 ## Tokens de Gratidão (Economia P2P)
 
-- Cada membro recebe uma cota **diária** de tokens de gratidão.
+- Cada membro recebe uma cota **mensal** de tokens de gratidão.
 - Tokens são transferidos para outros membros como reconhecimento por ajudas.
 - Ao receber tokens: +1 XP por token (afeta `totalXp` e `currentMonthlyXp`).
-- Tokens não transferidos expiram no fim de cada dia (reset pelo cron).
+- Tokens não transferidos expiram no fim de cada mês (reset mensal pelo cron).
 - A transferência não passa por moderação — é imediata.
 - Remetente perde tokens; destinatário ganha XP e tokens recebidos ficam registrados na Transaction.
 
@@ -143,6 +157,6 @@ Um perfil só pode ter uma submissão por missão. Tentativa de submeter novamen
 
 | Job | Frequência | O que faz |
 |-----|-----------|-----------|
-| Reset mensal | Todo dia 1 do mês às 00:00 | Zera `currentMonthlyXp` e `gratitudeTokens` de todos os perfis; gera Transaction(MONTHLY_RESET) |
-| Reset anual | Todo dia 1 de janeiro às 00:00 | Zera `currentYearlyXp` de todos os perfis |
+| Reset mensal | Todo dia 1 do mês às 00:00 | Zera `currentMonthlyXp` e renova `gratitudeTokens` de todos os perfis; registra snapshot do ranking e gera Transaction(MONTHLY_RESET) |
+| Reset anual | Todo dia 1 de janeiro às 00:00 | Zera `currentYearlyXp` de todos os perfis e registra snapshot do ranking anual |
 | Verificação de badges | Após aprovar submissão / cron periódico | Verifica critérios automáticos e concede badges não atribuídos |

@@ -1,3 +1,5 @@
+> **Nota de Arquivamento (25/07/2026):** A maioria dos déficits listados já foi resolvida (Cloudflare R2 configurado, WhatsApp implementado, Ranking Snapshot implementado) - não reflete mais os bloqueios atuais.
+
 # Documento de Déficit — Legado Tech Frontend
 
 > Este documento lista tudo que está especificado no Design Manual mas **não pode ser implementado agora** por depender de ativos, serviços ou decisões que ainda não existem. Cada item tem: o que é, por que não dá pra fazer agora, o que é necessário para desbloquear, e o que usar de fallback no interim.

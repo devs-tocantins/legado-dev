@@ -1,3 +1,5 @@
+> **Nota de Arquivamento (25/07/2026):** Todas as 20 issues deste plano já foram implementadas; mantido como registro histórico das decisões de arquitetura (indexação fracionária, soft-delete, etc), não como plano ativo.
+
 # Plano de desenvolvimento — Trilhas de aprendizado (dividido em issues)
 
 > Rascunho de planejamento. Base conceitual/decisões em `plano-engajamento.md`.
