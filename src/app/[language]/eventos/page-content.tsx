@@ -67,7 +67,14 @@ function EventCard({ event }: { event: Event }) {
             className="absolute inset-0 h-full w-full object-cover"
           />
         )}
-        <span className="absolute left-2.5 top-2.5 rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold shadow-sm">
+        <div className="absolute left-2.5 top-2.5 md:hidden flex flex-col gap-1">
+          <span className="rounded bg-background/90 px-2 py-1 text-center font-mono text-[10px] font-bold uppercase leading-tight shadow-sm backdrop-blur-md">
+            {dayNumber(event.startAt)}
+            <br />
+            {monthWeekday(event.startAt).replace(" ", "·")}
+          </span>
+        </div>
+        <span className="absolute right-2.5 top-2.5 md:left-2.5 md:right-auto md:top-2.5 rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold shadow-sm">
           {EVENT_CATEGORY_LABELS[event.category]}
         </span>
       </div>
@@ -168,14 +175,15 @@ function EventsPageContent() {
             </Button>
           )}
           <Button className="gap-2" render={<Link href="/eventos/new" />}>
-            <Plus className="h-4 w-4" />
-            Divulgar evento
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="md:hidden">Divulgar</span>
+            <span className="hidden md:inline">Divulgar evento</span>
           </Button>
         </div>
       </div>
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-5 border-b border-border pb-5">
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-8 flex flex-nowrap md:flex-wrap items-center gap-5 border-b border-border pb-5 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:justify-between">
+        <div className="flex flex-nowrap md:flex-wrap shrink-0 gap-2">
           <button
             onClick={() => setCategory("")}
             className={cn(
@@ -202,7 +210,7 @@ function EventsPageContent() {
             </button>
           ))}
         </div>
-        <div className="flex overflow-hidden rounded-[9px] border border-border bg-card">
+        <div className="flex overflow-hidden rounded-[9px] border border-border bg-card shrink-0">
           <button
             onClick={() => setModality("")}
             className={cn(
@@ -249,9 +257,9 @@ function EventsPageContent() {
             {dateGroups.map((group) => (
               <div
                 key={group.key}
-                className="grid grid-cols-[48px_1fr] gap-5 sm:grid-cols-[64px_1fr] sm:gap-6"
+                className="flex flex-col gap-4 md:grid md:grid-cols-[64px_1fr] md:gap-6"
               >
-                <div className="sticky top-20 flex flex-col items-center pt-0.5">
+                <div className="hidden md:flex sticky top-20 flex-col items-center pt-0.5">
                   <div className="font-heading text-2xl font-bold leading-none sm:text-[26px]">
                     {dayNumber(group.events[0].startAt)}
                   </div>

@@ -40,76 +40,80 @@ function MyEventRow({
   onCancel: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-4.5 rounded-xl border border-border bg-card p-4">
-      <div
-        className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg"
-        style={
-          event.coverImage
-            ? undefined
-            : {
-                backgroundImage:
-                  "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 6px, var(--background) 6px, var(--background) 12px)",
-              }
-        }
-      >
-        {event.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={event.coverImage.path}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="mb-1 font-heading text-[15px] font-semibold">
-          {event.title}
-        </h3>
-        <div className="flex flex-wrap gap-2.5 text-xs text-muted-foreground">
-          <span>{EVENT_CATEGORY_LABELS[event.category]}</span>
-          <span>·</span>
-          <span>{EVENT_MODALITY_LABELS[event.modality]}</span>
-          <span>·</span>
-          <span className="font-mono">
-            {formatEventDate(event.startAt).split(",")[0]} ·{" "}
-            {timeRange(event.startAt, event.endAt)}
-          </span>
+    <div className="flex flex-col md:flex-row gap-3 md:gap-4.5 md:items-center rounded-xl border border-border bg-card p-3 md:p-4">
+      <div className="flex gap-3 items-start md:items-center min-w-0">
+        <div
+          className="relative h-12 w-12 md:h-16 md:w-16 shrink-0 overflow-hidden rounded-lg"
+          style={
+            event.coverImage
+              ? undefined
+              : {
+                  backgroundImage:
+                    "repeating-linear-gradient(135deg, var(--secondary), var(--secondary) 6px, var(--background) 6px, var(--background) 12px)",
+                }
+          }
+        >
+          {event.coverImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={event.coverImage.path}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          )}
         </div>
-        {event.status === EventStatus.REJECTED && event.rejectionReason && (
-          <div className="mt-2 flex gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs">
-            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-            <span>
-              <strong>Motivo da rejeição:</strong> {event.rejectionReason}
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 font-heading text-[14px] md:text-[15px] font-semibold">
+            {event.title}
+          </h3>
+          <div className="flex flex-wrap gap-1.5 md:gap-2.5 text-[11px] md:text-xs text-muted-foreground">
+            <span>{EVENT_CATEGORY_LABELS[event.category]}</span>
+            <span>·</span>
+            <span>{EVENT_MODALITY_LABELS[event.modality]}</span>
+            <span>·</span>
+            <span className="font-mono">
+              {formatEventDate(event.startAt).split(",")[0]} ·{" "}
+              {timeRange(event.startAt, event.endAt)}
             </span>
           </div>
-        )}
+          {event.status === EventStatus.REJECTED && event.rejectionReason && (
+            <div className="mt-2 flex gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs">
+              <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              <span>
+                <strong>Motivo da rejeição:</strong> {event.rejectionReason}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-      <Badge className={cn("shrink-0", STATUS_BADGE_CLASS[event.status])}>
-        {EVENT_STATUS_LABELS[event.status]}
-      </Badge>
-      <div className="flex shrink-0 gap-2">
-        {event.status === EventStatus.APPROVED && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => onCancel(event.id)}
-          >
-            <Ban className="h-3.5 w-3.5" />
-            Cancelar
-          </Button>
-        )}
-        {event.status !== EventStatus.CANCELLED && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            render={<Link href={`/eventos/edit/${event.id}`} />}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            Editar
-          </Button>
-        )}
+      <div className="flex items-center justify-between gap-3 md:contents">
+        <Badge className={cn("shrink-0", STATUS_BADGE_CLASS[event.status])}>
+          {EVENT_STATUS_LABELS[event.status]}
+        </Badge>
+        <div className="flex shrink-0 gap-2">
+          {event.status === EventStatus.APPROVED && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => onCancel(event.id)}
+            >
+              <Ban className="h-3.5 w-3.5" />
+              Cancelar
+            </Button>
+          )}
+          {event.status !== EventStatus.CANCELLED && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              render={<Link href={`/eventos/edit/${event.id}`} />}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -187,23 +191,29 @@ function MyEventsPageContent() {
         </Button>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1 rounded-xl border border-border bg-card p-4">
-          <div className="font-heading text-2xl font-bold">{stats.total}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            Total divulgados
+      <div className="flex gap-2 md:gap-4">
+        <div className="flex-1 rounded-xl border border-border bg-card p-2 md:p-4 text-center md:text-left flex flex-col justify-center items-center md:items-start">
+          <div className="font-heading text-xl md:text-2xl font-bold">
+            {stats.total}
+          </div>
+          <div className="mt-0.5 text-[10px] md:text-xs text-muted-foreground leading-tight">
+            Total
           </div>
         </div>
-        <div className="flex-1 rounded-xl border border-border bg-card p-4">
-          <div className="font-heading text-2xl font-bold">
+        <div className="flex-1 rounded-xl border border-border bg-card p-2 md:p-4 text-center md:text-left flex flex-col justify-center items-center md:items-start">
+          <div className="font-heading text-xl md:text-2xl font-bold">
             {stats.approved}
           </div>
-          <div className="mt-0.5 text-xs text-muted-foreground">Aprovados</div>
+          <div className="mt-0.5 text-[10px] md:text-xs text-muted-foreground leading-tight">
+            Aprovados
+          </div>
         </div>
-        <div className="flex-1 rounded-xl border border-border bg-card p-4">
-          <div className="font-heading text-2xl font-bold">{stats.pending}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            Aguardando revisão
+        <div className="flex-1 rounded-xl border border-border bg-card p-2 md:p-4 text-center md:text-left flex flex-col justify-center items-center md:items-start">
+          <div className="font-heading text-xl md:text-2xl font-bold">
+            {stats.pending}
+          </div>
+          <div className="mt-0.5 text-[10px] md:text-xs text-muted-foreground leading-tight">
+            Revisão
           </div>
         </div>
       </div>

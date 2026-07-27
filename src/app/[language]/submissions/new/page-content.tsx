@@ -619,11 +619,17 @@ function NewSubmissionPageContent() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col-reverse md:flex-row gap-2 pt-2">
+          <Link
+            href="/submissions"
+            className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2.5 text-sm font-bold shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors md:flex-none"
+          >
+            Cancelar
+          </Link>
           <Button
             type="submit"
             disabled={submitting || uploadingProof || !selectedActivity}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold py-2.5 flex-1"
           >
             {submitting ? (
               "Enviando..."
@@ -636,12 +642,6 @@ function NewSubmissionPageContent() {
               </>
             )}
           </Button>
-          <Link
-            href="/submissions"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            Cancelar
-          </Link>
         </div>
       </form>
     </div>

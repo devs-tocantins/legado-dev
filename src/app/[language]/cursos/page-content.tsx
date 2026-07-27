@@ -276,7 +276,9 @@ function CourseCard({ course }: { course: Course }) {
         >
           {course.isFree ? (
             <>
-              <Gift className="h-3 w-3" /> Gratuito
+              <Gift className="h-3 w-3" />{" "}
+              <span className="md:hidden uppercase">Gratuito</span>
+              <span className="hidden md:inline">Gratuito</span>
             </>
           ) : (
             <>
@@ -299,12 +301,23 @@ function CourseCard({ course }: { course: Course }) {
       <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4 relative z-10">
         <div className="flex items-center gap-1">
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-          <span className="text-sm font-bold text-foreground">
-            {averageRating > 0 ? averageRating.toFixed(1) : "Novo"}
-          </span>
-          <span className="text-xs text-muted-foreground ml-1">
-            ({totalReviews})
-          </span>
+          {averageRating > 0 ? (
+            <>
+              <span className="text-sm font-bold text-foreground">
+                {averageRating.toFixed(1)}
+              </span>
+              <span className="text-xs text-muted-foreground ml-1">
+                ({totalReviews})
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground ml-1">
+              <span className="md:hidden">
+                Novo · seja o primeiro a avaliar
+              </span>
+              <span className="hidden md:inline">Novo ({totalReviews})</span>
+            </span>
+          )}
         </div>
         <span
           className="text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300"
