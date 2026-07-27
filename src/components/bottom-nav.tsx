@@ -10,7 +10,8 @@ import {
   User,
   Home,
   LogIn,
-  ClipboardList,
+  BookOpen,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,9 +46,9 @@ function BottomNav() {
 
   const authedLinks: NavItem[] = [
     { href: "/trilhas", label: "Trilhas", icon: Map },
+    { href: "/cursos", label: "Cursos", icon: BookOpen },
     { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
-    { href: "/submissions", label: "Histórico", icon: ClipboardList },
-    { href: "/leaderboard", label: "Ranking", icon: Trophy },
+    { href: "/eventos", label: "Agenda", icon: CalendarDays },
     { href: "/profile", label: "Perfil", icon: User },
   ];
 

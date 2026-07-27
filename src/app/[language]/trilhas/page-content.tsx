@@ -356,8 +356,8 @@ function TrilhasPageContent() {
         </div>
       )}
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
-        <div>
+      <div className="mt-10 flex flex-col md:grid md:gap-8 lg:grid-cols-[1fr_280px]">
+        <div className="order-last md:order-first" id="explorar-trilhas">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-[22px] font-bold tracking-tight">
@@ -367,7 +367,7 @@ function TrilhasPageContent() {
                 Cada marco cumprido vira prova verificada no seu perfil público.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-nowrap md:flex-wrap overflow-x-auto items-center gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
               {TIER_FILTERS.map((f) => (
                 <button
                   key={f.key}
@@ -409,11 +409,11 @@ function TrilhasPageContent() {
         </div>
 
         {profile && (
-          <div className="flex flex-col gap-4">
+          <div className="order-first md:order-last flex flex-col gap-4 mb-8 md:mb-0">
             <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">
               <div className="flex items-center justify-between gap-2">
                 <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Seu XP
+                  Seu XP Acumulado
                 </p>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
                   N{LEVELS.indexOf(getLevel(profile.totalXp)) + 1} ·{" "}
@@ -427,6 +427,12 @@ function TrilhasPageContent() {
               <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 XP acumulado com trilhas e contribuições para a comunidade.
               </p>
+              <a
+                href="#explorar-trilhas"
+                className="mt-4 md:hidden flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-[13px] font-bold text-primary-foreground"
+              >
+                Explorar trilhas
+              </a>
             </div>
             {featured && (
               <div className="rounded-[20px] border border-border bg-card p-5 shadow-[0_6px_0_var(--border)]">

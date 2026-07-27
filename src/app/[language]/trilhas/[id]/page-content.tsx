@@ -406,10 +406,15 @@ function TrackDetailPageContent() {
                 {state === "locked" && (
                   <p className="flex items-center gap-1.5 px-5 pb-4 font-mono text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />
-                    conclua a etapa anterior para desbloquear a conclusão
+                    conclua a etapa anterior para desbloquear
                   </p>
                 )}
-                <div className="border-t border-border/70">
+                <div
+                  className={cn(
+                    "border-t border-border/70",
+                    state === "locked" && "hidden md:block"
+                  )}
+                >
                   {sectionItems.map((item) => {
                     const globalIdx = items.findIndex((i) => i.id === item.id);
                     return (

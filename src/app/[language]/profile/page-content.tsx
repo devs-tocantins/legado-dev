@@ -279,7 +279,8 @@ function Profile() {
                 render={<Link href="/profile/edit" />}
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Editar perfil
+                <span className="md:hidden">Editar</span>
+                <span className="hidden md:inline">Editar perfil</span>
               </Button>
             </div>
           </div>
@@ -439,7 +440,7 @@ function Profile() {
           <Button
             variant="outline"
             render={<Link href="/voluntariado" />}
-            className="gap-2 rounded-xl font-bold"
+            className="hidden md:flex gap-2 rounded-xl font-bold"
           >
             <BookOpen className="h-4 w-4" />
             Ver Atividades
@@ -479,7 +480,7 @@ function Profile() {
           <Button
             variant="ghost"
             render={<Link href="/rules" />}
-            className="gap-2 rounded-xl font-bold text-primary"
+            className="hidden md:flex gap-2 rounded-xl font-bold text-primary"
           >
             <BookOpen className="h-4 w-4" />
             Nossas Regras
