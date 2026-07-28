@@ -31,7 +31,6 @@ import {
   Trophy,
   History,
   CalendarDays,
-  MessageCircle,
   Map,
   Lightbulb,
   BookOpen,
@@ -383,12 +382,6 @@ function AdminDashboardPageContent() {
             icon={Users}
             label="Usuarios"
             description="Gerenciar contas de usuarios"
-          />
-          <NavCard
-            href="/admin-panel/whatsapp"
-            icon={MessageCircle}
-            label="WhatsApp"
-            description="Parear o numero do bot e ver status da conexao"
           />
         </div>
       </section>

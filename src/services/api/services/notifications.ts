@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { InfinityPaginationType } from "../types/infinity-pagination";
 import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
@@ -12,11 +13,27 @@ import { RequestConfigType } from "./types/request-config";
 export function useGetNotificationsService() {
   const fetch = useFetch();
   return useCallback(
-    (requestConfig?: RequestConfigType) =>
-      fetch(`${API_URL}/api/v1/notifications`, {
+    (
+      params?: { page?: number; limit?: number; all?: boolean },
+      requestConfig?: RequestConfigType
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page !== undefined)
+        searchParams.append("page", String(params.page));
+      if (params?.limit !== undefined)
+        searchParams.append("limit", String(params.limit));
+      if (params?.all !== undefined)
+        searchParams.append("all", String(params.all));
+
+      const queryString = searchParams.toString()
+        ? `?${searchParams.toString()}`
+        : "";
+
+      return fetch(`${API_URL}/api/v1/notifications${queryString}`, {
         method: "GET",
         ...requestConfig,
-      }).then(wrapperFetchJsonResponse<Notification[]>),
+      }).then(wrapperFetchJsonResponse<InfinityPaginationType<Notification>>);
+    },
     [fetch]
   );
 }
@@ -76,11 +93,7 @@ export function useUpdateNotificationPreferencesService() {
       data: Partial<
         Pick<
           NotificationPreference,
-          | "emailOnSubmissionApproved"
-          | "emailOnMissionWon"
-          | "whatsappOnSubmissionApproved"
-          | "whatsappOnMissionWon"
-          | "whatsappOnEventChanges"
+          "emailOnSubmissionApproved" | "emailOnMissionWon"
         >
       >,
       requestConfig?: RequestConfigType
