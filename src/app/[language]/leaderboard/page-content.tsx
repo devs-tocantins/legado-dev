@@ -509,15 +509,15 @@ function LeaderboardPageContent() {
           >
             {/* Podium — aligned at base */}
             {top3.length > 0 && (
-              <div className="flex flex-col gap-3 md:flex-row md:items-end">
+              <div className="flex flex-col gap-5 md:gap-3 md:flex-row md:items-end">
                 {top3[0] && (
-                  <div className="flex-1 order-first md:order-2">
+                  <div className="flex-1 order-first md:order-2 md:flex-[1.15] md:z-10">
                     <PodiumCard profile={top3[0]} rank={1} xpField={xpField} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3 md:contents">
                   {top3[1] && (
-                    <div className="flex-1 md:order-1">
+                    <div className="flex-1 md:order-1 md:scale-95 md:origin-bottom">
                       <PodiumCard
                         profile={top3[1]}
                         rank={2}
@@ -526,7 +526,7 @@ function LeaderboardPageContent() {
                     </div>
                   )}
                   {top3[2] && (
-                    <div className="flex-1 md:order-3">
+                    <div className="flex-1 md:order-3 md:scale-95 md:origin-bottom">
                       <PodiumCard
                         profile={top3[2]}
                         rank={3}

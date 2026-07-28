@@ -441,6 +441,11 @@ function ResponsiveAppBar() {
                     Minha conta
                   </DropdownMenuItem>
 
+                  <DropdownMenuItem render={<Link href="/submissions" />}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Histórico
+                  </DropdownMenuItem>
+
                   {isModerator && (
                     <DropdownMenuItem render={<Link href="/moderation" />}>
                       <ClipboardCheck className="mr-2 h-4 w-4" />
