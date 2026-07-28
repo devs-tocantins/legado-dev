@@ -2,11 +2,12 @@
 
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import useAuth from "@/services/auth/use-auth";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import Link from "@/components/link";
+import { NotificationIcon } from "@/components/notification-icon";
 import { useQuery } from "@tanstack/react-query";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import { RoleEnum } from "@/services/api/types/role";
@@ -42,7 +43,6 @@ import {
   useMarkReadService,
 } from "@/services/api/services/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Notification } from "@/services/api/types/notification";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import {
   getLevel,
@@ -124,6 +124,7 @@ function UserMenuHeader({
 
 function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
   const getNotifications = useGetNotificationsService();
   const getUnreadCount = useGetUnreadCountService();
@@ -141,12 +142,12 @@ function NotificationBell() {
     refetchInterval: 30_000,
   });
 
-  const { data: notifications } = useQuery({
+  const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
       const res = await getNotifications();
-      if (res.status === HTTP_CODES_ENUM.OK) return res.data as Notification[];
-      return [] as Notification[];
+      if (res.status === HTTP_CODES_ENUM.OK) return res.data.data;
+      return [];
     },
     enabled: open,
   });
@@ -207,7 +208,12 @@ function NotificationBell() {
           )}
         </div>
         <div className="max-h-[350px] overflow-y-auto">
-          {!notifications || notifications.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <div className="h-10 w-10 animate-pulse rounded-full bg-muted mb-3" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          ) : !notifications || notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -224,7 +230,13 @@ function NotificationBell() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.isRead && doMarkRead(n.id)}
+                  onClick={() => {
+                    if (!n.isRead) doMarkRead(n.id);
+                    if (n.link) {
+                      setOpen(false);
+                      router.push(n.link);
+                    }
+                  }}
                   className={cn(
                     "p-4 hover:bg-muted/50 transition-colors cursor-pointer relative group",
                     !n.isRead && "bg-primary/[0.03]"
@@ -237,6 +249,9 @@ function NotificationBell() {
                         !n.isRead ? "bg-primary" : "bg-transparent"
                       )}
                     />
+                    <div className="mt-0.5 shrink-0">
+                      <NotificationIcon type={n.type} className="h-4 w-4" />
+                    </div>
                     <div className="space-y-1 min-w-0">
                       <p className="text-xs text-foreground leading-relaxed">
                         <span className="font-bold">{n.title}</span> {n.body}
@@ -253,6 +268,14 @@ function NotificationBell() {
               ))}
             </div>
           )}
+        </div>
+        <div className="p-2 border-t">
+          <Link
+            href="/notificacoes"
+            className="block w-full text-center text-xs text-primary hover:underline font-medium py-1"
+          >
+            Ver todas as notificações
+          </Link>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -444,6 +467,11 @@ function ResponsiveAppBar() {
                   <DropdownMenuItem render={<Link href="/submissions" />}>
                     <ClipboardList className="mr-2 h-4 w-4" />
                     Histórico
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem render={<Link href="/notificacoes" />}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notificações
                   </DropdownMenuItem>
 
                   {isModerator && (
