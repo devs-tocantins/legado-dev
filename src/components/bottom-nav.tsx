@@ -7,7 +7,6 @@ import {
   Map,
   HeartHandshake,
   Trophy,
-  User,
   Home,
   LogIn,
   BookOpen,
@@ -49,7 +48,7 @@ function BottomNav() {
     { href: "/cursos", label: "Cursos", icon: BookOpen },
     { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
     { href: "/eventos", label: "Agenda", icon: CalendarDays },
-    { href: "/profile", label: "Perfil", icon: User },
+    { href: "/leaderboard", label: "Ranking", icon: Trophy },
   ];
 
   const guestLinks: NavItem[] = [
