@@ -439,6 +439,14 @@ function Profile() {
           </Button>
           <Button
             variant="outline"
+            render={<Link href="/submissions" />}
+            className="gap-2 rounded-xl font-bold"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Minhas Submissões
+          </Button>
+          <Button
+            variant="outline"
             render={<Link href="/voluntariado" />}
             className="hidden md:flex gap-2 rounded-xl font-bold"
           >

@@ -1,0 +1,25 @@
+Voce esta no repositorio front-engajamento. Esta e uma tarefa PONTUAL de gravacao de video, nao uma tarefa de codigo pra virar PR. NAO crie branch, NAO commit, NAO abra PR - so um script utilitario temporario.
+
+Antes de tudo: NUNCA salve nenhum arquivo de sessao/credencial (storageState, cookies, tokens) dentro da pasta do repositorio (C:\Users\leonardo.santos\WWW\front-engajamento). Use exclusivamente a pasta temporaria C:\Users\leonardo.santos\AppData\Local\Temp\legado-video-capture para QUALQUER arquivo gerado (script, video, estado de sessao). Isso e importante: da ultima vez um arquivo de sessao com token real vazou sem querer pra dentro do repositorio git, e nao pode acontecer de novo.
+
+## Objetivo
+
+Usando Playwright (ja instalado como dependencia no projeto - verifique node_modules/.bin/playwright), escreva um script standalone (salve em C:\Users\leonardo.santos\AppData\Local\Temp\legado-video-capture\record.mjs, NAO dentro do repositorio) que:
+
+1. Faz login em https://www.legado.dev com o usuario de teste: email claude.design.qa@legado.dev, senha SenhaForte!2026x.
+2. Grava um VIDEO (usar a opcao recordVideo do contexto do Playwright, salvando o webm em C:\Users\leonardo.santos\AppData\Local\Temp\legado-video-capture\output\).
+3. Primeira parte do video (viewport mobile, 390x844): navega e permanece alguns segundos em cada tela, com pequenos scrolls suaves pra mostrar conteudo, nesta ordem:
+   - /pt-BR/trilhas (tela inicial, aguardar 3s, scroll suave)
+   - /pt-BR/trilhas/2c22ea26-5b0a-4678-9753-fe10d3c1d585 (detalhe da trilha, aguardar 3s)
+   - /pt-BR/voluntariado (aguardar 3s, scroll suave)
+   - /pt-BR/eventos (aguardar 2s)
+   - /pt-BR/leaderboard (aguardar 2s)
+   - /pt-BR/profile (aguardar 3s, scroll suave ate mostrar o Historico)
+4. Segunda parte do video (feche o contexto mobile, abra um novo contexto com viewport desktop 1440x900, login de novo), navegando rapido pelas mesmas telas (2s cada, sem precisar scroll completo) so pra mostrar a versao desktop tambem.
+5. O video final deve ter entre 25 e 35 segundos no total.
+6. Salve o(s) arquivo(s) .webm de video em C:\Users\leonardo.santos\AppData\Local\Temp\legado-video-capture\output\.
+7. Depois de gravar, use ffmpeg (verifique se esta disponivel no PATH; se nao estiver, pule esse passo e me avise) pra concatenar os dois videos (mobile + desktop) em um unico arquivo mp4 chamado legado-showcase.mp4 na mesma pasta de output, com qualidade razoavel pra upload no LinkedIn (h264, resolucao original, sem necessidade de compressao agressiva).
+8. Ao final, DELETE qualquer arquivo de estado de sessao/storageState que tenha sido criado (nao deixe nenhuma credencial/token salva em disco depois de terminar).
+9. Rode `git status` no repositorio front-engajamento ao final e confirme que NADA mudou la (nenhum arquivo novo, nenhuma modificacao) - se aparecer algo, desfaca antes de finalizar.
+
+Me reporte no final: caminho exato do(s) arquivo(s) de video gerados, duracao, e confirmacao de que o repositorio git ficou limpo (sem nenhuma mudanca).

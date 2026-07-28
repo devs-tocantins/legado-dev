@@ -15,8 +15,6 @@ import {
   User,
   Settings,
   Bell,
-  Menu,
-  X,
   HeartHandshake,
   Trophy,
   Sun,
@@ -267,7 +265,6 @@ function ResponsiveAppBar() {
   const { user, isLoaded } = useAuth();
   const { logOut } = useAuthActions();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -444,6 +441,20 @@ function ResponsiveAppBar() {
                     Minha conta
                   </DropdownMenuItem>
 
+                  {isModerator && (
+                    <DropdownMenuItem render={<Link href="/moderation" />}>
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Moderação
+                    </DropdownMenuItem>
+                  )}
+
+                  {isAdmin && (
+                    <DropdownMenuItem render={<Link href="/admin-panel" />}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem
                     render={
                       <Link
@@ -504,68 +515,8 @@ function ResponsiveAppBar() {
               )}
             </div>
           )}
-
-          {/* Mobile hamburger */}
-          <Button
-            variant="ghost"
-            size="icon"
-            nativeButton={true}
-            className="md:hidden h-8 w-8"
-            onClick={() => setMobileOpen((o) => !o)}
-            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          >
-            {mobileOpen ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Menu className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </div>
-
-      {/* Mobile dropdown menu */}
-      {mobileOpen && (
-        <nav className="border-t border-border/50 bg-background/95 md:hidden">
-          <div className="flex flex-col gap-0.5 p-3">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive(href)
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-            {isModerator && (
-              <Link
-                href="/moderation"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <ClipboardCheck className="h-4 w-4" />
-                Moderação
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                href="/admin-panel"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <Settings className="h-4 w-4" />
-                Admin
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
     </header>
   );
 }
