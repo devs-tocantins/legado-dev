@@ -828,6 +828,7 @@ function CompleteMilestonePageContent() {
   const [completing, setCompleting] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [justCompleted, setJustCompleted] = useState<number | null>(null);
+  const [showRedoForm, setShowRedoForm] = useState(false);
 
   const { data: mySubmissions, refetch: refetchMySubmissions } = useQuery({
     queryKey: ["my-submissions", "trilhas"],
@@ -1037,6 +1038,11 @@ function CompleteMilestonePageContent() {
 
   const isAutoCompletable = AUTO_COMPLETABLE_TYPES.has(item.type);
   const alreadyDone = isDone || justCompleted !== null;
+  const isRedoableTestOut =
+    alreadyDone &&
+    item.type === TrackItemType.PROOF &&
+    myItemSubmission?.isTestOut === true;
+  const showCongrats = alreadyDone && !showRedoForm;
   const badge = TRACK_ITEM_TYPE_BADGE[item.type];
 
   return (
@@ -1059,10 +1065,26 @@ function CompleteMilestonePageContent() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="flex flex-col gap-5">
-          {alreadyDone ? (
+          {showCongrats ? (
             <>
               <div className="rounded-[22px] border border-border bg-card p-7 shadow-[0_6px_0_var(--border)]">
-                <div className="flex items-center gap-4">
+                <span
+                  className="inline-block rounded-md px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-white"
+                  style={{ background: badge.color.bg }}
+                >
+                  {badge.abbr}
+                </span>
+                <h1 className="mt-3 text-[24px] font-bold leading-tight tracking-tight">
+                  {item.title}
+                </h1>
+                {item.body && (
+                  <MarkdownContent
+                    content={item.body}
+                    className="mt-3 max-w-none text-sm leading-relaxed text-muted-foreground"
+                  />
+                )}
+
+                <div className="mt-6 flex items-center gap-4 border-t border-border pt-6">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
                     <Sparkles className="h-7 w-7" />
                   </div>
@@ -1132,6 +1154,16 @@ function CompleteMilestonePageContent() {
                       </div>
                     </div>
                   ) : null}
+                  {isRedoableTestOut && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowRedoForm(true)}
+                      className="mt-3 w-full justify-center gap-2 rounded-2xl py-6 text-[15px] font-bold"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Refazer com comprovação
+                    </Button>
+                  )}
                   <Link
                     href={`/trilhas/${trackId}`}
                     className="mt-3 inline-block text-sm font-semibold text-muted-foreground hover:text-foreground"
@@ -1327,6 +1359,7 @@ function CompleteMilestonePageContent() {
                               : null
                           }
                           onSubmitted={async () => {
+                            setShowRedoForm(false);
                             await refetchMySubmissions();
                             await queryClient.invalidateQueries({
                               queryKey: ["learning-track-progress", trackId],

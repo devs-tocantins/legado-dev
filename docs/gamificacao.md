@@ -45,6 +45,7 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 | Revisão de submissão aprovada (moderador) | `MODERATOR_REWARD_XP` (fixo, 3 XP) | Paga só quando o moderador **aprova**; rejeição não gera XP. Aparece no Histórico (privado e público) identificado como recompensa de moderação, para transparência |
 | Missão vencida | `mission.xpReward` | Definido pelo admin por missão |
 | Conclusão de item de Trilha | `item.journeyXp` | Concede XP de Jornada (contador separado de aprendizado) |
+| Avaliação de curso | 10 XP fixo | XP de Comunidade; qualquer membro pode avaliar um curso `VERIFIED`, mesmo sem tê-lo concluído formalmente |
 | Penalidade (admin) | Negativo (configurável) | Deduz XP por abuso |
 
 ---
@@ -54,6 +55,23 @@ O level é calculado dinamicamente a partir do `totalXp` do perfil. Nunca é arm
 O sistema diferencia dois tipos de experiência:
 - **XP de Comunidade** (`totalXp`, `currentMonthlyXp`, `currentYearlyXp`): obtido via atividades de voluntariado, missões, moderação e recebimento de tokens de gratidão. Alimenta os níveis e o Leaderboard da comunidade.
 - **XP de Jornada** (`journeyXp`): obtido exclusivamente ao progredir e concluir itens nas **Trilhas de Aprendizado**. É um indicador de evolução técnica individual que não entra nos rankings competitivos da comunidade.
+
+### Trilha não é contribuição
+
+Um marco de trilha (`TrackItem` do tipo `PROOF`) usa a mesma tabela de
+`Submission` que uma atividade de voluntariado — mas **não é** uma
+contribuição para a comunidade, mesmo quando a prova é aprovada de verdade
+(e ainda menos quando o usuário só pula via test-out, ganhando 0 XP). O
+campo `Submission.contributionKind` formaliza essa distinção:
+- `COMMUNITY_ACTIVITY` — atividade real de voluntariado.
+- `TRACK_PROGRESS` — progresso pessoal de trilha (prova aprovada ou test-out).
+
+Selos de "contribuição" (ex: "Primeira Missão", "Colaborador", "Herói da
+Comunidade") só contam submissões `COMMUNITY_ACTIVITY` aprovadas — nunca
+progresso de trilha. Antes dessa distinção existir, um test-out (0 XP, sem
+nenhuma ajuda real à comunidade) chegava a conceder o selo "Primeira
+Missão", porque a submissão ficava com `status = APPROVED` e o critério só
+olhava para o status, não para o tipo.
 
 ---
 
@@ -108,6 +126,8 @@ Badges com `criteriaType: AUTOMATIC` têm um `criteriaConfig` JSON com o critér
 
 A verificação ocorre automaticamente (via cron ou ao aprovar uma submissão). Se o critério for atendido e o badge ainda não tiver sido concedido, o sistema atribui automaticamente.
 
+`submissions_approved` conta apenas `Submission` com `status = APPROVED`, `isTestOut = false` e `contributionKind = COMMUNITY_ACTIVITY` — ver [Trilha não é contribuição](#trilha-não-é-contribuição) acima.
+
 ### Badges manuais
 
 Badges com `criteriaType: MANUAL` são concedidos pelo admin via `POST /badges/grant`. Úteis para reconhecimentos únicos que não se encaixam em critérios automáticos.
@@ -117,6 +137,29 @@ Badges com `criteriaType: MANUAL` são concedidos pelo admin via `POST /badges/g
 - Badges são agrupados por categoria no perfil público
 - Cada badge exibe nome, imagem e descrição em tooltip
 - Badges inativos (`isActive: false`) não aparecem no catálogo público nem no perfil
+
+---
+
+## Histórico do Perfil Público (`/u/[username]`)
+
+O componente `ProfileHistoryTimeline` (`src/components/profile-history-timeline.tsx`)
+mistura eventos de várias fontes numa linha do tempo única, cada um numa
+categoria própria — a regra geral é: **tudo que gera XP deve aparecer, na
+categoria certa; nada com 0 XP (ex: test-out) deve aparecer**.
+
+| Categoria (`HistoryEventType`) | Fonte | O que mostra |
+|---|---|---|
+| `trilha` | `GET /learning-tracks/proof-portfolio` | Marcos de trilha realmente concluídos (test-out já vem filtrado pelo backend) |
+| `voluntariado` | `GET /gamification-profiles/:id/approved-submissions`, filtrado a `trackItemId == null` no frontend | Só contribuição real à comunidade — marcos de trilha nunca entram aqui, mesmo aprovados |
+| `curso` | `GET /gamification-profiles/:id/course-reviews` | Avaliações de curso, exibidas discretamente ("Avaliou o curso X"), sem destaque de XP |
+| `ranking` | `GET /gamification-profiles/:id/ranking-history` | Top 3 em rankings mensais/anuais |
+| `moderation` | `GET /learning-tracks/moderation-history` (via `profile-portfolio.service.ts`) | Recompensa de moderação (`AUDITOR_REWARD`) |
+
+O filtro de `voluntariado` por `trackItemId == null` existe porque o endpoint
+de submissões aprovadas retorna qualquer `Submission` aprovada, incluindo
+marcos de trilha e test-outs (que também ficam com `status = APPROVED`,
+mesmo sem XP) — sem esse filtro, um test-out aparecia como se fosse uma
+contribuição real à comunidade.
 
 ---
 
