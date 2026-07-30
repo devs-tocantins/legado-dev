@@ -103,7 +103,9 @@ export function FileUploadDropzone({
             </p>
             {displaySize ? (
               <p className="text-xs text-muted-foreground">
-                {(displaySize / 1024 / 1024).toFixed(1)} MB
+                {displaySize < 1024 * 1024
+                  ? `${Math.max(1, Math.round(displaySize / 1024))} KB`
+                  : `${(displaySize / 1024 / 1024).toFixed(1)} MB`}
               </p>
             ) : null}
           </div>

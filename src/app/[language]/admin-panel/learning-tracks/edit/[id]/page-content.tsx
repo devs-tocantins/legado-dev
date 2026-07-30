@@ -31,6 +31,7 @@ import {
   LearningTrackStatus,
   LearningTrackTier,
   TrackItem,
+  TrackItemProofFormat,
   TrackItemStatus,
   TrackItemType,
   TrackSection,
@@ -413,7 +414,7 @@ function SectionDialog({
 
   return (
     <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {state?.mode === "create" ? "Nova seção" : "Editar seção"}
@@ -553,6 +554,9 @@ function ItemDialog({
   const [status, setStatus] = useState<TrackItemStatus>(TrackItemStatus.ACTIVE);
   const [isOptional, setIsOptional] = useState(false);
   const [allowsTestOut, setAllowsTestOut] = useState(false);
+  const [proofFormat, setProofFormat] = useState<TrackItemProofFormat>(
+    TrackItemProofFormat.EITHER
+  );
   const [journeyXp, setJourneyXp] = useState(0);
   const [grantsCommunityXp, setGrantsCommunityXp] = useState(false);
   const [communityXpReward, setCommunityXpReward] = useState(0);
@@ -572,6 +576,7 @@ function ItemDialog({
       setStatus(item.status);
       setIsOptional(item.isOptional);
       setAllowsTestOut(item.allowsTestOut);
+      setProofFormat(item.proofFormat ?? TrackItemProofFormat.EITHER);
       setJourneyXp(item.journeyXp);
       setGrantsCommunityXp(item.grantsCommunityXp);
       setCommunityXpReward(item.communityXpReward ?? 0);
@@ -586,6 +591,7 @@ function ItemDialog({
       setStatus(TrackItemStatus.ACTIVE);
       setIsOptional(false);
       setAllowsTestOut(false);
+      setProofFormat(TrackItemProofFormat.EITHER);
       setJourneyXp(0);
       setGrantsCommunityXp(false);
       setCommunityXpReward(0);
@@ -611,6 +617,7 @@ function ItemDialog({
         status,
         isOptional,
         allowsTestOut,
+        proofFormat: type === "PROOF" ? proofFormat : undefined,
         journeyXp,
         grantsCommunityXp,
         communityXpReward: grantsCommunityXp ? communityXpReward : undefined,
@@ -643,7 +650,7 @@ function ItemDialog({
 
   return (
     <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {state?.mode === "create" ? "Novo marco" : "Editar marco"}
@@ -701,6 +708,31 @@ function ItemDialog({
                       {a.title}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {type === "PROOF" && (
+            <div className="space-y-1.5">
+              <Label>Formato de comprovação exigido</Label>
+              <Select
+                value={proofFormat}
+                onValueChange={(v) => setProofFormat(v as TrackItemProofFormat)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TrackItemProofFormat.EITHER}>
+                    Link ou foto (usuário escolhe)
+                  </SelectItem>
+                  <SelectItem value={TrackItemProofFormat.LINK}>
+                    Só link (obrigatório)
+                  </SelectItem>
+                  <SelectItem value={TrackItemProofFormat.PHOTO}>
+                    Só foto/print (obrigatório)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

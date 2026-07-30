@@ -22,7 +22,11 @@ import {
 } from "@/services/api/services/courses";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { TrackItem, TrackItemType } from "@/services/api/types/learning-track";
+import {
+  TrackItem,
+  TrackItemProofFormat,
+  TrackItemType,
+} from "@/services/api/types/learning-track";
 import { SubmissionStatusEnum } from "@/services/api/types/submission";
 import { Course, CourseReview } from "@/services/api/types/course";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
@@ -203,9 +207,21 @@ function ProofSubmissionForm({
     setUploadedUrl(null);
   };
 
+  const proofFormat = item.proofFormat ?? TrackItemProofFormat.EITHER;
+  const allowsLink = proofFormat !== TrackItemProofFormat.PHOTO;
+  const allowsPhoto = proofFormat !== TrackItemProofFormat.LINK;
+
   const effectiveProofUrl = uploadedUrl ?? proofUrl.trim();
 
   const handleSubmit = async () => {
+    if (proofFormat === TrackItemProofFormat.LINK && !proofUrl.trim()) {
+      setError("Cole o link do repositório/comprovante.");
+      return;
+    }
+    if (proofFormat === TrackItemProofFormat.PHOTO && !uploadedUrl) {
+      setError("Anexe um print como comprovante.");
+      return;
+    }
     if (!effectiveProofUrl) {
       setError("Cole o link do repositório/comprovante ou anexe um print.");
       return;
@@ -250,32 +266,47 @@ function ProofSubmissionForm({
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-bold">
-          Link do repositório/comprovante
-        </label>
-        <input
-          value={proofUrl}
-          onChange={(e) => {
-            setProofUrl(e.target.value);
-            setError("");
-          }}
-          placeholder="https://github.com/seu-usuario/seu-repo"
-          disabled={!!uploadedUrl}
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-        />
-      </div>
+      {allowsLink && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-bold">
+            Link do repositório/comprovante
+            {proofFormat === TrackItemProofFormat.LINK && (
+              <span className="ml-1 font-normal text-muted-foreground">
+                (obrigatório)
+              </span>
+            )}
+          </label>
+          <input
+            value={proofUrl}
+            onChange={(e) => {
+              setProofUrl(e.target.value);
+              setError("");
+            }}
+            placeholder="https://github.com/seu-usuario/seu-repo"
+            disabled={!!uploadedUrl}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+        </div>
+      )}
 
-      <FileUploadDropzone
-        label="ou anexe um print (opcional)"
-        file={proofFile}
-        fileUrl={uploadedUrl}
-        onFileSelect={processProofSelect}
-        onFileRemove={handleRemoveFile}
-        uploading={uploading}
-        accept="image/jpeg,image/png,image/gif"
-        hintText="JPG, PNG ou GIF · Máx. 5 MB"
-      />
+      {allowsPhoto && (
+        <FileUploadDropzone
+          label={
+            proofFormat === TrackItemProofFormat.PHOTO
+              ? "Anexe um print (obrigatório)"
+              : allowsLink
+                ? "ou anexe um print (opcional)"
+                : "Anexe um print"
+          }
+          file={proofFile}
+          fileUrl={uploadedUrl}
+          onFileSelect={processProofSelect}
+          onFileRemove={handleRemoveFile}
+          uploading={uploading}
+          accept="image/jpeg,image/png,image/gif"
+          hintText="JPG, PNG ou GIF · Máx. 5 MB"
+        />
+      )}
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-muted-foreground">
