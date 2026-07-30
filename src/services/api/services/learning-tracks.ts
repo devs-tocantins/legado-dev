@@ -11,6 +11,7 @@ import {
   TrackEnrollment,
   TrackItem,
   TrackItemCompletion,
+  TrackItemProofFormat,
   TrackItemStatus,
   TrackItemType,
   TrackSection,
@@ -337,6 +338,7 @@ export type CreateTrackItemRequest = {
   status?: TrackItemStatus;
   isOptional?: boolean;
   allowsTestOut?: boolean;
+  proofFormat?: TrackItemProofFormat;
   journeyXp?: number;
   grantsCommunityXp?: boolean;
   communityXpReward?: number;

@@ -55,6 +55,12 @@ export enum TrackItemStatus {
   ARCHIVED = "ARCHIVED",
 }
 
+export enum TrackItemProofFormat {
+  LINK = "LINK",
+  PHOTO = "PHOTO",
+  EITHER = "EITHER",
+}
+
 export type TrackItem = {
   id: string;
   trackId: string;
@@ -66,6 +72,7 @@ export type TrackItem = {
   status: TrackItemStatus;
   isOptional: boolean;
   allowsTestOut: boolean;
+  proofFormat?: TrackItemProofFormat;
   journeyXp: number;
   grantsCommunityXp: boolean;
   communityXpReward?: number;

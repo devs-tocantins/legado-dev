@@ -802,7 +802,7 @@ function AdminMissionsPageContent() {
           if (o) setShowCreate(true);
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Missão</DialogTitle>
           </DialogHeader>
@@ -821,7 +821,7 @@ function AdminMissionsPageContent() {
           if (o) setEditingMission(editingMission);
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Missão</DialogTitle>
           </DialogHeader>
