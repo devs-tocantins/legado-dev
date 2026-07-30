@@ -6,7 +6,10 @@ import {
   useGetProofPortfolioService,
   useGetModerationHistoryService,
 } from "@/services/api/services/learning-tracks";
-import { useGetProfileApprovedSubmissionsService } from "@/services/api/services/gamification-profiles";
+import {
+  useGetProfileApprovedSubmissionsService,
+  useGetProfileCourseReviewsService,
+} from "@/services/api/services/gamification-profiles";
 import { useGetProfileRankingHistoryService } from "@/services/api/services/ranking-snapshots";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import { useGetPublicSubmissionDetailService } from "@/services/api/services/submissions";
@@ -40,7 +43,8 @@ export type HistoryEventType =
   | "trilha"
   | "voluntariado"
   | "ranking"
-  | "moderation";
+  | "moderation"
+  | "curso";
 
 export interface HistoryEventItem {
   id: string;
@@ -290,6 +294,7 @@ const EVENT_ICON: Record<HistoryEventType, string> = {
   voluntariado: "🙌",
   ranking: "🏆",
   moderation: "🛡️",
+  curso: "⭐",
 };
 
 function CompactEventRow({
@@ -476,6 +481,7 @@ function MonthBlock({
     trilha: events.filter((e) => e.type === "trilha").length,
     ranking: events.filter((e) => e.type === "ranking").length,
     moderation: events.filter((e) => e.type === "moderation").length,
+    curso: events.filter((e) => e.type === "curso").length,
   };
   const total = events.length;
   const categoriesCount = Object.values(counts).filter((c) => c > 0).length;
@@ -530,6 +536,13 @@ function MonthBlock({
               className="h-full bg-slate-500"
               style={{ width: `${(counts.moderation / total) * 100}%` }}
               title={`Moderação: ${counts.moderation}`}
+            />
+          )}
+          {counts.curso > 0 && (
+            <div
+              className="h-full bg-purple-500"
+              style={{ width: `${(counts.curso / total) * 100}%` }}
+              title={`Avaliações de curso: ${counts.curso}`}
             />
           )}
         </div>
@@ -614,6 +627,7 @@ export function ProfileHistoryTimeline({
   const fetchRankingHistory = useGetProfileRankingHistoryService();
   const fetchActivities = useGetActivitiesService();
   const fetchModerationHistory = useGetModerationHistoryService();
+  const fetchCourseReviews = useGetProfileCourseReviewsService();
 
   const { data: proofPortfolio, isLoading: loadingPortfolio } = useQuery({
     queryKey: ["public-profile-portfolio", profileId],
@@ -659,6 +673,18 @@ export function ProfileHistoryTimeline({
       enabled: !!profileId,
     });
 
+  const { data: courseReviewsData, isLoading: loadingCourseReviews } = useQuery(
+    {
+      queryKey: ["public-profile-course-reviews", profileId],
+      queryFn: async () => {
+        const { status, data } = await fetchCourseReviews(profileId);
+        if (status === HTTP_CODES_ENUM.OK && Array.isArray(data)) return data;
+        return [];
+      },
+      enabled: !!profileId,
+    }
+  );
+
   const { data: activitiesData } = useQuery({
     queryKey: ["activities-map"],
     queryFn: async () => {
@@ -692,18 +718,15 @@ export function ProfileHistoryTimeline({
       }
     }
 
-    // 2. Voluntariado
+    // 2. Voluntariado — só contribuição real à comunidade. Marcos de trilha
+    // (test-out ou prova aprovada) já aparecem na seção "Trilha" acima; não
+    // são contribuição para a comunidade, são progresso pessoal.
     if (submissionsData) {
       for (const sub of submissionsData) {
-        const portfolioMatch = sub.trackItemId
-          ? proofPortfolio?.find((item) => item.itemId === sub.trackItemId)
-          : null;
+        if (sub.trackItemId) continue;
         const title =
           activityMap.get(sub.activityId) ??
-          portfolioMatch?.itemTitle ??
-          (sub.trackItemId
-            ? "Marco de trilha concluído"
-            : sub.activityId.substring(0, 8) + "…");
+          sub.activityId.substring(0, 8) + "…";
         events.push({
           id: `voluntariado-${sub.id}`,
           type: "voluntariado",
@@ -750,6 +773,19 @@ export function ProfileHistoryTimeline({
       }
     }
 
+    // 5. Avaliações de curso — geram XP mas não são atividade nem trilha;
+    // categoria própria, discreta (sem destaque de contribuição).
+    if (courseReviewsData) {
+      for (const review of courseReviewsData) {
+        events.push({
+          id: `curso-${review.id}`,
+          type: "curso",
+          date: review.createdAt,
+          title: `Avaliou o curso ${review.courseTitle}`,
+        });
+      }
+    }
+
     events.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -760,6 +796,7 @@ export function ProfileHistoryTimeline({
     submissionsData,
     rankingHistoryData,
     moderationHistoryData,
+    courseReviewsData,
     activityMap,
   ]);
 
@@ -767,7 +804,8 @@ export function ProfileHistoryTimeline({
     loadingPortfolio ||
     loadingSubmissions ||
     loadingRanking ||
-    loadingModeration;
+    loadingModeration ||
+    loadingCourseReviews;
 
   const groupedByYearAndMonth = useMemo(() => {
     const years = new Map<number, Map<number, HistoryEventItem[]>>();
