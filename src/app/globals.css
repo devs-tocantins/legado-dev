@@ -170,3 +170,10 @@
   text-align: left;
 }
 .markdown-body th { font-weight: 600; background-color: var(--muted); }
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  display: block;
+}

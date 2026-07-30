@@ -1,9 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
+
+// Imagem vira base64 embutido no próprio markdown (data URL) — sem upload,
+// sem depender de storage externo. Guarda-chuva de 2MB no arquivo original
+// pra não inflar o campo de texto com um base64 gigante (~2.7MB de texto).
+const MAX_PASTED_IMAGE_BYTES = 2 * 1024 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -43,6 +57,51 @@ export function MarkdownEditor({
   maxLength,
 }: MarkdownEditorProps) {
   const [preview, setPreview] = useState(false);
+  const [pasteError, setPasteError] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertAtCursor = (text: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      onChange(value + text);
+      return;
+    }
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    const next = value.slice(0, start) + text + value.slice(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + text.length;
+      el.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imageItem = Array.from(e.clipboardData.items).find((item) =>
+      item.type.startsWith("image/")
+    );
+    if (!imageItem) return;
+
+    e.preventDefault();
+    setPasteError("");
+    const file = imageItem.getAsFile();
+    if (!file) return;
+
+    if (file.size > MAX_PASTED_IMAGE_BYTES) {
+      setPasteError(
+        "Imagem muito grande (máx. 2 MB). Reduza o tamanho e tente colar de novo."
+      );
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      insertAtCursor(`\n![imagem](${dataUrl})\n`);
+    } catch {
+      setPasteError("Não foi possível colar a imagem. Tente novamente.");
+    }
+  };
 
   const toggle = (
     <div className="flex rounded-md border overflow-hidden text-xs shrink-0">
@@ -115,8 +174,13 @@ export function MarkdownEditor({
         </div>
       ) : (
         <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            if (pasteError) setPasteError("");
+          }}
+          onPaste={handlePaste}
           placeholder={placeholder}
           rows={rows}
           onInput={(e) => {
@@ -133,6 +197,13 @@ export function MarkdownEditor({
         />
       )}
 
+      {!preview && (
+        <p className="text-xs text-muted-foreground">
+          Dica: cole (Ctrl+V) uma imagem copiada pra inserir direto no texto.
+        </p>
+      )}
+
+      {pasteError && <p className="text-xs text-destructive">{pasteError}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
