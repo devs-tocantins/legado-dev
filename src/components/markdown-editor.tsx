@@ -3,22 +3,17 @@
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFileUploadService } from "@/services/api/services/files";
+import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 
-// Imagem vira base64 embutido no próprio markdown (data URL) — sem upload,
-// sem depender de storage externo. Guarda-chuva de 2MB no arquivo original
-// pra não inflar o campo de texto com um base64 gigante (~2.7MB de texto).
-const MAX_PASTED_IMAGE_BYTES = 2 * 1024 * 1024;
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+// Mesmo pipeline de upload usado no comprovante de prova (ProofSubmissionForm)
+// — a imagem vira um arquivo de verdade no storage (R2/S3), o markdown só
+// guarda a URL. Nada de base64 embutido no texto: infla o campo, e a maioria
+// dos renderizadores de markdown (incluindo o nosso, por segurança) não
+// aceita data URI em src de imagem por padrão.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB, mesmo limite do upload de comprovante
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -59,8 +54,10 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [preview, setPreview] = useState(false);
   const [pasteError, setPasteError] = useState("");
+  const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadFile = useFileUploadService();
 
   const insertAtCursor = (text: string) => {
     const el = textareaRef.current;
@@ -85,17 +82,24 @@ export function MarkdownEditor({
       setPasteError("Só é possível inserir arquivos de imagem.");
       return;
     }
-    if (file.size > MAX_PASTED_IMAGE_BYTES) {
+    if (file.size > MAX_IMAGE_BYTES) {
       setPasteError(
-        "Imagem muito grande (máx. 2 MB). Reduza o tamanho e tente de novo."
+        "Imagem muito grande (máx. 5 MB). Reduza o tamanho e tente de novo."
       );
       return;
     }
+    setUploading(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      insertAtCursor(`\n![imagem](${dataUrl})\n`);
+      const { status, data } = await uploadFile(file);
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        insertAtCursor(`\n![imagem](${data.file.path})\n`);
+      } else {
+        setPasteError("Erro ao enviar a imagem. Tente novamente.");
+      }
     } catch {
-      setPasteError("Não foi possível inserir a imagem. Tente novamente.");
+      setPasteError("Erro ao enviar a imagem. Tente novamente.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -180,11 +184,16 @@ export function MarkdownEditor({
               />
               <button
                 type="button"
+                disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
               >
-                <ImagePlus className="h-3.5 w-3.5" />
-                Inserir imagem
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5" />
+                )}
+                {uploading ? "Enviando..." : "Inserir imagem"}
               </button>
             </>
           )}
@@ -235,7 +244,7 @@ export function MarkdownEditor({
       {!preview && (
         <p className="text-xs text-muted-foreground">
           Cole (Ctrl+V) uma imagem copiada ou use &quot;Inserir imagem&quot;
-          acima.
+          acima. Máx. 5 MB.
         </p>
       )}
 
