@@ -33,7 +33,10 @@ import { Submission } from "@/services/api/types/submission";
 import { Mission, MissionSubmission } from "@/services/api/types/mission";
 import { Activity } from "@/services/api/types/activity";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
-import { TrackItem } from "@/services/api/types/learning-track";
+import {
+  LearningTrackOverview,
+  TrackItem,
+} from "@/services/api/types/learning-track";
 import { Course } from "@/services/api/types/course";
 import { Event, EventModality } from "@/services/api/types/event";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
@@ -108,18 +111,26 @@ function useTrackItem(trackItemId: string) {
   });
 }
 
+// Mesma chave ["learning-track-overview", trackId] usada em várias outras
+// telas (trilhas, marcos, cursos, conquista, perfil público) — todas
+// guardam o LearningTrackOverview cru nesse cache. Aqui usamos `select`
+// pra extrair só o título da seção sem sobrescrever o cache compartilhado
+// com um formato diferente (isso já causou um bug real: quem lesse essa
+// chave depois de passar por aqui recebia uma string em vez do objeto
+// completo, e tentar renderizar esse objeto direto quebrava a página com
+// "Objects are not valid as a React child").
 function useTrackSectionTitle(trackId: string, sectionId: string) {
   const fetch = useGetLearningTrackOverviewService();
   return useQuery({
     queryKey: ["learning-track-overview", trackId],
     queryFn: async () => {
       const { status, data } = await fetch({ id: trackId });
-      if (status !== HTTP_CODES_ENUM.OK) return null;
-      return (
-        data.sections.find((s) => s.section.id === sectionId)?.section.title ??
-        null
-      );
+      if (status === HTTP_CODES_ENUM.OK) return data as LearningTrackOverview;
+      return null;
     },
+    select: (overview) =>
+      overview?.sections.find((s) => s.section.id === sectionId)?.section
+        .title ?? null,
     staleTime: 10 * 60 * 1000,
     enabled: !!trackId && !!sectionId,
   });
