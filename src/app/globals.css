@@ -177,3 +177,29 @@
   margin: 0.5rem 0;
   display: block;
 }
+
+/* Scrollbar fino e discreto em toda a aplicação — o scrollbar padrão do
+   navegador (grosso, cinza puro, quadrado) destoa do resto do design.
+   Firefox usa scrollbar-width/scrollbar-color; Chrome/Edge/Safari usam os
+   pseudo-elementos ::-webkit-scrollbar-*. Aplicado globalmente pra não
+   precisar caçar cada overflow-y-auto individualmente. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}

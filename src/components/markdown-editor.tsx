@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
+import { ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Imagem vira base64 embutido no próprio markdown (data URL) — sem upload,
@@ -59,6 +60,7 @@ export function MarkdownEditor({
   const [preview, setPreview] = useState(false);
   const [pasteError, setPasteError] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const insertAtCursor = (text: string) => {
     const el = textareaRef.current;
@@ -77,30 +79,42 @@ export function MarkdownEditor({
     });
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const insertImageFile = async (file: File) => {
+    setPasteError("");
+    if (!file.type.startsWith("image/")) {
+      setPasteError("Só é possível inserir arquivos de imagem.");
+      return;
+    }
+    if (file.size > MAX_PASTED_IMAGE_BYTES) {
+      setPasteError(
+        "Imagem muito grande (máx. 2 MB). Reduza o tamanho e tente de novo."
+      );
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      insertAtCursor(`\n![imagem](${dataUrl})\n`);
+    } catch {
+      setPasteError("Não foi possível inserir a imagem. Tente novamente.");
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const imageItem = Array.from(e.clipboardData.items).find((item) =>
       item.type.startsWith("image/")
     );
     if (!imageItem) return;
 
     e.preventDefault();
-    setPasteError("");
     const file = imageItem.getAsFile();
     if (!file) return;
+    void insertImageFile(file);
+  };
 
-    if (file.size > MAX_PASTED_IMAGE_BYTES) {
-      setPasteError(
-        "Imagem muito grande (máx. 2 MB). Reduza o tamanho e tente colar de novo."
-      );
-      return;
-    }
-
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      insertAtCursor(`\n![imagem](${dataUrl})\n`);
-    } catch {
-      setPasteError("Não foi possível colar a imagem. Tente novamente.");
-    }
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void insertImageFile(file);
   };
 
   const toggle = (
@@ -154,7 +168,28 @@ export function MarkdownEditor({
             </span>
           )}
         </div>
-        {toggle}
+        <div className="flex items-center gap-2">
+          {!preview && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFilePick}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <ImagePlus className="h-3.5 w-3.5" />
+                Inserir imagem
+              </button>
+            </>
+          )}
+          {toggle}
+        </div>
       </div>
 
       {preview ? (
@@ -199,7 +234,8 @@ export function MarkdownEditor({
 
       {!preview && (
         <p className="text-xs text-muted-foreground">
-          Dica: cole (Ctrl+V) uma imagem copiada pra inserir direto no texto.
+          Cole (Ctrl+V) uma imagem copiada ou use &quot;Inserir imagem&quot;
+          acima.
         </p>
       )}
 
