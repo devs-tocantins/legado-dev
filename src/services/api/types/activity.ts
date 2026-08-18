@@ -9,6 +9,7 @@ export type Activity = {
   requiresProof: boolean;
   requiresDescription: boolean;
   requiresActivityDate: boolean;
+  createsGithubIssue: boolean;
   cooldownHours: number;
   createdAt: string;
   updatedAt: string;

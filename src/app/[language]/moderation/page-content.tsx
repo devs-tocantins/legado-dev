@@ -206,12 +206,37 @@ function DetailModal({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> O que foi enviado
             </p>
-            {!submission.description && !submission.proofUrl ? (
+            {!submission.description &&
+            !submission.proofUrl &&
+            !submission.customTitle ? (
               <p className="text-xs text-muted-foreground italic">
                 Nenhum detalhe enviado.
               </p>
             ) : (
               <>
+                {submission.customTitle && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">
+                      {submission.customTitle}
+                    </p>
+                    {(submission.githubRepo || submission.issueCategory) && (
+                      <div className="flex gap-1.5 text-xs text-muted-foreground">
+                        {submission.githubRepo && (
+                          <span className="rounded bg-muted px-1.5 py-0.5">
+                            {submission.githubRepo === "FRONT"
+                              ? "Site / Front-end"
+                              : "API / Backend"}
+                          </span>
+                        )}
+                        {submission.issueCategory && (
+                          <span className="rounded bg-muted px-1.5 py-0.5">
+                            {submission.issueCategory}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {submission.description && (
                   <div className="bg-muted rounded-md px-3 py-2">
                     <MarkdownContent

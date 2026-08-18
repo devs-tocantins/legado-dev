@@ -7,6 +7,10 @@ import { useGetActivitiesService } from "@/services/api/services/activities";
 import { usePostSubmissionService } from "@/services/api/services/submissions";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { Activity } from "@/services/api/types/activity";
+import {
+  GithubRepoTargetEnum,
+  GithubIssueCategoryEnum,
+} from "@/services/api/types/submission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +30,8 @@ import {
   Loader2,
   ArrowRight,
   CalendarDays,
+  GitBranch,
+  Tag,
 } from "lucide-react";
 import { cn, getApiError } from "@/lib/utils";
 import { useSnackbar } from "@/hooks/use-snackbar";
@@ -56,9 +62,18 @@ function NewSubmissionPageContent() {
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activityDate, setActivityDate] = useState("");
+  const [issueTitle, setIssueTitle] = useState("");
+  const [githubRepo, setGithubRepo] = useState<GithubRepoTargetEnum | null>(
+    null
+  );
+  const [issueCategory, setIssueCategory] =
+    useState<GithubIssueCategoryEnum | null>(null);
   const [proofError, setProofError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
   const [activityDateError, setActivityDateError] = useState("");
+  const [issueTitleError, setIssueTitleError] = useState("");
+  const [githubRepoError, setGithubRepoError] = useState("");
+  const [issueCategoryError, setIssueCategoryError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -152,6 +167,23 @@ function NewSubmissionPageContent() {
       return;
     }
     setActivityDateError("");
+    if (selectedActivity.createsGithubIssue) {
+      if (!issueTitle.trim()) {
+        setIssueTitleError("O título da issue é obrigatório.");
+        return;
+      }
+      if (!githubRepo) {
+        setGithubRepoError("Selecione onde a issue deve ser criada.");
+        return;
+      }
+      if (!issueCategory) {
+        setIssueCategoryError("Selecione a categoria da issue.");
+        return;
+      }
+    }
+    setIssueTitleError("");
+    setGithubRepoError("");
+    setIssueCategoryError("");
     setSubmitting(true);
     try {
       const { status, data } = await postSubmission({
@@ -159,6 +191,15 @@ function NewSubmissionPageContent() {
         proofUrl: proofUploadedUrl ?? undefined,
         description: description.trim() || undefined,
         activityDate: activityDate || undefined,
+        customTitle: selectedActivity.createsGithubIssue
+          ? issueTitle.trim()
+          : undefined,
+        githubRepo: selectedActivity.createsGithubIssue
+          ? githubRepo
+          : undefined,
+        issueCategory: selectedActivity.createsGithubIssue
+          ? issueCategory
+          : undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
         setSubmitted(true);
@@ -179,10 +220,16 @@ function NewSubmissionPageContent() {
     setProofUploadedUrl(null);
     setDescription("");
     setActivityDate("");
+    setIssueTitle("");
+    setGithubRepo(null);
+    setIssueCategory(null);
     setSearch("");
     setProofError("");
     setDescriptionError("");
     setActivityDateError("");
+    setIssueTitleError("");
+    setGithubRepoError("");
+    setIssueCategoryError("");
   };
 
   // Success state
@@ -303,6 +350,12 @@ function NewSubmissionPageContent() {
                       Requer data
                     </span>
                   )}
+                  {selectedActivity.createsGithubIssue && (
+                    <span className="flex items-center gap-1 text-foreground">
+                      <GitBranch className="h-3 w-3" />
+                      Cria issue no GitHub
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -359,6 +412,12 @@ function NewSubmissionPageContent() {
                             {activity.requiresActivityDate && (
                               <span className="text-violet-500">
                                 Requer data
+                              </span>
+                            )}
+                            {activity.createsGithubIssue && (
+                              <span className="flex items-center gap-1">
+                                <GitBranch className="h-3 w-3" />
+                                Cria issue
                               </span>
                             )}
                             {activity.cooldownHours > 0 && (
@@ -483,6 +542,117 @@ function NewSubmissionPageContent() {
               max={new Date().toISOString().split("T")[0]}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
+          </div>
+        )}
+
+        {/* GitHub issue fields */}
+        {selectedActivity?.createsGithubIssue && (
+          <div className="space-y-4 rounded-lg border border-input p-4">
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <GitBranch className="h-4 w-4" />
+              Detalhes da issue
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Título da issue <span className="text-destructive">*</span>
+              </label>
+              <input
+                value={issueTitle}
+                onChange={(e) => {
+                  setIssueTitle(e.target.value);
+                  setIssueTitleError("");
+                }}
+                placeholder="Ex: Botão de login não funciona no mobile"
+                maxLength={200}
+                className={cn(
+                  "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+                  issueTitleError && "border-destructive"
+                )}
+              />
+              {issueTitleError && (
+                <p className="text-xs text-destructive">{issueTitleError}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Repositório <span className="text-destructive">*</span>
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGithubRepo(GithubRepoTargetEnum.FRONT);
+                    setGithubRepoError("");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
+                    githubRepo === GithubRepoTargetEnum.FRONT
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-input hover:bg-accent"
+                  )}
+                >
+                  Site / Front-end
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGithubRepo(GithubRepoTargetEnum.API);
+                    setGithubRepoError("");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
+                    githubRepo === GithubRepoTargetEnum.API
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-input hover:bg-accent"
+                  )}
+                >
+                  API / Backend
+                </button>
+              </div>
+              {githubRepoError && (
+                <p className="text-xs text-destructive">{githubRepoError}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Tag className="h-4 w-4" />
+                Categoria <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: GithubIssueCategoryEnum.BUG, label: "Bug" },
+                  {
+                    value: GithubIssueCategoryEnum.MELHORIA,
+                    label: "Melhoria",
+                  },
+                  { value: GithubIssueCategoryEnum.DUVIDA, label: "Dúvida" },
+                  { value: GithubIssueCategoryEnum.OUTRO, label: "Outro" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setIssueCategory(option.value);
+                      setIssueCategoryError("");
+                    }}
+                    className={cn(
+                      "rounded-lg border px-3 py-2 text-sm transition-colors",
+                      issueCategory === option.value
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-input hover:bg-accent"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {issueCategoryError && (
+                <p className="text-xs text-destructive">{issueCategoryError}</p>
+              )}
+            </div>
           </div>
         )}
 
