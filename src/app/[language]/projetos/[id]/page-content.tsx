@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Lightbulb, Plus, Users, X } from "lucide-react";
+import { ArrowLeft, Lightbulb, Pencil, Plus, X } from "lucide-react";
 import {
   useDeleteProjectInterestService,
   useDeleteProjectParticipantService,
@@ -16,7 +16,12 @@ import {
   usePutProjectInterestService,
 } from "@/services/api/services/projects";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { ProjectIdea, ProjectParticipant } from "@/services/api/types/project";
+import {
+  ProjectIdea,
+  ProjectIdeaStatus,
+  ProjectParticipant,
+  ProjectUserSummary,
+} from "@/services/api/types/project";
 import { RoleEnum } from "@/services/api/types/role";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,16 +29,53 @@ import Link from "@/components/link";
 import { EmptyState } from "@/components/ui/empty-state";
 import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { getApiError } from "@/lib/utils";
-import { projectUserName } from "@/lib/project-labels";
-import { FIELD_CLASS, UserChip } from "../project-components";
+import { cn, getApiError } from "@/lib/utils";
+import { projectRoleFromLabel, projectUserName } from "@/lib/project-labels";
+import { FIELD_CLASS } from "../project-components";
 
 const MAX_STACK = 4;
+const MAX_NAMES = 3;
 
-function participantLabel(participant: ProjectParticipant): string {
-  return participant.user?.username
-    ? `@${participant.user.username}`
-    : projectUserName(participant.user);
+const AVATAR_COLORS = [
+  "bg-[#2f5fd8]",
+  "bg-[#b4540a]",
+  "bg-[#0f7b6c]",
+  "bg-[#8a3fd1]",
+  "bg-[#c0357a]",
+  "bg-[#4d6b1f]",
+];
+
+function avatarColor(userId: number): string {
+  return AVATAR_COLORS[Math.abs(userId) % AVATAR_COLORS.length];
+}
+
+function handleOf(user?: ProjectUserSummary | null): string {
+  return user?.username ? `@${user.username}` : projectUserName(user);
+}
+
+function initialOf(user?: ProjectUserSummary | null): string {
+  return projectUserName(user).charAt(0).toUpperCase();
+}
+
+function PersonAvatar({
+  user,
+  userId,
+  className,
+}: {
+  user?: ProjectUserSummary | null;
+  userId: number;
+  className?: string;
+}) {
+  return (
+    <Avatar className={className}>
+      {user?.photo?.path && <AvatarImage src={user.photo.path} alt="" />}
+      <AvatarFallback
+        className={cn("font-semibold text-white", avatarColor(userId))}
+      >
+        {initialOf(user)}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
 
 /** Fotos sobrepostas, no estilo do Instagram; passando do limite vira "+N". */
@@ -42,23 +84,20 @@ function AvatarStack({ participants }: { participants: ProjectParticipant[] }) {
   const extra = participants.length - visible.length;
 
   return (
-    <div className="flex items-center -space-x-3">
-      {visible.map((participant) => (
-        <Avatar
+    <div className="flex items-center">
+      {visible.map((participant, index) => (
+        <PersonAvatar
           key={participant.id}
-          className="h-11 w-11 ring-2 ring-card"
-          title={participantLabel(participant)}
-        >
-          {participant.user?.photo?.path && (
-            <AvatarImage src={participant.user.photo.path} alt="" />
+          user={participant.user}
+          userId={participant.userId}
+          className={cn(
+            "size-14 text-lg ring-[3px] ring-card after:hidden",
+            index > 0 && "-ml-4"
           )}
-          <AvatarFallback>
-            {projectUserName(participant.user).charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        />
       ))}
       {extra > 0 && (
-        <span className="z-10 flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-xs font-semibold ring-2 ring-card">
+        <span className="-ml-4 flex size-14 items-center justify-center rounded-full bg-secondary text-[15px] font-semibold ring-[3px] ring-card">
           +{extra}
         </span>
       )}
@@ -66,7 +105,22 @@ function AvatarStack({ participants }: { participants: ProjectParticipant[] }) {
   );
 }
 
-function TeamCard({ idea }: { idea: ProjectIdea }) {
+function EmptyStack() {
+  return (
+    <div className="flex items-center">
+      <span
+        aria-hidden="true"
+        className="size-14 rounded-full border-2 border-dashed border-border"
+      />
+      <span
+        aria-hidden="true"
+        className="-ml-4 size-14 rounded-full border-2 border-dashed border-border bg-card"
+      />
+    </div>
+  );
+}
+
+function TeamSection({ idea }: { idea: ProjectIdea }) {
   const { user, isLoaded } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
@@ -79,6 +133,7 @@ function TeamCard({ idea }: { idea: ProjectIdea }) {
   const deleteRole = useDeleteProjectRoleService();
   const deleteParticipant = useDeleteProjectParticipantService();
 
+  const [manage, setManage] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [processing, setProcessing] = useState(false);
   const [confirmRoleId, setConfirmRoleId] = useState<string | null>(null);
@@ -211,12 +266,11 @@ function TeamCard({ idea }: { idea: ProjectIdea }) {
 
   if (!user) {
     return (
-      <section className="space-y-3 rounded-xl border border-border bg-card p-5">
-        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-          <Users className="h-5 w-5" />
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[26px] font-bold tracking-tight">
           Time do projeto
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] text-muted-foreground">
           <Link
             href="/sign-in"
             className="font-semibold text-primary hover:underline"
@@ -232,108 +286,157 @@ function TeamCard({ idea }: { idea: ProjectIdea }) {
   const joinedRoles = new Set(mine?.roles ?? []);
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-5 sm:p-6">
-      <div>
-        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-          <Users className="h-5 w-5" />
-          Time do projeto
-        </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Escolha um ou mais cargos para participar. Quem propôs o projeto
-          também pode atuar nele.
-        </p>
+    <section className="flex flex-col gap-7">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex max-w-[620px] flex-col gap-1.5">
+          <h2 className="text-[26px] font-bold tracking-tight">
+            Time do projeto
+          </h2>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            Entre em um ou mais cargos. Quem propôs o projeto também pode atuar
+            nele
+            {canManage ? ", e você pode criar cargos novos." : "."}
+          </p>
+        </div>
+        {canManage && (
+          <Button
+            variant="outline"
+            onClick={() => setManage((value) => !value)}
+            className="gap-2"
+          >
+            <Pencil className="size-4" />
+            {manage ? "Concluir edição" : "Gerenciar cargos"}
+          </Button>
+        )}
       </div>
 
       {loadingRoles ? (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" />
+        <div className="h-56 animate-pulse rounded-2xl bg-muted" />
       ) : (
-        <ul className="divide-y divide-border">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
           {roles.map((role) => {
             const inRole = participants.filter((p) => p.role === role.name);
             const joined = joinedRoles.has(role.name);
+            const custom = projectRoleFromLabel(role.name) === undefined;
+
             return (
-              <li
+              <article
                 key={role.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3"
+                className={cn(
+                  "flex min-h-[232px] flex-col gap-5 rounded-2xl border bg-card p-[22px] transition-colors",
+                  joined
+                    ? "border-primary"
+                    : "border-border hover:border-muted-foreground/40"
+                )}
               >
-                <div className="min-w-[9rem] flex-1">
-                  <p className="text-sm font-semibold">{role.name}</p>
-                  {inRole.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Vaga aberta</p>
-                  ) : (
-                    <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                      {inRole.map((participant) => (
-                        <span
-                          key={participant.id}
-                          className="inline-flex items-center gap-0.5"
-                        >
-                          {participant.user?.username ? (
-                            <Link
-                              href={`/u/${participant.user.username}`}
-                              className="hover:text-foreground hover:underline"
-                            >
-                              {participantLabel(participant)}
-                            </Link>
-                          ) : (
-                            participantLabel(participant)
-                          )}
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRemoveParticipant(participant)
-                              }
-                              disabled={processing}
-                              className="rounded p-0.5 hover:text-destructive"
-                              aria-label={`Remover ${participantLabel(participant)}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                </div>
-
-                {inRole.length > 0 && <AvatarStack participants={inRole} />}
-
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant={joined ? "outline" : "default"}
-                    onClick={() => handleToggle(role.name, joined)}
-                    disabled={processing}
-                  >
-                    {joined ? "Sair" : "Participar"}
-                  </Button>
-                  {canManage && (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <h3 className="text-[17px] font-semibold tracking-tight">
+                      {role.name}
+                    </h3>
+                    {custom && (
+                      <span className="w-fit rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
+                        Cargo criado por quem propôs
+                      </span>
+                    )}
+                  </div>
+                  {manage && (
                     <Button
-                      size="sm"
                       variant="ghost"
+                      size="sm"
                       onClick={() => handleRemoveRole(role)}
                       disabled={processing}
                       aria-label={`Remover cargo ${role.name}`}
+                      className="text-muted-foreground"
                     >
                       {confirmRoleId === role.id ? (
                         <span className="text-xs text-destructive">
                           Remover?
                         </span>
                       ) : (
-                        <X className="h-4 w-4" />
+                        <X className="size-4" />
                       )}
                     </Button>
                   )}
                 </div>
-              </li>
+
+                <div className="flex flex-1 flex-col justify-center gap-3">
+                  {inRole.length === 0 ? (
+                    <div className="flex items-center gap-3.5">
+                      <EmptyStack />
+                      <span className="text-sm text-muted-foreground">
+                        Ninguém ainda. Seja o primeiro.
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <AvatarStack participants={inRole} />
+                      <p className="flex flex-wrap items-center gap-x-1.5 text-sm leading-relaxed text-foreground/80">
+                        {(manage ? inRole : inRole.slice(0, MAX_NAMES)).map(
+                          (participant, index, list) => (
+                            <span
+                              key={participant.id}
+                              className="inline-flex items-center gap-0.5"
+                            >
+                              {participant.user?.username ? (
+                                <Link
+                                  href={`/u/${participant.user.username}`}
+                                  className="hover:text-foreground hover:underline"
+                                >
+                                  {handleOf(participant.user)}
+                                </Link>
+                              ) : (
+                                handleOf(participant.user)
+                              )}
+                              {manage ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemoveParticipant(participant)
+                                  }
+                                  disabled={processing}
+                                  className="rounded p-0.5 text-muted-foreground hover:text-destructive"
+                                  aria-label={`Remover ${handleOf(
+                                    participant.user
+                                  )}`}
+                                >
+                                  <X className="size-3" />
+                                </button>
+                              ) : (
+                                index < list.length - 1 && ","
+                              )}
+                            </span>
+                          )
+                        )}
+                        {!manage && inRole.length > MAX_NAMES && (
+                          <span>e mais {inRole.length - MAX_NAMES}</span>
+                        )}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant={joined ? "outline" : "default"}
+                  onClick={() => handleToggle(role.name, joined)}
+                  disabled={processing}
+                  className="h-11 w-full"
+                >
+                  {joined ? "Sair do cargo" : "Participar"}
+                </Button>
+              </article>
             );
           })}
-        </ul>
+        </div>
       )}
 
-      {canManage && (
-        <div className="flex gap-2 border-t border-border pt-4">
+      {canManage && manage && (
+        <div className="flex flex-wrap gap-3 border-t border-border pt-6">
+          <label htmlFor="novo-cargo" className="sr-only">
+            Novo cargo
+          </label>
           <input
+            id="novo-cargo"
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
             onKeyDown={(e) => {
@@ -343,16 +446,16 @@ function TeamCard({ idea }: { idea: ProjectIdea }) {
               }
             }}
             maxLength={40}
-            placeholder="Novo cargo (ex: Mentor)"
-            className={FIELD_CLASS}
+            placeholder="Novo cargo, por exemplo: Mentor"
+            className={cn(FIELD_CLASS, "min-w-0 flex-[1_1_280px]")}
           />
           <Button
             onClick={handleAddRole}
             disabled={processing || newRole.trim().length < 2}
-            className="gap-1.5"
+            className="h-auto gap-2 px-[18px] py-3"
           >
-            <Plus className="h-4 w-4" />
-            Adicionar
+            <Plus className="size-4" />
+            Adicionar cargo
           </Button>
         </div>
       )}
@@ -364,6 +467,8 @@ function ProjectIdeaDetailPageContent() {
   const params = useParams();
   const id = params.id as string;
   const fetchIdea = useGetProjectIdeaService();
+  const fetchRoles = useGetProjectRolesService();
+  const { user } = useAuth();
 
   const { data: idea, isLoading } = useQuery({
     queryKey: ["project-idea", id],
@@ -374,9 +479,18 @@ function ProjectIdeaDetailPageContent() {
     enabled: !!id,
   });
 
+  const { data: roles } = useQuery({
+    queryKey: ["project-idea-roles", id],
+    queryFn: async () => {
+      const { status, data } = await fetchRoles({ ideaId: id });
+      return status === HTTP_CODES_ENUM.OK ? data : [];
+    },
+    enabled: !!id && !!user,
+  });
+
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-[1160px] px-4 py-8 sm:px-6">
         <div className="h-64 animate-pulse rounded-lg bg-muted" />
       </div>
     );
@@ -384,7 +498,7 @@ function ProjectIdeaDetailPageContent() {
 
   if (!idea) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-[1160px] px-4 py-8 sm:px-6">
         <EmptyState
           icon={Lightbulb}
           title="Projeto não encontrado"
@@ -395,34 +509,72 @@ function ProjectIdeaDetailPageContent() {
     );
   }
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 pb-20">
-      <Link
-        href="/projetos"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Projetos
-      </Link>
+  const open =
+    idea.status === ProjectIdeaStatus.APPROVED ||
+    idea.status === ProjectIdeaStatus.TEAM_FORMED;
 
-      <header className="space-y-3">
-        <h1 className="font-heading text-[30px] font-bold leading-tight tracking-tight">
-          {idea.title}
-        </h1>
-        <div className="flex flex-wrap items-center gap-4">
-          <UserChip user={idea.author} />
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
-            {idea.interestCount}{" "}
+  return (
+    <div className="mx-auto flex max-w-[1160px] flex-col gap-10 px-4 pb-24 pt-8 sm:px-6">
+      <header className="flex flex-col gap-5">
+        <Link
+          href="/projetos"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Projetos
+        </Link>
+
+        <div className="flex max-w-[860px] flex-col gap-4">
+          {open && (
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400">
+              <span
+                aria-hidden="true"
+                className="size-[7px] rounded-full bg-emerald-400"
+              />
+              Aberto a participantes
+            </span>
+          )}
+          <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight sm:text-[44px]">
+            {idea.title}
+          </h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
+          <div className="flex items-center gap-2.5">
+            <PersonAvatar
+              user={idea.author}
+              userId={idea.authorId}
+              className="size-8 text-xs after:hidden"
+            />
+            <span className="text-sm text-muted-foreground">
+              Proposto por{" "}
+              <span className="font-semibold text-foreground">
+                {handleOf(idea.author)}
+              </span>
+            </span>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            <strong className="font-semibold text-foreground">
+              {idea.interestCount}
+            </strong>{" "}
             {idea.interestCount === 1 ? "participante" : "participantes"}
           </span>
+          {roles && (
+            <span className="text-sm text-muted-foreground">
+              <strong className="font-semibold text-foreground">
+                {roles.length}
+              </strong>{" "}
+              {roles.length === 1 ? "cargo" : "cargos"}
+            </span>
+          )}
         </div>
+
         {idea.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {idea.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
+                className="rounded-md border border-border bg-secondary px-2.5 py-1 font-mono text-xs text-muted-foreground"
               >
                 {tag}
               </span>
@@ -430,10 +582,6 @@ function ProjectIdeaDetailPageContent() {
           </div>
         )}
       </header>
-
-      <p className="whitespace-pre-line text-[15px] leading-relaxed">
-        {idea.description}
-      </p>
 
       {idea.teamId && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-600/30 bg-emerald-600/5 p-4">
@@ -444,7 +592,16 @@ function ProjectIdeaDetailPageContent() {
         </div>
       )}
 
-      <TeamCard idea={idea} />
+      <TeamSection idea={idea} />
+
+      <section className="flex max-w-[760px] flex-col gap-6">
+        <h2 className="text-[26px] font-bold tracking-tight">
+          Sobre o projeto
+        </h2>
+        <p className="whitespace-pre-line text-base leading-[1.7] text-foreground/80">
+          {idea.description}
+        </p>
+      </section>
     </div>
   );
 }
