@@ -2,7 +2,12 @@ import { useCallback } from "react";
 import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
-import { Submission, PublicSubmissionDetail } from "../types/submission";
+import {
+  Submission,
+  PublicSubmissionDetail,
+  GithubRepoTargetEnum,
+  GithubIssueCategoryEnum,
+} from "../types/submission";
 import { EffortLevelEnum } from "../types/activity";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { SortEnum } from "../types/sort-type";
@@ -92,8 +97,10 @@ export type SubmissionPostRequest = {
   isTestOut?: boolean;
   proofUrl?: string | null;
   description?: string | null;
-  activityDate?: string | null;
   customTitle?: string | null;
+  activityDate?: string | null;
+  githubRepo?: GithubRepoTargetEnum | null;
+  issueCategory?: GithubIssueCategoryEnum | null;
   effortLevel?: EffortLevelEnum;
 };
 

@@ -11,6 +11,7 @@ import {
   LogIn,
   BookOpen,
   CalendarDays,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ function BottomNav() {
     { href: "/trilhas", label: "Trilhas", icon: Map },
     { href: "/cursos", label: "Cursos", icon: BookOpen },
     { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+    { href: "/projetos", label: "Projetos", icon: Rocket },
     { href: "/eventos", label: "Agenda", icon: CalendarDays },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
   ];

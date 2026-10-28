@@ -35,6 +35,7 @@ import {
   XCircle,
   ChevronRight,
   Trash2,
+  GitBranch,
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -118,6 +119,17 @@ function SubmissionRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {sub.githubIssueUrl && (
+            <a
+              href={sub.githubIssueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              title="Ver issue no GitHub"
+            >
+              <GitBranch className="h-3.5 w-3.5" />
+            </a>
+          )}
           {sub.proofUrl && (
             <a
               href={sub.proofUrl}

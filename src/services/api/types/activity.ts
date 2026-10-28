@@ -23,6 +23,7 @@ export type Activity = {
   requiresProof: boolean;
   requiresDescription: boolean;
   requiresActivityDate: boolean;
+  createsGithubIssue: boolean;
   cooldownHours: number;
   effortTiers?: EffortTier[] | null;
   isFreeform?: boolean;

@@ -12,6 +12,9 @@ import {
   Shield,
   Clock,
   Bell,
+  Lightbulb,
+  Users,
+  Rocket,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +43,10 @@ export const NOTIFICATION_TYPE_MAP: Record<
   },
   EVENT_UPDATED: { icon: CalendarDays, colorClass: "text-amber-500" },
   EVENT_CANCELLED: { icon: CalendarX, colorClass: "text-destructive" },
+  PROJECT_IDEA_APPROVED: { icon: Lightbulb, colorClass: "text-emerald-500" },
+  PROJECT_IDEA_REJECTED: { icon: Lightbulb, colorClass: "text-destructive" },
+  PROJECT_IDEA_INTEREST: { icon: Users, colorClass: "text-blue-500" },
+  PROJECT_TEAM_MEMBER_ADDED: { icon: Rocket, colorClass: "text-violet-500" },
 };
 
 export function NotificationIcon({

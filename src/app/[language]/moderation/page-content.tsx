@@ -40,6 +40,7 @@ import {
 import { Course } from "@/services/api/types/course";
 import { Event, EventModality } from "@/services/api/types/event";
 import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
+import { ProjectIdeasTab } from "./project-ideas-tab";
 import {
   EVENT_CATEGORY_LABELS,
   EVENT_MODALITY_LABELS,
@@ -73,6 +74,7 @@ import {
   Gift,
   Coins,
   CalendarDays,
+  Lightbulb,
   MapPin,
   Video,
 } from "lucide-react";
@@ -344,20 +346,49 @@ function DetailModal({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> O que foi enviado
             </p>
-            {submission.description ? (
-              <div className="bg-muted rounded-md px-3 py-2">
-                <MarkdownContent
-                  content={submission.description}
-                  className="text-sm"
-                />
-              </div>
-            ) : (
+            {!submission.description &&
+            !submission.proofUrl &&
+            !submission.customTitle ? (
               <p className="text-xs text-muted-foreground italic">
-                Sem descrição enviada.
+                Nenhum detalhe enviado.
               </p>
-            )}
-            {submission.proofUrl && (
-              <ProofPreview proofUrl={submission.proofUrl} />
+            ) : (
+              <>
+                {submission.customTitle && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">
+                      {submission.customTitle}
+                    </p>
+                    {(submission.githubRepo || submission.issueCategory) && (
+                      <div className="flex gap-1.5 text-xs text-muted-foreground">
+                        {submission.githubRepo && (
+                          <span className="rounded bg-muted px-1.5 py-0.5">
+                            {submission.githubRepo === "FRONT"
+                              ? "Site / Front-end"
+                              : "API / Backend"}
+                          </span>
+                        )}
+                        {submission.issueCategory && (
+                          <span className="rounded bg-muted px-1.5 py-0.5">
+                            {submission.issueCategory}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {submission.description && (
+                  <div className="bg-muted rounded-md px-3 py-2">
+                    <MarkdownContent
+                      content={submission.description}
+                      className="text-sm"
+                    />
+                  </div>
+                )}
+                {submission.proofUrl && (
+                  <ProofPreview proofUrl={submission.proofUrl} />
+                )}
+              </>
             )}
           </div>
 
@@ -1692,7 +1723,13 @@ function EventosTab() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = "atividades" | "trilhas" | "cursos" | "missoes" | "eventos";
+type Tab =
+  | "atividades"
+  | "trilhas"
+  | "cursos"
+  | "missoes"
+  | "eventos"
+  | "projetos";
 
 const TAB_CONFIG: Record<Tab, { label: string; icon: typeof ShieldCheck }> = {
   atividades: { label: "Atividades", icon: ShieldCheck },
@@ -1700,6 +1737,7 @@ const TAB_CONFIG: Record<Tab, { label: string; icon: typeof ShieldCheck }> = {
   cursos: { label: "Cursos", icon: GraduationCap },
   missoes: { label: "Missões", icon: Target },
   eventos: { label: "Eventos", icon: CalendarDays },
+  projetos: { label: "Projetos", icon: Lightbulb },
 };
 
 function ModerationPageContent() {
@@ -1715,7 +1753,7 @@ function ModerationPageContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-border">
         {(Object.keys(TAB_CONFIG) as Tab[]).map((t) => {
           const { label, icon: Icon } = TAB_CONFIG[t];
           return (
@@ -1743,6 +1781,8 @@ function ModerationPageContent() {
         <CursosTab />
       ) : tab === "eventos" ? (
         <EventosTab />
+      ) : tab === "projetos" ? (
+        <ProjectIdeasTab />
       ) : (
         <MissoesTab />
       )}

@@ -27,6 +27,7 @@ import {
   Map,
   GraduationCap,
   FileText,
+  Rocket,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -326,12 +327,14 @@ function ResponsiveAppBar() {
         { href: "/trilhas", label: "Trilhas", icon: Map },
         { href: "/cursos", label: "Cursos", icon: GraduationCap },
         { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+        { href: "/projetos", label: "Projetos", icon: Rocket },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
         { href: "/submissions", label: "Histórico", icon: ClipboardList },
       ]
     : [
         { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+        { href: "/projetos", label: "Projetos", icon: Rocket },
         { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
       ];
