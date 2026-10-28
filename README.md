@@ -1,4 +1,4 @@
-# Documentação — Motor de Engajamento (Frontend)
+# Documentação — legado.dev (Frontend)
 
 Frontend do Motor de Gamificação e Reconhecimento da comunidade **Devs Tocantins**.
 

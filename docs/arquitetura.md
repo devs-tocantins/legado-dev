@@ -8,30 +8,36 @@ src/
 │   └── [language]/                  ← Todas as páginas da aplicação (rotas)
 │       ├── page.tsx                 ← Home pública (título + botão Entrar)
 │       ├── layout.tsx               ← Layout raiz (providers, navbar)
-│       ├── sign-in/                 ← Login (e-mail/senha + Google)
-│       ├── sign-up/                 ← Cadastro
-│       ├── forgot-password/         ← Recuperação de senha
-│       ├── password-change/         ← Redefinição de senha (via link do e-mail)
+│       ├── activities/              ← Redireciona automaticamente para /voluntariado
+│       ├── admin-panel/             ← Painel administrativo (métricas, saúde dos serviços e gestão)
+│       ├── auth/                    ← Callbacks de autenticação social (OAuth)
 │       ├── confirm-email/           ← Confirmação de e-mail pós-cadastro
-│       ├── profile/                 ← Perfil público de qualquer membro
-│       ├── activities/              ← Catálogo de atividades
-│       ├── submissions/
-│       │   └── new/                 ← Envio de comprovante de atividade
-│       ├── missions/
-│       │   └── [id]/                ← Detalhe + submissão de missão
-│       ├── rankings/                ← Rankings mensal, anual e global
-│       ├── moderation/              ← Fila de moderação (ADMIN/MODERADOR)
-│       └── admin-panel/             ← Painel administrativo (ADMIN)
-│           ├── page.tsx             ← Dashboard com métricas e saúde dos serviços
-│           ├── activities/          ← CRUD de atividades
-│           ├── submissions/         ← Gestão de submissões
-│           ├── gamification-profiles/ ← Gestão de perfis + penalidades
-│           ├── missions/            ← CRUD de missões
-│           ├── badges/              ← CRUD de badges + concessão manual
-│           ├── transactions/        ← Histórico de transações
-│           └── users/               ← Gestão de contas de usuários
+│       ├── confirm-new-email/       ← Confirmação de alteração de e-mail
+│       ├── cursos/                  ← Catálogo comunitário de cursos e avaliações
+│       ├── dashboard/               ← Redireciona automaticamente para /profile
+│       ├── eventos/                 ← Listagem e inscrição em eventos comunitários
+│       ├── forgot-password/         ← Recuperação de senha
+│       ├── leaderboard/             ← Rankings mensal, anual, geral e Mural de Campeões
+│       ├── legal/                   ← Central de navegação para termos e privacidade
+│       ├── missions/                ← Redireciona para /voluntariado (detalhe em /missions/[id])
+│       ├── moderation/              ← Fila de moderação de submissões, cursos e eventos (ADMIN/MODERADOR)
+│       ├── onboarding/              ← Configuração inicial de username pós-cadastro
+│       ├── password-change/         ← Redefinição de senha via link enviado por e-mail
+│       ├── privacy-policy/          ← Documento de Política de Privacidade
+│       ├── profile/                 ← Perfil do usuário logado (XP, nível, badges e tokens)
+│       ├── rules/                   ← Regras da comunidade e manifesto de contribuição
+│       ├── secret/                  ← Resgate de XP/atividades via códigos secretos
+│       ├── settings/                ← Configurações de preferências da conta e notificações
+│       ├── sign-in/                 ← Login (e-mail/senha + Google/GitHub)
+│       ├── sign-up/                 ← Cadastro de novos membros
+│       ├── submissions/             ← Histórico e envio de comprovantes de atividades
+│       ├── terms-of-service/        ← Documento dos Termos de Serviço
+│       ├── transactions/            ← Extrato de transações de XP e tokens de gratidão
+│       ├── trilhas/                 ← Trilhas de aprendizado estruturadas com marcos
+│       ├── u/                       ← Perfil público de membros (/u/[username])
+│       └── voluntariado/            ← Hub de voluntariado (atividades recorrentes e missões)
 │
-├── components/               ← Componentes reutilizáveis
+├── components/               ← Componentes reutilizáveis (inclui UI em src/components/ui/ com shadcn/ui)
 │   ├── app-bar/              ← Barra de navegação
 │   ├── confirm-dialog/       ← Dialog de confirmação genérico
 │   ├── form/                 ← Inputs reutilizáveis (text, checkbox, file...)

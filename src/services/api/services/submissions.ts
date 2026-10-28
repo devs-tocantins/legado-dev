@@ -8,6 +8,7 @@ import {
   GithubRepoTargetEnum,
   GithubIssueCategoryEnum,
 } from "../types/submission";
+import { EffortLevelEnum } from "../types/activity";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { SortEnum } from "../types/sort-type";
 import { RequestConfigType } from "./types/request-config";
@@ -91,13 +92,16 @@ export function useGetPublicSubmissionDetailService() {
 }
 
 export type SubmissionPostRequest = {
-  activityId: string;
+  activityId?: string;
+  trackItemId?: string;
+  isTestOut?: boolean;
   proofUrl?: string | null;
   description?: string | null;
   customTitle?: string | null;
   activityDate?: string | null;
   githubRepo?: GithubRepoTargetEnum | null;
   issueCategory?: GithubIssueCategoryEnum | null;
+  effortLevel?: EffortLevelEnum;
 };
 
 export type SubmissionPostResponse = Submission;
@@ -243,6 +247,7 @@ export type ReviewSubmissionRequest = {
   data: {
     status: "APPROVED" | "REJECTED";
     feedback?: string;
+    effortLevel?: EffortLevelEnum;
   };
 };
 

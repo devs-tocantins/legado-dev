@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -9,6 +10,8 @@ import useLeavePage from "@/services/leave-page/use-leave-page";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { useTranslation } from "@/services/i18n/client";
 import { usePostActivityService } from "@/services/api/services/activities";
+import { EffortTier } from "@/services/api/types/activity";
+import { EffortTiersFields } from "@/components/activity/effort-tiers-fields";
 import { useRouter } from "next/navigation";
 import FormTextInput from "@/components/form/text-input/form-text-input-shadcn";
 import FormCheckboxInput from "@/components/form/checkbox-boolean/form-checkbox-boolean";
@@ -28,6 +31,7 @@ type CreateFormData = {
   requiresDescription: boolean;
   requiresActivityDate: boolean;
   cooldownHours: number;
+  isFreeform: boolean;
 };
 
 const toInteger = (value: number, originalValue: unknown) =>
@@ -77,6 +81,7 @@ const useValidationSchema = () => {
     requiresProof: yup.boolean().default(false),
     requiresDescription: yup.boolean().default(false),
     requiresActivityDate: yup.boolean().default(false),
+    isFreeform: yup.boolean().default(false),
     cooldownHours: yup
       .number()
       .transform(toInteger)
@@ -107,6 +112,8 @@ function FormCreateActivity() {
   const { t } = useTranslation("admin-panel-activities-create");
   const validationSchema = useValidationSchema();
   const { enqueueSnackbar } = useSnackbar();
+  const [usesEffortTiers, setUsesEffortTiers] = useState(false);
+  const [effortTiers, setEffortTiers] = useState<EffortTier[]>([]);
 
   const methods = useForm<CreateFormData>({
     resolver: yupResolver(validationSchema),
@@ -118,6 +125,7 @@ function FormCreateActivity() {
       requiresProof: false,
       requiresDescription: false,
       requiresActivityDate: false,
+      isFreeform: false,
       cooldownHours: 0,
     },
   });
@@ -134,6 +142,8 @@ function FormCreateActivity() {
       requiresDescription: formData.requiresDescription,
       requiresActivityDate: formData.requiresActivityDate,
       cooldownHours: formData.cooldownHours,
+      isFreeform: formData.isFreeform,
+      effortTiers: usesEffortTiers ? effortTiers : undefined,
     });
     if (status === HTTP_CODES_ENUM.UNPROCESSABLE_ENTITY) {
       (Object.keys(data.errors) as Array<keyof CreateFormData>).forEach(
@@ -240,6 +250,28 @@ function FormCreateActivity() {
                 testId="requiresActivityDate"
                 label="Requer data de realização"
               />
+              <FormCheckboxInput<CreateFormData>
+                name="isFreeform"
+                testId="isFreeform"
+                label="Atividade livre (usuário digita o título ao submeter)"
+              />
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={usesEffortTiers}
+                  onChange={(e) => setUsesEffortTiers(e.target.checked)}
+                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                />
+                Usar faixas de esforço (P/M/G/Épico) em vez de XP fixo
+              </label>
+              {usesEffortTiers && (
+                <EffortTiersFields
+                  tiers={effortTiers}
+                  onChange={setEffortTiers}
+                />
+              )}
+
               <div className="flex gap-2 pt-2">
                 <CreateActivityFormActions />
                 <Button

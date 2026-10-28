@@ -1,0 +1,47 @@
+{
+  "title": "Termo de Serviço",
+  "lastUpdated": "Última atualização: 19 de julho de 2026 — versão 1",
+  "intro_notice": "Este é um documento em fase inicial (v1), redigido para deixar claro como o legado.dev funciona hoje. Ele ainda não passou por revisão jurídica profissional; isso está planejado para uma etapa futura da comunidade.",
+
+  "section_1_title": "1. O que é o legado.dev",
+  "section_1_paragraph_1": "O legado.dev é uma plataforma comunitária, gratuita e sem fins lucrativos, mantida pela Comunidade Devs Tocantins, para registrar, reconhecer e dar visibilidade a contribuições voluntárias de seus membros (organização de eventos, palestras, mentorias, atividades de trilhas de aprendizado, entre outras).",
+  "section_1_paragraph_2": "Ao criar uma conta e usar o serviço, você concorda com este Termo de Serviço e com a nossa Política de Privacidade. Se você não concordar com algum ponto, pedimos que não utilize a plataforma.",
+
+  "section_2_title": "2. Sua conta",
+  "section_2_paragraph_1": "Para usar o legado.dev você precisa criar uma conta com e-mail e senha, ou entrar via Google/GitHub. Você é responsável por manter a confidencialidade da sua senha e por tudo o que acontecer na sua conta.",
+  "section_2_paragraph_2": "As informações que você fornece no cadastro (nome, e-mail) e no seu perfil (username, foto) devem ser verdadeiras. Contas com informações falsas, duplicadas ou usadas para se passar por outra pessoa podem ser suspensas.",
+
+  "section_3_title": "3. Envio de contribuições e comprovantes",
+  "section_3_paragraph_1": "Ao submeter uma contribuição (atividade, prova de marco de trilha, etc.), você declara que a descrição e o comprovante enviados são verdadeiros e representam algo que você de fato realizou.",
+  "section_3_paragraph_2": "Toda submissão passa por moderação humana antes de gerar XP. Moderadores podem aprovar, rejeitar ou pedir mais informações, usando seu próprio critério. Comprovantes fraudados, plagiados ou contribuições fictícias podem levar à remoção da submissão, zeragem do XP obtido de forma indevida e, em casos graves, à suspensão da conta.",
+  "section_3_paragraph_3": "Você concede ao legado.dev uma licença gratuita, não exclusiva, para exibir o conteúdo das suas submissões aprovadas (título, relato em texto e indicação de que há comprovante) publicamente no seu perfil, conforme detalhado na nossa Política de Privacidade.",
+
+  "section_4_title": "4. Conduta esperada",
+  "section_4_paragraph_1": "Pedimos que você trate outros membros com respeito. Não é permitido: assédio, discurso de ódio, spam, tentativa de burlar a moderação, uso de múltiplas contas para fraudar o ranking, ou qualquer atividade que viole a lei brasileira.",
+  "section_4_paragraph_2": "Podemos remover conteúdo, suspender ou encerrar contas que violem este Termo, a nosso critério, buscando sempre agir de forma proporcional e, quando possível, avisando a pessoa envolvida antes.",
+
+  "section_5_title": "5. XP, níveis e Tokens de Gratidão",
+  "section_5_paragraph_1": "XP, níveis, selos e Tokens de Gratidão são elementos de gamificação interna, sem qualquer valor monetário. Eles não são criptomoedas, não podem ser comprados, vendidos, trocados por dinheiro ou por bens fora da plataforma, e não representam propriedade ou participação societária de nenhum tipo.",
+  "section_5_paragraph_2": "Podemos ajustar, zerar ou recalcular XP e Tokens de Gratidão em caso de erro do sistema, fraude comprovada, ou mudança nas regras de pontuação — sempre buscando comunicar essas mudanças de forma transparente.",
+
+  "section_6_title": "6. Perfil público",
+  "section_6_paragraph_1": "Parte central do legado.dev é o perfil público, que funciona como um currículo de voluntariado visível a qualquer pessoa com o link, mesmo sem login. Antes de continuar usando a plataforma, é importante que você leia a seção \"Seu Perfil Público\" da nossa Política de Privacidade, que descreve exatamente quais informações ficam públicas.",
+
+  "section_7_title": "7. Propriedade intelectual",
+  "section_7_paragraph_1": "O nome \"legado.dev\", a marca da Comunidade Devs Tocantins e o design da plataforma pertencem à comunidade mantenedora. O conteúdo que você envia (relatos, textos) continua seu, mas você concede a licença de exibição descrita na seção 3.",
+
+  "section_8_title": "8. Isenção de garantias e limitação de responsabilidade",
+  "section_8_paragraph_1": "O legado.dev é oferecido gratuitamente, \"como está\" (as is), sem garantias de disponibilidade contínua, ausência de erros ou adequação a uma finalidade específica. Por ser um projeto comunitário mantido por voluntários, podemos ter instabilidades, manutenções não avisadas ou, eventualmente, descontinuar funcionalidades.",
+  "section_8_paragraph_2": "Na máxima extensão permitida pela lei, a Comunidade Devs Tocantins não se responsabiliza por danos indiretos decorrentes do uso ou da impossibilidade de uso da plataforma.",
+
+  "section_9_title": "9. Alterações neste termo",
+  "section_9_paragraph_1": "Podemos atualizar este Termo de Serviço e a Política de Privacidade ao longo do tempo, conforme a plataforma evolui. Sempre que houver uma mudança relevante, notificamos os usuários cadastrados (por notificação interna e, quando possível, por e-mail) e atualizamos a data e o número de versão no topo desta página.",
+  "section_9_paragraph_2": "O uso continuado da plataforma após uma atualização deste termo significa que você concorda com a nova versão.",
+
+  "section_10_title": "10. Encerramento de conta",
+  "section_10_paragraph_1": "Você pode encerrar sua conta a qualquer momento pelo seu painel de perfil. Ao fazer isso, seus dados pessoais são anonimizados conforme descrito na Política de Privacidade, e seu perfil público deixa de existir.",
+
+  "section_11_title": "11. Lei aplicável e contato",
+  "section_11_paragraph_1": "Este Termo é regido pelas leis da República Federativa do Brasil. Dúvidas sobre este documento podem ser enviadas para o e-mail abaixo.",
+  "contact_us_by_email": "Para dúvidas, entre em contato pelo e-mail:"
+}

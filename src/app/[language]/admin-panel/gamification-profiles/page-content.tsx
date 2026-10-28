@@ -110,7 +110,7 @@ function PenaltyModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <ShieldAlert className="h-4 w-4 text-destructive" />
@@ -171,8 +171,13 @@ function PenaltyModal({
               placeholder="Ex: Fraude em submissão de evidências"
               rows={3}
               maxLength={300}
+              onInput={(e) => {
+                e.currentTarget.style.height = "auto";
+                e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+              }}
+              style={{ fieldSizing: "content" }}
               className={cn(
-                "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none",
+                "w-full field-sizing-content min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
                 errors.reason && "border-destructive"
               )}
             />

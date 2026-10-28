@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   useGetNotificationPreferencesService,
   useUpdateNotificationPreferencesService,
@@ -9,7 +9,6 @@ import { NotificationPreference } from "@/services/api/types/notification";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import withPageRequiredAuth from "@/services/auth/with-page-required-auth";
 import { Bell, Mail, Trophy, Target } from "lucide-react";
-import { useSnackbar } from "@/hooks/use-snackbar";
 
 function Toggle({
   checked,
@@ -41,8 +40,6 @@ function Toggle({
 }
 
 function NotificationSettingsPageContent() {
-  const queryClient = useQueryClient();
-  const { enqueueSnackbar } = useSnackbar();
   const getPrefs = useGetNotificationPreferencesService();
   const updatePrefs = useUpdateNotificationPreferencesService();
 
@@ -56,19 +53,24 @@ function NotificationSettingsPageContent() {
   });
 
   const { mutate: update, isPending } = useMutation({
-    mutationFn: (
+    mutationFn: async (
       data: Partial<
         Pick<
           NotificationPreference,
           "emailOnSubmissionApproved" | "emailOnMissionWon"
         >
       >
-    ) => updatePrefs(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
-      enqueueSnackbar("Preferências salvas.", { variant: "success" });
+    ) => {
+      const res = await updatePrefs(data);
+      if (res.status === HTTP_CODES_ENUM.OK) return res.data;
+      throw new Error("Erro ao salvar.");
     },
-    onError: () => enqueueSnackbar("Erro ao salvar.", { variant: "error" }),
+    onSuccess: () => {
+      // Preferências salvas
+    },
+    onError: () => {
+      // Erro ao salvar
+    },
   });
 
   return (
@@ -79,7 +81,7 @@ function NotificationSettingsPageContent() {
           Notificações
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Escolha quais eventos você quer receber por email.
+          Escolha quais notificações você quer receber por e-mail.
         </p>
       </div>
 

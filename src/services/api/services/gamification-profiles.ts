@@ -167,6 +167,7 @@ export function useGetGamificationProfileByUsernameService() {
 export type ApprovedSubmissionsResponse = InfinityPaginationType<{
   id: string;
   activityId: string;
+  trackItemId?: string | null;
   awardedXp: number;
   createdAt: string;
 }>;
@@ -194,10 +195,37 @@ export function useGetProfileApprovedSubmissionsService() {
   );
 }
 
+export type CourseReviewPublicItem = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  rating: number;
+  createdAt: string;
+};
+
+export function useGetProfileCourseReviewsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (profileId: string, requestConfig?: RequestConfigType) => {
+      const url = new URL(
+        `${API_URL}/api/v1/gamification-profiles/${profileId}/course-reviews`
+      );
+      return fetch(url, {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<CourseReviewPublicItem[]>);
+    },
+    [fetch]
+  );
+}
+
 export type UpdateMyGamificationProfileRequest = {
   username: string;
   githubUsername?: string | null;
   bannerPreset?: string;
+  avatarConfig?: string | null;
+  showFullName?: boolean;
 };
 
 export type UpdateMyGamificationProfileResponse = GamificationProfile;

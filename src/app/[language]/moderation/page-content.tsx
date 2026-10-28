@@ -15,12 +15,37 @@ import {
   useReviewMissionSubmissionService,
 } from "@/services/api/services/missions";
 import { useGetActivityService } from "@/services/api/services/activities";
+import {
+  useGetPendingCoursesService,
+  useReviewCourseService,
+} from "@/services/api/services/courses";
 import { useGetGamificationProfileService } from "@/services/api/services/gamification-profiles";
+import {
+  useGetTrackItemService,
+  useGetLearningTrackOverviewService,
+} from "@/services/api/services/learning-tracks";
+import {
+  useGetPendingEventsService,
+  usePatchReviewEventService,
+} from "@/services/api/services/events";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { Submission } from "@/services/api/types/submission";
 import { Mission, MissionSubmission } from "@/services/api/types/mission";
 import { Activity } from "@/services/api/types/activity";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
+import {
+  LearningTrackOverview,
+  TrackItem,
+} from "@/services/api/types/learning-track";
+import { Course } from "@/services/api/types/course";
+import { Event, EventModality } from "@/services/api/types/event";
+import { TRACK_ITEM_TYPE_BADGE } from "@/lib/track-colors";
+import { ProjectIdeasTab } from "./project-ideas-tab";
+import {
+  EVENT_CATEGORY_LABELS,
+  EVENT_MODALITY_LABELS,
+  formatEventDate,
+} from "@/lib/event-labels";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +62,6 @@ import {
   Eye,
   User,
   FileText,
-  Link2,
   CheckCircle2,
   XCircle,
   Info,
@@ -45,9 +69,17 @@ import {
   Target,
   AlertTriangle,
   ChevronRight,
+  Map,
+  GraduationCap,
+  Gift,
+  Coins,
+  CalendarDays,
+  Lightbulb,
+  MapPin,
+  Video,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/use-snackbar";
-import { cn, getApiError } from "@/lib/utils";
+import { cn, getApiError, formatTimeAgo, formatCurrency } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "@/components/link";
 
@@ -67,6 +99,53 @@ function useActivity(activityId: string) {
   });
 }
 
+function useTrackItem(trackItemId: string) {
+  const fetch = useGetTrackItemService();
+  return useQuery({
+    queryKey: ["track-item", trackItemId],
+    queryFn: async () => {
+      const { status, data } = await fetch({ id: trackItemId });
+      if (status === HTTP_CODES_ENUM.OK) return data as TrackItem;
+      return null;
+    },
+    staleTime: 10 * 60 * 1000,
+    enabled: !!trackItemId,
+  });
+}
+
+// Mesma chave ["learning-track-overview", trackId] usada em várias outras
+// telas (trilhas, marcos, cursos, conquista, perfil público) — todas
+// guardam o LearningTrackOverview cru nesse cache. Aqui usamos `select`
+// pra extrair só o título da seção sem sobrescrever o cache compartilhado
+// com um formato diferente (isso já causou um bug real: quem lesse essa
+// chave depois de passar por aqui recebia uma string em vez do objeto
+// completo, e tentar renderizar esse objeto direto quebrava a página com
+// "Objects are not valid as a React child").
+function useTrackSectionTitle(trackId: string, sectionId: string) {
+  const fetch = useGetLearningTrackOverviewService();
+  return useQuery({
+    queryKey: ["learning-track-overview", trackId],
+    queryFn: async () => {
+      const { status, data } = await fetch({ id: trackId });
+      if (status === HTTP_CODES_ENUM.OK) return data as LearningTrackOverview;
+      return null;
+    },
+    select: (overview) =>
+      overview?.sections.find((s) => s.section.id === sectionId)?.section
+        .title ?? null,
+    staleTime: 10 * 60 * 1000,
+    enabled: !!trackId && !!sectionId,
+  });
+}
+
+function isCriteriaConfig(config: unknown): config is { criteria: string[] } {
+  return (
+    !!config &&
+    typeof config === "object" &&
+    Array.isArray((config as { criteria?: unknown }).criteria)
+  );
+}
+
 function useProfile(profileId: string) {
   const fetch = useGetGamificationProfileService();
   return useQuery({
@@ -79,6 +158,67 @@ function useProfile(profileId: string) {
     staleTime: 10 * 60 * 1000,
     enabled: !!profileId,
   });
+}
+
+function isLikelyUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+function ProofPreview({ proofUrl }: { proofUrl: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (!isLikelyUrl(proofUrl)) {
+    return (
+      <div className="rounded-md border bg-muted px-3 py-2">
+        <p className="mb-1 text-xs font-medium text-muted-foreground">
+          Texto enviado como comprovante (não é um link)
+        </p>
+        <p className="text-sm whitespace-pre-wrap">{proofUrl}</p>
+      </div>
+    );
+  }
+
+  if (imageFailed) {
+    return (
+      <div className="space-y-2">
+        <a
+          href={proofUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+          Abrir comprovante
+        </a>
+        <p className="text-xs text-muted-foreground italic">
+          Não foi possível carregar uma prévia da imagem — abra o comprovante em
+          uma nova aba.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={proofUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Abrir comprovante em tamanho real"
+      className="group relative inline-block"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={proofUrl}
+        alt="Prova enviada"
+        className="max-h-64 w-auto rounded-md border object-contain transition-opacity group-hover:opacity-90"
+        onError={() => setImageFailed(true)}
+      />
+      <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/85 px-2 py-1 text-[10px] font-medium text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+        <ExternalLink className="h-3 w-3" />
+        Ampliar
+      </span>
+    </a>
+  );
 }
 
 // ─── Atividades: Detail modal ─────────────────────────────────────────────────
@@ -148,7 +288,7 @@ function DetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -246,16 +386,7 @@ function DetailModal({
                   </div>
                 )}
                 {submission.proofUrl && (
-                  <a
-                    href={submission.proofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
-                  >
-                    <Link2 className="h-3.5 w-3.5 shrink-0" />
-                    {submission.proofUrl}
-                    <ExternalLink className="h-3 w-3 shrink-0" />
-                  </a>
+                  <ProofPreview proofUrl={submission.proofUrl} />
                 )}
               </>
             )}
@@ -300,7 +431,12 @@ function DetailModal({
                   placeholder="Explique o motivo da rejeição..."
                   rows={3}
                   maxLength={500}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  onInput={(e) => {
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                  }}
+                  style={{ fieldSizing: "content" }}
+                  className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <Button
                   variant="destructive"
@@ -365,6 +501,321 @@ function SubmissionRow({
           {submission.description && (
             <span className="ml-2 text-primary">· tem descrição</span>
           )}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="shrink-0 flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      >
+        <Eye className="h-3.5 w-3.5" />
+        Revisar
+      </button>
+    </div>
+  );
+}
+
+// ─── Trilhas: Detail modal ────────────────────────────────────────────────────
+
+function TrilhaDetailModal({
+  submission,
+  open,
+  onClose,
+  onReviewed,
+}: {
+  submission: Submission;
+  open: boolean;
+  onClose: () => void;
+  onReviewed: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewSubmission = useReviewSubmissionService();
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const { data: trackItem } = useTrackItem(submission.trackItemId ?? "");
+  const { data: profile } = useProfile(submission.profileId);
+  const { data: sectionTitle } = useTrackSectionTitle(
+    trackItem?.trackId ?? "",
+    trackItem?.sectionId ?? ""
+  );
+
+  const badge = trackItem ? TRACK_ITEM_TYPE_BADGE[trackItem.type] : null;
+
+  const handleApprove = async () => {
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewSubmission({
+        id: submission.id,
+        data: { status: "APPROVED" },
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar(
+          submission.isTestOut
+            ? "Marco aprovado (prova pulada)!"
+            : "Marco aprovado!",
+          { variant: "success" }
+        );
+        onReviewed();
+        onClose();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao aprovar."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!feedback.trim()) return;
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewSubmission({
+        id: submission.id,
+        data: { status: "REJECTED", feedback: feedback.trim() },
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Ajuste solicitado.", { variant: "success" });
+        onReviewed();
+        onClose();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao pedir ajuste."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Map className="h-4 w-4 text-primary" />
+            Validar prova de trilha
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="rounded-lg border p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" /> Pessoa
+            </p>
+            {profile ? (
+              <>
+                <p className="text-sm font-semibold font-mono">
+                  @{profile.username}
+                </p>
+                <Link
+                  href={`/u/${profile.username}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ver perfil público
+                </Link>
+              </>
+            ) : (
+              <div className="h-4 bg-muted animate-pulse rounded w-32" />
+            )}
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <Map className="h-3.5 w-3.5" /> Marco da trilha
+            </p>
+            {trackItem ? (
+              <>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {badge && (
+                    <span
+                      className="inline-block rounded-md px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
+                      style={{ background: badge.color.bg }}
+                    >
+                      {badge.abbr}
+                    </span>
+                  )}
+                  {submission.isTestOut && (
+                    <Badge variant="outline" className="text-[10px]">
+                      prova pulada
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm font-semibold">{trackItem.title}</p>
+                {sectionTitle && (
+                  <p className="text-xs text-muted-foreground">
+                    Etapa: {sectionTitle}
+                  </p>
+                )}
+                {isCriteriaConfig(trackItem.config) && (
+                  <div className="pt-1">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                      Critérios avaliados
+                    </p>
+                    <ul className="flex flex-col gap-1.5 text-sm">
+                      {trackItem.config.criteria.map((criterion, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-primary/10 font-mono text-[9px] font-bold text-primary">
+                            {i + 1}
+                          </span>
+                          {criterion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="h-4 bg-muted animate-pulse rounded w-40" />
+            )}
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" /> Evidência enviada
+            </p>
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Notas do candidato
+              </p>
+              {submission.description ? (
+                <div className="bg-muted rounded-md px-3 py-2">
+                  <MarkdownContent
+                    content={submission.description}
+                    className="text-sm"
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhuma nota enviada.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Comprovante
+              </p>
+              {submission.proofUrl ? (
+                <ProofPreview proofUrl={submission.proofUrl} />
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhum comprovante enviado.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                onClick={handleApprove}
+                disabled={processing}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Aprovar marco
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 gap-1.5"
+                onClick={() => setRejectOpen((o) => !o)}
+                disabled={processing}
+              >
+                <XCircle className="h-4 w-4" />
+                {rejectOpen ? "Cancelar" : "Pedir ajuste"}
+              </Button>
+            </div>
+
+            {rejectOpen && (
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium">
+                    O que precisa ajustar?{" "}
+                    <span className="text-destructive">*</span>
+                  </label>
+                  <span className="text-xs text-muted-foreground">
+                    {feedback.length}/500
+                  </span>
+                </div>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Explique o que precisa ser corrigido ou complementado..."
+                  rows={3}
+                  maxLength={500}
+                  onInput={(e) => {
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                  }}
+                  style={{ fieldSizing: "content" }}
+                  className="w-full field-sizing-content min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleReject}
+                  disabled={processing || !feedback.trim()}
+                >
+                  {processing ? "Processando..." : "Pedir ajuste"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Trilhas: Row ─────────────────────────────────────────────────────────────
+
+function TrilhaSubmissionRow({
+  submission,
+  onSelect,
+}: {
+  submission: Submission;
+  onSelect: () => void;
+}) {
+  const { data: trackItem } = useTrackItem(submission.trackItemId ?? "");
+  const { data: profile } = useProfile(submission.profileId);
+  const { data: sectionTitle } = useTrackSectionTitle(
+    trackItem?.trackId ?? "",
+    trackItem?.sectionId ?? ""
+  );
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          {profile ? (
+            <span className="text-sm font-semibold font-mono">
+              @{profile.username}
+            </span>
+          ) : (
+            <span className="h-4 w-24 bg-muted animate-pulse rounded inline-block" />
+          )}
+          <span className="text-muted-foreground text-xs">→</span>
+          {trackItem ? (
+            <span className="text-sm font-medium truncate">
+              {trackItem.title}
+            </span>
+          ) : (
+            <span className="h-4 w-32 bg-muted animate-pulse rounded inline-block" />
+          )}
+          {submission.isTestOut && (
+            <Badge variant="outline" className="text-[10px] shrink-0">
+              prova pulada
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {sectionTitle && <span>{sectionTitle} · </span>}
+          {formatTimeAgo(submission.createdAt)}
         </p>
       </div>
       <button
@@ -496,28 +947,16 @@ function MissionSubmissionCard({
         </Button>
       </div>
 
-      {sub.description && (
+      {sub.description ? (
         <div className="bg-muted rounded-md px-3 py-2">
           <MarkdownContent content={sub.description} className="text-sm" />
         </div>
-      )}
-      {sub.proofUrl && (
-        <a
-          href={sub.proofUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline-offset-4 hover:underline flex items-center gap-1.5 text-sm break-all"
-        >
-          <Link2 className="h-3.5 w-3.5 shrink-0" />
-          {sub.proofUrl}
-          <ExternalLink className="h-3 w-3 shrink-0" />
-        </a>
-      )}
-      {!sub.description && !sub.proofUrl && (
+      ) : (
         <p className="text-xs text-muted-foreground italic">
-          Nenhum detalhe enviado.
+          Sem descrição enviada.
         </p>
       )}
+      {sub.proofUrl && <ProofPreview proofUrl={sub.proofUrl} />}
     </div>
   );
 }
@@ -672,7 +1111,10 @@ function AtividadesTab() {
     },
   });
 
-  const submissions = useMemo<Submission[]>(() => data?.data ?? [], [data]);
+  const submissions = useMemo<Submission[]>(
+    () => (data?.data ?? []).filter((s) => !s.trackItemId),
+    [data]
+  );
   const hasNextPage = data?.hasNextPage ?? false;
 
   const handleReviewed = () => {
@@ -755,6 +1197,82 @@ function AtividadesTab() {
   );
 }
 
+// ─── Aba: Provas de Trilha ────────────────────────────────────────────────────
+
+function TrilhasTab() {
+  const fetchPending = useGetPendingSubmissionsService();
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Submission | null>(null);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["pending-submissions", "trilhas"],
+    queryFn: async () => {
+      const { status, data } = await fetchPending({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return null;
+    },
+  });
+
+  const submissions = useMemo<Submission[]>(
+    () => (data?.data ?? []).filter((s) => !!s.trackItemId),
+    [data]
+  );
+
+  const handleReviewed = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-submissions"] });
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    refetch();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Provas de marcos de trilha, vinculadas a um item de trilha
+        </p>
+        {!isLoading && (
+          <Badge variant="outline" className="text-xs">
+            {submissions.length} pendente{submissions.length !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="animate-pulse h-16 bg-muted rounded-lg" />
+          ))}
+        </div>
+      ) : submissions.length === 0 ? (
+        <EmptyState
+          icon={Map}
+          title="Nenhuma prova de trilha pendente"
+          description="Todas as provas de marcos de trilha foram revisadas!"
+        />
+      ) : (
+        <div className="space-y-2">
+          {submissions.map((sub) => (
+            <TrilhaSubmissionRow
+              key={sub.id}
+              submission={sub}
+              onSelect={() => setSelected(sub)}
+            />
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <TrilhaDetailModal
+          submission={selected}
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          onReviewed={handleReviewed}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Aba: Missões ─────────────────────────────────────────────────────────────
 
 function MissoesTab() {
@@ -821,9 +1339,406 @@ function MissoesTab() {
   );
 }
 
+// ─── Aba: Cursos ──────────────────────────────────────────────────────────────
+
+function CourseRow({
+  course,
+  onReviewed,
+}: {
+  course: Course;
+  onReviewed: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewCourse = useReviewCourseService();
+  const { data: profile } = useProfile(course.submittedByProfileId ?? "");
+  const [processing, setProcessing] = useState(false);
+
+  const handleReview = async (status: "VERIFIED" | "REJECTED") => {
+    setProcessing(true);
+    try {
+      const { status: httpStatus, data } = await reviewCourse({
+        id: course.id,
+        status,
+      });
+      if (httpStatus === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar(
+          status === "VERIFIED" ? "Curso verificado!" : "Curso rejeitado.",
+          { variant: "success" }
+        );
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao revisar curso."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-semibold">{course.title}</span>
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+              course.isFree
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            )}
+          >
+            {course.isFree ? (
+              <>
+                <Gift className="h-3 w-3" /> Gratuito
+              </>
+            ) : (
+              <>
+                <Coins className="h-3 w-3" />
+                {course.price ? formatCurrency(course.price) : "Pago"}
+              </>
+            )}
+          </span>
+        </div>
+        {course.provider && (
+          <p className="text-xs text-muted-foreground">{course.provider}</p>
+        )}
+        <a
+          href={course.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline break-all"
+        >
+          <ExternalLink className="h-3 w-3 shrink-0" /> {course.url}
+        </a>
+        {profile && (
+          <p className="text-xs text-muted-foreground">
+            Sugerido por{" "}
+            <Link
+              href={`/u/${profile.username}`}
+              target="_blank"
+              className="font-mono text-primary hover:underline"
+            >
+              @{profile.username}
+            </Link>
+          </p>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          onClick={() => handleReview("VERIFIED")}
+          disabled={processing}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Verificar
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="flex-1 gap-1.5"
+          onClick={() => handleReview("REJECTED")}
+          disabled={processing}
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          Rejeitar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CursosTab() {
+  const fetchPending = useGetPendingCoursesService();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["pending-courses"],
+    queryFn: async () => {
+      const { status, data } = await fetchPending({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data as Course[];
+      return [] as Course[];
+    },
+  });
+
+  const courses = data ?? [];
+
+  const handleReviewed = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-courses"] });
+    refetch();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Cursos e vídeos sugeridos pela comunidade para marcos de trilha
+        </p>
+        {!isLoading && (
+          <Badge variant="outline" className="text-xs">
+            {courses.length} pendente{courses.length !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse h-24 bg-muted rounded-lg" />
+          ))}
+        </div>
+      ) : courses.length === 0 ? (
+        <EmptyState
+          icon={GraduationCap}
+          title="Nenhum curso pendente"
+          description="Todos os cursos sugeridos foram revisados!"
+        />
+      ) : (
+        <div className="space-y-2">
+          {courses.map((course) => (
+            <CourseRow
+              key={course.id}
+              course={course}
+              onReviewed={handleReviewed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Aba: Eventos ─────────────────────────────────────────────────────────────
+
+function EventRow({
+  event,
+  onReviewed,
+}: {
+  event: Event;
+  onReviewed: () => void;
+}) {
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewEvent = usePatchReviewEventService();
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const handleApprove = async () => {
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewEvent({
+        id: event.id,
+        status: "APPROVED",
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Evento aprovado!", { variant: "success" });
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao aprovar."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) return;
+    setProcessing(true);
+    try {
+      const { status, data } = await reviewEvent({
+        id: event.id,
+        status: "REJECTED",
+        rejectionReason: rejectionReason.trim(),
+      });
+      if (status === HTTP_CODES_ENUM.OK) {
+        enqueueSnackbar("Evento rejeitado.", { variant: "success" });
+        onReviewed();
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao rejeitar."), {
+          variant: "error",
+        });
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <span className="text-sm font-semibold">{event.title}</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>{EVENT_CATEGORY_LABELS[event.category]}</span>
+            <span className="flex items-center gap-1">
+              {event.modality === EventModality.ONLINE ? (
+                <Video className="h-3 w-3" />
+              ) : (
+                <MapPin className="h-3 w-3" />
+              )}
+              {EVENT_MODALITY_LABELS[event.modality]}
+            </span>
+            <span className="flex items-center gap-1 font-mono">
+              <CalendarDays className="h-3 w-3" />
+              {formatEventDate(event.startAt)}
+            </span>
+          </div>
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <User className="h-3 w-3" />
+            Organizador: {event.organizerId}
+          </p>
+        </div>
+        <Badge variant="outline" className="shrink-0 text-xs">
+          Pendente
+        </Badge>
+      </div>
+
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
+        {event.description}
+      </p>
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          onClick={handleApprove}
+          disabled={processing}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Aprovar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 gap-1.5"
+          onClick={() => setRejectOpen((o) => !o)}
+          disabled={processing}
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          {rejectOpen ? "Cancelar" : "Rejeitar"}
+        </Button>
+      </div>
+
+      {rejectOpen && (
+        <div className="flex flex-col gap-2 rounded-lg bg-secondary p-3">
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Explique o motivo da rejeição (ex: fora do foco de TI, informações incompletas...)"
+            rows={3}
+            maxLength={500}
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+            }}
+            style={{ fieldSizing: "content" }}
+            className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px] field-sizing-content min-h-[70px]"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRejectOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleReject}
+              disabled={processing || !rejectionReason.trim()}
+            >
+              Confirmar rejeição
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventosTab() {
+  const fetchPending = useGetPendingEventsService();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["pending-events"],
+    queryFn: async () => {
+      const { status, data } = await fetchPending({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK) return data.data as Event[];
+      return [] as Event[];
+    },
+  });
+
+  const events = data ?? [];
+
+  const handleReviewed = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-events"] });
+    refetch();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Eventos enviados pela comunidade antes de entrarem na agenda pública
+        </p>
+        {!isLoading && (
+          <Badge variant="outline" className="text-xs">
+            {events.length} pendente{events.length !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse h-32 bg-muted rounded-lg" />
+          ))}
+        </div>
+      ) : events.length === 0 ? (
+        <EmptyState
+          icon={CalendarDays}
+          title="Nenhum evento pendente"
+          description="Todos os eventos enviados foram revisados!"
+        />
+      ) : (
+        <div className="space-y-2">
+          {events.map((event) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              onReviewed={handleReviewed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = "atividades" | "missoes";
+type Tab =
+  | "atividades"
+  | "trilhas"
+  | "cursos"
+  | "missoes"
+  | "eventos"
+  | "projetos";
+
+const TAB_CONFIG: Record<Tab, { label: string; icon: typeof ShieldCheck }> = {
+  atividades: { label: "Atividades", icon: ShieldCheck },
+  trilhas: { label: "Provas de Trilha", icon: Map },
+  cursos: { label: "Cursos", icon: GraduationCap },
+  missoes: { label: "Missões", icon: Target },
+  eventos: { label: "Eventos", icon: CalendarDays },
+  projetos: { label: "Projetos", icon: Lightbulb },
+};
 
 function ModerationPageContent() {
   const [tab, setTab] = useState<Tab>("atividades");
@@ -838,32 +1753,39 @@ function ModerationPageContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {(["atividades", "missoes"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-              tab === t
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t === "atividades" ? (
-              <>
-                <ShieldCheck className="h-3.5 w-3.5" /> Atividades
-              </>
-            ) : (
-              <>
-                <Target className="h-3.5 w-3.5" /> Missões
-              </>
-            )}
-          </button>
-        ))}
+      <div className="flex gap-1 overflow-x-auto border-b border-border">
+        {(Object.keys(TAB_CONFIG) as Tab[]).map((t) => {
+          const { label, icon: Icon } = TAB_CONFIG[t];
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                tab === t
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          );
+        })}
       </div>
 
-      {tab === "atividades" ? <AtividadesTab /> : <MissoesTab />}
+      {tab === "atividades" ? (
+        <AtividadesTab />
+      ) : tab === "trilhas" ? (
+        <TrilhasTab />
+      ) : tab === "cursos" ? (
+        <CursosTab />
+      ) : tab === "eventos" ? (
+        <EventosTab />
+      ) : tab === "projetos" ? (
+        <ProjectIdeasTab />
+      ) : (
+        <MissoesTab />
+      )}
     </div>
   );
 }

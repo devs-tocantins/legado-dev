@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFileUploadService } from "@/services/api/services/files";
+import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
+
+// Mesmo pipeline de upload usado no comprovante de prova (ProofSubmissionForm)
+// — a imagem vira um arquivo de verdade no storage (R2/S3), o markdown só
+// guarda a URL. Nada de base64 embutido no texto: infla o campo, e a maioria
+// dos renderizadores de markdown (incluindo o nosso, por segurança) não
+// aceita data URI em src de imagem por padrão.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB, mesmo limite do upload de comprovante
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -43,6 +53,73 @@ export function MarkdownEditor({
   maxLength,
 }: MarkdownEditorProps) {
   const [preview, setPreview] = useState(false);
+  const [pasteError, setPasteError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadFile = useFileUploadService();
+
+  const insertAtCursor = (text: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      onChange(value + text);
+      return;
+    }
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    const next = value.slice(0, start) + text + value.slice(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + text.length;
+      el.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const insertImageFile = async (file: File) => {
+    setPasteError("");
+    if (!file.type.startsWith("image/")) {
+      setPasteError("Só é possível inserir arquivos de imagem.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setPasteError(
+        "Imagem muito grande (máx. 5 MB). Reduza o tamanho e tente de novo."
+      );
+      return;
+    }
+    setUploading(true);
+    try {
+      const { status, data } = await uploadFile(file);
+      if (status === HTTP_CODES_ENUM.CREATED) {
+        insertAtCursor(`\n![imagem](${data.file.path})\n`);
+      } else {
+        setPasteError("Erro ao enviar a imagem. Tente novamente.");
+      }
+    } catch {
+      setPasteError("Erro ao enviar a imagem. Tente novamente.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imageItem = Array.from(e.clipboardData.items).find((item) =>
+      item.type.startsWith("image/")
+    );
+    if (!imageItem) return;
+
+    e.preventDefault();
+    const file = imageItem.getAsFile();
+    if (!file) return;
+    void insertImageFile(file);
+  };
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void insertImageFile(file);
+  };
 
   const toggle = (
     <div className="flex rounded-md border overflow-hidden text-xs shrink-0">
@@ -95,7 +172,33 @@ export function MarkdownEditor({
             </span>
           )}
         </div>
-        {toggle}
+        <div className="flex items-center gap-2">
+          {!preview && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFilePick}
+                className="hidden"
+              />
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5" />
+                )}
+                {uploading ? "Enviando..." : "Inserir imagem"}
+              </button>
+            </>
+          )}
+          {toggle}
+        </div>
       </div>
 
       {preview ? (
@@ -115,19 +218,37 @@ export function MarkdownEditor({
         </div>
       ) : (
         <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            if (pasteError) setPasteError("");
+          }}
+          onPaste={handlePaste}
           placeholder={placeholder}
           rows={rows}
+          onInput={(e) => {
+            e.currentTarget.style.height = "auto";
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
+          style={{ fieldSizing: "content" }}
           className={cn(
-            "w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+            "w-full min-h-[120px] field-sizing-content rounded-md border border-input bg-background px-3 py-2 text-sm",
             "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-            "resize-y font-mono",
+            "font-mono",
             error && "border-destructive"
           )}
         />
       )}
 
+      {!preview && (
+        <p className="text-xs text-muted-foreground">
+          Cole (Ctrl+V) uma imagem copiada ou use &quot;Inserir imagem&quot;
+          acima. Máx. 5 MB.
+        </p>
+      )}
+
+      {pasteError && <p className="text-xs text-destructive">{pasteError}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

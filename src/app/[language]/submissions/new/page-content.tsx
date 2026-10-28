@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useGetActivitiesService } from "@/services/api/services/activities";
 import { usePostSubmissionService } from "@/services/api/services/submissions";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
-import { Activity } from "@/services/api/types/activity";
+import { Activity, EffortLevelEnum } from "@/services/api/types/activity";
 import {
   GithubRepoTargetEnum,
   GithubIssueCategoryEnum,
@@ -25,9 +25,6 @@ import {
   CheckCircle2,
   RotateCcw,
   ClipboardList,
-  Upload,
-  X,
-  Loader2,
   ArrowRight,
   CalendarDays,
   GitBranch,
@@ -39,6 +36,22 @@ import useLanguage from "@/services/i18n/use-language";
 import { useFileUploadService } from "@/services/api/services/files";
 import { MarkdownContent, MarkdownEditor } from "@/components/markdown-editor";
 import { sanitizeMarkdownInput } from "@/lib/sanitize-markdown";
+import { FileUploadDropzone } from "@/components/file-upload-dropzone";
+
+function formatRewardLabel(activity: Activity): string {
+  if (activity.effortTiers && activity.effortTiers.length > 0) {
+    const xps = activity.effortTiers.map((t) => t.xp);
+    return `${Math.min(...xps)}–${Math.max(...xps)} XP`;
+  }
+  return `${activity.fixedReward} XP`;
+}
+
+const EFFORT_LEVEL_ORDER: EffortLevelEnum[] = [
+  EffortLevelEnum.P,
+  EffortLevelEnum.M,
+  EffortLevelEnum.G,
+  EffortLevelEnum.EPICO,
+];
 
 function NewSubmissionPageContent() {
   const searchParams = useSearchParams();
@@ -74,6 +87,10 @@ function NewSubmissionPageContent() {
   const [issueTitleError, setIssueTitleError] = useState("");
   const [githubRepoError, setGithubRepoError] = useState("");
   const [issueCategoryError, setIssueCategoryError] = useState("");
+  const [customTitle, setCustomTitle] = useState("");
+  const [customTitleError, setCustomTitleError] = useState("");
+  const [effortLevel, setEffortLevel] = useState<EffortLevelEnum | null>(null);
+  const [effortLevelError, setEffortLevelError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -111,12 +128,7 @@ function NewSubmissionPageContent() {
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-  const handleProofFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processProofSelect = async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
       setProofError("O arquivo deve ter no máximo 5 MB.");
       return;
@@ -184,6 +196,16 @@ function NewSubmissionPageContent() {
     setIssueTitleError("");
     setGithubRepoError("");
     setIssueCategoryError("");
+    if (selectedActivity.isFreeform && !customTitle.trim()) {
+      setCustomTitleError("Conte o que você fez.");
+      return;
+    }
+    setCustomTitleError("");
+    if (selectedActivity.effortTiers?.length && !effortLevel) {
+      setEffortLevelError("Escolha a faixa de esforço.");
+      return;
+    }
+    setEffortLevelError("");
     setSubmitting(true);
     try {
       const { status, data } = await postSubmission({
@@ -193,13 +215,16 @@ function NewSubmissionPageContent() {
         activityDate: activityDate || undefined,
         customTitle: selectedActivity.createsGithubIssue
           ? issueTitle.trim()
-          : undefined,
+          : selectedActivity.isFreeform
+            ? customTitle.trim()
+            : undefined,
         githubRepo: selectedActivity.createsGithubIssue
           ? githubRepo
           : undefined,
         issueCategory: selectedActivity.createsGithubIssue
           ? issueCategory
           : undefined,
+        effortLevel: effortLevel ?? undefined,
       });
       if (status === HTTP_CODES_ENUM.CREATED) {
         setSubmitted(true);
@@ -230,6 +255,10 @@ function NewSubmissionPageContent() {
     setIssueTitleError("");
     setGithubRepoError("");
     setIssueCategoryError("");
+    setCustomTitle("");
+    setCustomTitleError("");
+    setEffortLevel(null);
+    setEffortLevelError("");
   };
 
   // Success state
@@ -322,7 +351,7 @@ function NewSubmissionPageContent() {
                   </div>
                   <Badge className="shrink-0">
                     <Zap className="h-3 w-3 mr-1" />
-                    {selectedActivity.fixedReward} XP
+                    {formatRewardLabel(selectedActivity)}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -426,7 +455,7 @@ function NewSubmissionPageContent() {
                           </div>
                         </div>
                         <Badge variant="outline" className="shrink-0 text-xs">
-                          {activity.fixedReward} XP
+                          {formatRewardLabel(activity)}
                         </Badge>
                       </button>
                     ))}
@@ -442,62 +471,106 @@ function NewSubmissionPageContent() {
           </CardContent>
         </Card>
 
-        {/* Proof file upload (required) */}
-        {selectedActivity?.requiresProof && (
+        {/* Título livre (atividade freeform) */}
+        {selectedActivity?.isFreeform && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4 text-amber-500" />
-              Comprovante <span className="text-destructive">*</span>
+              O que você fez? <span className="text-destructive">*</span>
             </label>
-            {proofFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
-                {uploadingProof ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
-                )}
-                <span className="text-sm truncate flex-1">
-                  {proofFile.name}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-                {!uploadingProof && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveProof}
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <label
-                className={cn(
-                  "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
-                  proofError && "border-destructive"
-                )}
-              >
-                <Upload className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">
-                  Clique para selecionar um arquivo
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  JPG, PNG ou GIF · Máx. 5 MB
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif"
-                  className="sr-only"
-                  onChange={handleProofFileChange}
-                />
-              </label>
-            )}
-            {proofError && (
-              <p className="text-xs text-destructive">{proofError}</p>
+            <input
+              value={customTitle}
+              onChange={(e) => {
+                setCustomTitle(e.target.value);
+                setCustomTitleError("");
+              }}
+              maxLength={200}
+              placeholder="Ex: Ajudei a organizar a lista de presença do meetup"
+              className={cn(
+                "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+                customTitleError && "border-destructive"
+              )}
+            />
+            {customTitleError && (
+              <p className="text-xs text-destructive">{customTitleError}</p>
             )}
           </div>
+        )}
+
+        {/* Faixa de esforço (atividades com effortTiers) */}
+        {selectedActivity?.effortTiers &&
+          selectedActivity.effortTiers.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Quanto esforço isso deu?{" "}
+                <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {EFFORT_LEVEL_ORDER.filter((level) =>
+                  selectedActivity.effortTiers?.some((t) => t.level === level)
+                ).map((level) => {
+                  const tier = selectedActivity.effortTiers?.find(
+                    (t) => t.level === level
+                  );
+                  if (!tier) return null;
+                  const selected = effortLevel === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => {
+                        setEffortLevel(level);
+                        setEffortLevelError("");
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 rounded-lg border-2 px-2 py-2.5 text-center transition-colors",
+                        selected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/30"
+                      )}
+                    >
+                      <span className="text-sm font-bold">{tier.label}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {tier.xp} XP
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {effortLevel &&
+                (() => {
+                  const tier = selectedActivity.effortTiers?.find(
+                    (t) => t.level === effortLevel
+                  );
+                  return tier ? (
+                    <p className="text-xs text-muted-foreground">
+                      Exemplo: {tier.example}
+                    </p>
+                  ) : null;
+                })()}
+              {effortLevelError && (
+                <p className="text-xs text-destructive">{effortLevelError}</p>
+              )}
+            </div>
+          )}
+
+        {/* Proof file upload (required) */}
+        {selectedActivity?.requiresProof && (
+          <FileUploadDropzone
+            label={
+              <span className="flex items-center gap-1.5 font-medium text-sm">
+                <FileCheck className="h-4 w-4 text-amber-500" />
+                Comprovante <span className="text-destructive">*</span>
+              </span>
+            }
+            file={proofFile}
+            fileUrl={proofUploadedUrl}
+            onFileSelect={processProofSelect}
+            onFileRemove={handleRemoveProof}
+            uploading={uploadingProof}
+            accept="image/jpeg,image/png,image/gif"
+            hintText="Arraste ou clique para selecionar (JPG, PNG ou GIF · Máx. 5 MB)"
+            error={proofError}
+          />
         )}
 
         {/* Activity date (required) */}
@@ -696,60 +769,36 @@ function NewSubmissionPageContent() {
 
         {/* Proof file upload (optional) */}
         {selectedActivity && !selectedActivity.requiresProof && (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4" />
-              Comprovante (opcional)
-            </label>
-            {proofFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 px-3 py-2">
-                {uploadingProof ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <Upload className="h-4 w-4 shrink-0 text-emerald-500" />
-                )}
-                <span className="text-sm truncate flex-1">
-                  {proofFile.name}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {(proofFile.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-                {!uploadingProof && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveProof}
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input px-3 py-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  JPG, PNG ou GIF · Máx. 5 MB (opcional)
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif"
-                  className="sr-only"
-                  onChange={handleProofFileChange}
-                />
-              </label>
-            )}
-            {proofError && (
-              <p className="text-xs text-destructive">{proofError}</p>
-            )}
-          </div>
+          <FileUploadDropzone
+            label={
+              <span className="flex items-center gap-1.5 font-medium text-sm text-muted-foreground">
+                <FileCheck className="h-4 w-4" />
+                Comprovante (opcional)
+              </span>
+            }
+            file={proofFile}
+            fileUrl={proofUploadedUrl}
+            onFileSelect={processProofSelect}
+            onFileRemove={handleRemoveProof}
+            uploading={uploadingProof}
+            accept="image/jpeg,image/png,image/gif"
+            hintText="Arraste ou clique para selecionar (JPG, PNG ou GIF · Máx. 5 MB)"
+            error={proofError}
+          />
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col-reverse md:flex-row gap-2 pt-2">
+          <Link
+            href="/submissions"
+            className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2.5 text-sm font-bold shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors md:flex-none"
+          >
+            Cancelar
+          </Link>
           <Button
             type="submit"
             disabled={submitting || uploadingProof || !selectedActivity}
-            className="gap-2"
+            className="gap-2 rounded-xl font-bold py-2.5 flex-1"
           >
             {submitting ? (
               "Enviando..."
@@ -762,12 +811,6 @@ function NewSubmissionPageContent() {
               </>
             )}
           </Button>
-          <Link
-            href="/submissions"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            Cancelar
-          </Link>
         </div>
       </form>
     </div>

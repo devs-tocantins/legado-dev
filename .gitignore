@@ -45,3 +45,11 @@ next-env.d.ts
 .idea
 docs-backend
 tmp/
+lighthouse*.html
+
+# Local design/screenshot working files - never commit (may contain session data)
+design-reference/
+
+# Local one-off design/capture utilities - never commit
+scripts/capture-design-screenshots.mjs
+.agy-*.txt

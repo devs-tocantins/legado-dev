@@ -1,6 +1,6 @@
 {
   "title": "Privacy Policy",
-  "lastUpdated": "Last updated: April 19, 2026",
+  "lastUpdated": "Last updated: July 19, 2026",
   "description-1": "This Privacy Policy describes how the Devs Tocantins Community (\"we\", \"our\", or \"legado.dev\") collects, uses, and protects your information when you use our service.",
   "description-2": "By using legado.dev, you agree to the collection and use of information in accordance with this policy. We are compliant with the Brazilian General Data Protection Law (LGPD).",
   "interpretation_and_definitions": "Definitions",
@@ -19,6 +19,11 @@
   "personal_data_description": "When registering, we collect your first name, last name, and email address. If you use social login, we collect your unique identifier and profile picture provided by the provider (Google or GitHub).",
   "usage_data": "Gamification Data",
   "usage_data_auto_collected": "We store your progress, XP, badges, and contribution history to maintain the community ranking.",
+  "public_profile_title": "Your Public Profile (Contribution Portfolio)",
+  "public_profile_paragraph_1": "legado.dev is a public-recognition platform: part of what makes it useful is that your approved contributions become a verifiable portfolio, accessible to anyone with your profile link — including people without an account or who aren't logged in.",
+  "public_profile_paragraph_2": "On your public profile (legado.dev/u/your-username), any visitor can see: your name, your @username, your avatar/photo, your total, monthly, and yearly XP, your level, your ranking position, the badges and achievements you've earned, and, for each contribution already approved by a moderator: the activity title, the date, the XP awarded, and the text report you wrote when submitting it.",
+  "public_profile_paragraph_3": "We do not publicly display the proof file you attach (photo, screenshot, link, etc.) — we only indicate that a proof was submitted. We also do not display pending or rejected submissions on the public profile, only approved ones.",
+  "public_profile_paragraph_4": "Since the text of your report becomes public as soon as the contribution is approved, avoid including sensitive data about yourself or third parties (addresses, documents, health information, etc.) — write it as if you were posting on a professional social network. There is currently no option to make the profile fully private, since public exposure of contributions is the platform's core mechanism (it works as a volunteering résumé). If you no longer want to keep this public portfolio, you may request account deletion at any time — see the \"Your Rights (LGPD)\" section below.",
   "security_of_personal_data": "Third-Party Services",
   "security_paragraph": "We use trusted partners to operate the system. Your data is processed by:",
   "contact_us": "Your Rights (LGPD)",
@@ -26,5 +31,12 @@
   "contact_us_by_email": "For questions, contact us via email:",
   "contact_us_on_website": "Or through our community channels:",
   "contact_us_on_github_discussions": "GitHub Discussions",
-  "contact_us_on_discord": "Discord Server"
+  "contact_us_on_discord": "Discord Server",
+  "extra_services": {
+    "vercel": "Hosting and Infrastructure (Vercel Inc.)",
+    "neon": "Database Storage (Neon Inc.)",
+    "cloudflare": "Media Storage and Security (Cloudflare Inc.)",
+    "brevo": "Transactional Email Delivery (Brevo/Sendinblue)",
+    "auth": "Authentication via Google OAuth and GitHub OAuth"
+  }
 }

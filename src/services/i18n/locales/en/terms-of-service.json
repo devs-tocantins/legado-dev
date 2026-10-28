@@ -1,0 +1,47 @@
+{
+  "title": "Terms of Service",
+  "lastUpdated": "Last updated: July 19, 2026 — version 1",
+  "intro_notice": "This is an early-stage document (v1), written to make clear how legado.dev works today. It has not yet gone through professional legal review; that is planned for a future stage of the community.",
+
+  "section_1_title": "1. What legado.dev is",
+  "section_1_paragraph_1": "legado.dev is a free, non-profit community platform, maintained by the Devs Tocantins Community, to record, recognize, and give visibility to the volunteer contributions of its members (organizing events, giving talks, mentoring, learning-track activities, and more).",
+  "section_1_paragraph_2": "By creating an account and using the service, you agree to this Terms of Service and to our Privacy Policy. If you don't agree with any part of it, please don't use the platform.",
+
+  "section_2_title": "2. Your account",
+  "section_2_paragraph_1": "To use legado.dev you need to create an account with email and password, or sign in via Google/GitHub. You're responsible for keeping your password confidential and for everything that happens under your account.",
+  "section_2_paragraph_2": "The information you provide at sign-up (name, email) and on your profile (username, photo) must be truthful. Accounts with false or duplicate information, or used to impersonate someone else, may be suspended.",
+
+  "section_3_title": "3. Submitting contributions and proof",
+  "section_3_paragraph_1": "When you submit a contribution (an activity, a learning-track milestone proof, etc.), you're declaring that the description and proof submitted are truthful and represent something you actually did.",
+  "section_3_paragraph_2": "Every submission goes through human moderation before granting XP. Moderators may approve, reject, or ask for more information, at their own discretion. Fraudulent or plagiarized proof, or fictitious contributions, may lead to removal of the submission, reversal of improperly earned XP, and, in serious cases, account suspension.",
+  "section_3_paragraph_3": "You grant legado.dev a free, non-exclusive license to publicly display the content of your approved submissions (title, text report, and an indicator that proof was attached) on your profile, as detailed in our Privacy Policy.",
+
+  "section_4_title": "4. Expected conduct",
+  "section_4_paragraph_1": "We ask that you treat other members with respect. The following are not allowed: harassment, hate speech, spam, attempting to circumvent moderation, using multiple accounts to game the ranking, or any activity that violates Brazilian law.",
+  "section_4_paragraph_2": "We may remove content, suspend, or terminate accounts that violate this Terms of Service, at our discretion, always aiming to act proportionally and, when possible, notifying the person involved beforehand.",
+
+  "section_5_title": "5. XP, levels, and Gratitude Tokens",
+  "section_5_paragraph_1": "XP, levels, badges, and Gratitude Tokens are internal gamification elements with no monetary value whatsoever. They are not cryptocurrency, cannot be bought, sold, or exchanged for money or goods outside the platform, and do not represent ownership or equity of any kind.",
+  "section_5_paragraph_2": "We may adjust, reset, or recalculate XP and Gratitude Tokens in case of a system error, proven fraud, or a change in scoring rules — always aiming to communicate these changes transparently.",
+
+  "section_6_title": "6. Public profile",
+  "section_6_paragraph_1": "A core part of legado.dev is the public profile, which works as a volunteering résumé visible to anyone with the link, even without logging in. Before continuing to use the platform, please read the \"Your Public Profile\" section of our Privacy Policy, which describes exactly what information is made public.",
+
+  "section_7_title": "7. Intellectual property",
+  "section_7_paragraph_1": "The name \"legado.dev\", the Devs Tocantins Community brand, and the platform's design belong to the maintaining community. Content you submit (reports, text) remains yours, but you grant the display license described in section 3.",
+
+  "section_8_title": "8. Disclaimer of warranties and limitation of liability",
+  "section_8_paragraph_1": "legado.dev is provided free of charge, \"as is\", with no guarantee of continuous availability, absence of errors, or fitness for a particular purpose. As a community project maintained by volunteers, we may experience instability, unannounced maintenance, or eventually discontinue features.",
+  "section_8_paragraph_2": "To the maximum extent permitted by law, the Devs Tocantins Community is not liable for indirect damages arising from the use or inability to use the platform.",
+
+  "section_9_title": "9. Changes to this Terms of Service",
+  "section_9_paragraph_1": "We may update this Terms of Service and the Privacy Policy over time, as the platform evolves. Whenever there is a material change, we notify registered users (through an in-app notification and, when possible, by email) and update the date and version number at the top of this page.",
+  "section_9_paragraph_2": "Continued use of the platform after an update to this document means you agree to the new version.",
+
+  "section_10_title": "10. Account termination",
+  "section_10_paragraph_1": "You can close your account at any time from your profile dashboard. When you do, your personal data is anonymized as described in the Privacy Policy, and your public profile ceases to exist.",
+
+  "section_11_title": "11. Governing law and contact",
+  "section_11_paragraph_1": "This Terms of Service is governed by the laws of the Federative Republic of Brazil. Questions about this document can be sent to the email below.",
+  "contact_us_by_email": "For questions, contact us via email:"
+}

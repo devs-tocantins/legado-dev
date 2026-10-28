@@ -30,6 +30,10 @@ import {
   Target,
   Trophy,
   History,
+  CalendarDays,
+  Map,
+  Lightbulb,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -314,6 +318,18 @@ function AdminDashboardPageContent() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <NavCard
+            href="/admin-panel/learning-tracks"
+            icon={Map}
+            label="Trilhas"
+            description="Criar e montar trilhas: seções, marcos e vínculos"
+          />
+          <NavCard
+            href="/admin-panel/track-suggestions"
+            icon={Lightbulb}
+            label="Sugestões de Trilha"
+            description="Ideias de trilhas novas e melhorias enviadas pela comunidade"
+          />
+          <NavCard
             href="/admin-panel/activities"
             icon={Activity}
             label="Atividades"
@@ -336,6 +352,18 @@ function AdminDashboardPageContent() {
             icon={Target}
             label="Missoes"
             description="Criar missoes unicas e revisar participacoes"
+          />
+          <NavCard
+            href="/admin-panel/events"
+            icon={CalendarDays}
+            label="Eventos"
+            description="Moderar eventos divulgados pela comunidade"
+          />
+          <NavCard
+            href="/admin-panel/courses"
+            icon={BookOpen}
+            label="Cursos"
+            description="Moderar cursos enviados pela comunidade"
           />
           <NavCard
             href="/admin-panel/badges"

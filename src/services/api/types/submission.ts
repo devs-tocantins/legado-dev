@@ -1,3 +1,5 @@
+import { EffortLevelEnum } from "./activity";
+
 export enum SubmissionStatusEnum {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -20,10 +22,13 @@ export type Submission = {
   id: string;
   profileId: string;
   activityId: string;
+  trackItemId?: string | null;
+  isTestOut?: boolean;
   proofUrl?: string | null;
   description?: string | null;
   customTitle?: string | null;
   activityDate?: string | null;
+  declaredEffort?: EffortLevelEnum | null;
   githubRepo?: GithubRepoTargetEnum | null;
   issueCategory?: GithubIssueCategoryEnum | null;
   githubIssueUrl?: string | null;

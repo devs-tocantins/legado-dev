@@ -13,8 +13,8 @@ O sistema é composto por dois serviços independentes:
 
 | Camada | Tecnologia | Hospedagem |
 |--------|-----------|------------|
-| Frontend (SPA/SSR) | Next.js 14 (App Router) + Tailwind CSS | Vercel (auto-deploy via GitHub) |
-| Backend (API REST) | NestJS + TypeORM + PostgreSQL | Oracle Cloud VM (Docker) |
+| Frontend (SPA/SSR) | Next.js (App Router) + [shadcn/ui](https://ui.shadcn.com/) + Tailwind CSS | Vercel (auto-deploy via GitHub) |
+| Backend (API REST) | NestJS + TypeORM + PostgreSQL | Oracle Cloud VM (Docker + Nginx + Certbot) |
 | Banco de dados | PostgreSQL (Neon — serverless) | Neon.tech |
 | Armazenamento de arquivos | Cloudflare R2 (S3-compatible) | Cloudflare |
 | E-mail transacional | Brevo (SMTP) | Brevo |
@@ -33,18 +33,20 @@ O sistema é composto por dois serviços independentes:
 ┌─────────────────────────────────────────────────────────────┐
 │                    Vercel (CDN + Edge)                      │
 │              Next.js — SSR + Static Pages                   │
-│  Rotas: /dashboard, /activities, /missions, /leaderboard,  │
-│         /submissions, /u/:username, /admin-panel/*          │
+│  Rotas: /profile, /voluntariado, /trilhas, /eventos,        │
+│         /cursos, /leaderboard, /submissions, /u/:username,  │
+│         /admin-panel/*, /moderation                         │
 └────────────────────────┬────────────────────────────────────┘
                          │ REST API calls (JWT Bearer)
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│               NestJS API (Docker — Oracle VM)               │
+│    NestJS API (Docker + Nginx + Certbot — Oracle VM)        │
 │           https://136.248.75.34.nip.io/api/v1/*             │
 │                                                             │
 │  Módulos: auth, users, gamification-profiles, activities,  │
 │           submissions, missions, badges, transactions,      │
-│           notifications, files, contribution-reports        │
+│           learning-tracks, events, courses, whatsapp,       │
+│           ranking-snapshots, notifications, files            │
 └────────┬───────────────────────────────────────┬────────────┘
          │ TypeORM                               │ S3 SDK
          ▼                                       ▼
@@ -68,8 +70,8 @@ O sistema é composto por dois serviços independentes:
 | Role | ID | Descrição |
 |------|----|-----------|
 | `admin` | 1 | Acesso total. Invisível no ranking e perfis públicos. |
-| `user` | 2 | Usuário padrão. Participa de atividades, missões, ranking. |
-| `moderator` | 3 | Pode revisar submissões e ver dados internos, mas não editar configurações. |
+| `user` | 2 | Usuário padrão. Participa de atividades, missões, ranking, trilhas, eventos e cursos. |
+| `moderator` | 3 | Pode revisar submissões, eventos e cursos propostos, mas não editar configurações globais. |
 
 **Regra de privacidade admin:** usuários com `role.id = 1` são completamente ocultos de qualquer endpoint público (ranking, busca por username, perfil por ID).
 
@@ -101,7 +103,7 @@ Cada usuário tem exatamente um perfil de gamificação. É o dado principal par
 | `totalXp` | int | XP acumulado total (para ranking geral) |
 | `currentMonthlyXp` | int | XP do mês atual (para ranking mensal) |
 | `currentYearlyXp` | int | XP do ano atual (para ranking anual) |
-| `gratitudeTokens` | int | Tokens de gratidão (podem ser doados a outros) |
+| `gratitudeTokens` | int | Tokens de gratidão (podem ser doados a outros; reset mensal) |
 | `isBanned` | bool | Usuário banido fica oculto do ranking |
 
 **Endpoints públicos:**
@@ -113,7 +115,27 @@ Cada usuário tem exatamente um perfil de gamificação. É o dado principal par
 - `GET /me`, `PATCH /me` — perfil próprio
 - `POST /transfer` — transferir tokens de gratidão
 
-### 4.4 Activities (`/api/v1/activities`)
+### 4.4 Learning Tracks (`/api/v1/learning-tracks`)
+
+Módulo de Trilhas de Aprendizado estruturadas em seções e itens com concedeção de `journeyXp`.
+
+### 4.5 Events (`/api/v1/events`)
+
+Gestão de eventos da comunidade (presenciais/online), inscrições de participantes e aprovação de eventos propostos.
+
+### 4.6 Courses (`/api/v1/courses` e `/api/v1/course-reviews`)
+
+Catálogo comunitário de cursos com envio de sugestões, moderação e avaliações por estrelas (1-5).
+
+### 4.7 Ranking Snapshots (`/api/v1/ranking-snapshots`)
+
+Mural de Campeões e histórico de fechamento de ciclos mensais e anuais de ranking.
+
+### 4.8 WhatsApp Admin (`/api/v1/whatsapp`)
+
+Integração de envio de notificações e mensagens de suporte via WhatsApp.
+
+### 4.9 Activities (`/api/v1/activities`)
 
 Atividades são tarefas recorrentes que qualquer usuário pode completar para ganhar XP fixo.
 
@@ -123,7 +145,7 @@ Atividades são tarefas recorrentes que qualquer usuário pode completar para ga
 - `requiresProof` — se exige upload de arquivo
 - `isHidden` — atividades secretas (não aparecem na listagem pública)
 
-### 4.5 Submissions (`/api/v1/submissions`)
+### 4.10 Submissions (`/api/v1/submissions`)
 
 Submissões são respostas de usuários a atividades.
 
@@ -140,59 +162,25 @@ PENDING → APPROVED (XP creditado automaticamente)
 - `GET /pending` — fila de revisão (moderador/admin)
 - `PATCH /:id/review` — aprovar ou rejeitar (moderador/admin)
 
-### 4.6 Missions (`/api/v1/missions`)
+### 4.11 Missions (`/api/v1/missions`)
 
 Missões são desafios únicos onde **apenas um participante pode vencer**.
 
-**Características:**
-- Ao contrário das atividades, só um usuário recebe o XP
-- Quando uma submissão é aprovada, a missão é encerrada (`CLOSED`) e nenhuma nova submissão é aceita
-- `isSecret` — missão oculta da listagem pública
-- `requiresProof`, `requiresDescription` — obrigatoriedade de evidências
+### 4.12 Badges (`/api/v1/badges`)
 
-**Endpoints públicos:**
-- `GET /` — listar missões abertas (paginado, com busca)
-- `GET /:id` — detalhes da missão
-- `GET /:id/participants` — participantes (apenas username + status, sem conteúdo das submissões)
+Conquistas automáticas concedidas com base em regras avaliadas após cada transação de XP.
 
-**Endpoints autenticados (usuário):**
-- `POST /:id/submit` — enviar participação
-- `GET /:id/my-submission` — ver minha submissão
+### 4.13 Transactions (`/api/v1/transactions`)
 
-**Endpoints admin/moderador:**
-- `GET /admin/all` — todas as missões
-- `GET /:id/submissions` — submissões completas (com conteúdo)
-- `PATCH /:id/submissions/:submissionId/review` — revisar
+Histórico completo de movimentações de XP do usuário.
 
-### 4.7 Badges (`/api/v1/badges`)
+### 4.14 Files (`/api/v1/files`)
 
-Conquistas automáticas concedidas com base em regras avaliadas após cada transação de XP. Exemplos: "Primeiro XP", "100 XP acumulados", "Top 3 do mês".
+Upload de imagens no Cloudflare R2.
 
-O `BadgeEvaluatorService` roda assincronamente após eventos de crédito de XP.
+### 4.15 Notifications (`/api/v1/notifications`)
 
-Um cron job semanal (`RankingCronService`) atribui badges de ranking com base nas posições atuais.
-
-### 4.8 Transactions (`/api/v1/transactions`)
-
-Histórico completo de movimentações de XP do usuário. Categorias:
-
-| Categoria | Descrição |
-|-----------|-----------|
-| `ACTIVITY_REWARD` | XP por atividade aprovada |
-| `MISSION_REWARD` | XP por missão vencida |
-| `TOKEN_TRANSFER` | Saída de tokens de gratidão |
-| `TOKEN_REWARD` | Recebimento de tokens de gratidão |
-| `PENALTY` | Penalidade aplicada por admin |
-
-### 4.9 Files (`/api/v1/files`)
-
-- `POST /upload` — upload de imagem (JPG, PNG, GIF, WebP, máx. 5 MB)
-- Armazenamento direto no Cloudflare R2 via `multer-s3`
-- Retorna `{ file: { path: "chave-do-arquivo" } }`
-
-### 4.10 Notifications (`/api/v1/notifications`)
-
-Sistema de notificações internas (in-app). Geradas automaticamente em eventos como aprovação de submissão, recebimento de tokens, conquista de badge.
+Sistema de notificações internas e preferências de e-mail/WhatsApp.
 
 ---
 

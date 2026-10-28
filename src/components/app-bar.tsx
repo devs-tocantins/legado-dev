@@ -2,11 +2,12 @@
 
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import useAuth from "@/services/auth/use-auth";
 import useAuthActions from "@/services/auth/use-auth-actions";
 import Link from "@/components/link";
+import { NotificationIcon } from "@/components/notification-icon";
 import { useQuery } from "@tanstack/react-query";
 import { useGetMyGamificationProfileService } from "@/services/api/services/gamification-profiles";
 import { RoleEnum } from "@/services/api/types/role";
@@ -15,23 +16,23 @@ import {
   User,
   Settings,
   Bell,
-  Menu,
-  X,
-  LayoutDashboard,
-  BookOpen,
+  HeartHandshake,
   Trophy,
-  Target,
   Sun,
   Moon,
   ExternalLink,
   ClipboardCheck,
   ClipboardList,
+  CalendarDays,
+  Map,
+  GraduationCap,
+  FileText,
+  Rocket,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,13 @@ import {
   useMarkReadService,
 } from "@/services/api/services/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Notification } from "@/services/api/types/notification";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
-import { getLevel, LEVELS } from "@/lib/gamification";
+import {
+  getLevel,
+  getLevelProgress,
+  formatXp,
+  LEVELS,
+} from "@/lib/gamification";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { formatDistanceToNow } from "date-fns";
 import { IS_SIGN_UP_ENABLED } from "@/services/auth/config";
@@ -66,21 +71,52 @@ function LogoMark() {
   );
 }
 
-// ─── Level badge ──────────────────────────────────────────────────────────────
+// ─── User menu header (identidade + progressão) ──────────────────────────────
 
-function LevelBadge({ totalXp }: { totalXp: number }) {
+function UserMenuHeader({
+  user,
+  profile,
+}: {
+  user: { firstName?: string; lastName?: string; email?: string };
+  profile: GamificationProfile | null | undefined;
+}) {
+  const totalXp = profile?.totalXp ?? 0;
   const level = getLevel(totalXp);
   const levelValue = LEVELS.findIndex((l) => l.name === level.name) + 1;
+  const progress = getLevelProgress(totalXp);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border",
-        level.color,
-        "bg-current/10 border-current/20"
+    <div className="border-b px-4 py-3.5 space-y-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold font-heading">
+          {user.firstName} {user.lastName}
+        </p>
+        {profile?.username && (
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            @{profile.username}
+          </p>
+        )}
+        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+      </div>
+
+      {profile && (
+        <div className="space-y-1.5 rounded-lg border bg-muted/40 px-3 py-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className={cn("font-semibold", level.color)}>
+              {level.name}
+            </span>
+            <span className="text-muted-foreground">
+              Lvl {levelValue} · {formatXp(totalXp)} XP
+            </span>
+          </div>
+          <div className="h-1 rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       )}
-    >
-      Lvl {levelValue}
     </div>
   );
 }
@@ -89,6 +125,7 @@ function LevelBadge({ totalXp }: { totalXp: number }) {
 
 function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
   const getNotifications = useGetNotificationsService();
   const getUnreadCount = useGetUnreadCountService();
@@ -106,12 +143,12 @@ function NotificationBell() {
     refetchInterval: 30_000,
   });
 
-  const { data: notifications } = useQuery({
+  const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
       const res = await getNotifications();
-      if (res.status === HTTP_CODES_ENUM.OK) return res.data as Notification[];
-      return [] as Notification[];
+      if (res.status === HTTP_CODES_ENUM.OK) return res.data.data;
+      return [];
     },
     enabled: open,
   });
@@ -172,7 +209,12 @@ function NotificationBell() {
           )}
         </div>
         <div className="max-h-[350px] overflow-y-auto">
-          {!notifications || notifications.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <div className="h-10 w-10 animate-pulse rounded-full bg-muted mb-3" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          ) : !notifications || notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -189,7 +231,13 @@ function NotificationBell() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.isRead && doMarkRead(n.id)}
+                  onClick={() => {
+                    if (!n.isRead) doMarkRead(n.id);
+                    if (n.link) {
+                      setOpen(false);
+                      router.push(n.link);
+                    }
+                  }}
                   className={cn(
                     "p-4 hover:bg-muted/50 transition-colors cursor-pointer relative group",
                     !n.isRead && "bg-primary/[0.03]"
@@ -202,6 +250,9 @@ function NotificationBell() {
                         !n.isRead ? "bg-primary" : "bg-transparent"
                       )}
                     />
+                    <div className="mt-0.5 shrink-0">
+                      <NotificationIcon type={n.type} className="h-4 w-4" />
+                    </div>
                     <div className="space-y-1 min-w-0">
                       <p className="text-xs text-foreground leading-relaxed">
                         <span className="font-bold">{n.title}</span> {n.body}
@@ -219,6 +270,14 @@ function NotificationBell() {
             </div>
           )}
         </div>
+        <div className="p-2 border-t">
+          <Link
+            href="/notificacoes"
+            className="block w-full text-center text-xs text-primary hover:underline font-medium py-1"
+          >
+            Ver todas as notificações
+          </Link>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -230,7 +289,6 @@ function ResponsiveAppBar() {
   const { user, isLoaded } = useAuth();
   const { logOut } = useAuthActions();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -242,7 +300,7 @@ function ResponsiveAppBar() {
 
   const fetchMyProfile = useGetMyGamificationProfileService();
   const { data: profile } = useQuery<GamificationProfile | null>({
-    queryKey: ["my-profile-appbar"],
+    queryKey: ["my-profile"],
     queryFn: async () => {
       const res = await fetchMyProfile();
       if (res.status === HTTP_CODES_ENUM.OK) {
@@ -266,14 +324,18 @@ function ResponsiveAppBar() {
 
   const navLinks = user
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/activities", label: "Atividades", icon: BookOpen },
-        { href: "/missions", label: "Missões", icon: Target },
+        { href: "/trilhas", label: "Trilhas", icon: Map },
+        { href: "/cursos", label: "Cursos", icon: GraduationCap },
+        { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+        { href: "/projetos", label: "Projetos", icon: Rocket },
+        { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
         { href: "/submissions", label: "Histórico", icon: ClipboardList },
       ]
     : [
-        { href: "/activities", label: "Atividades", icon: BookOpen },
+        { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+        { href: "/projetos", label: "Projetos", icon: Rocket },
+        { href: "/eventos", label: "Agenda", icon: CalendarDays },
         { href: "/leaderboard", label: "Ranking", icon: Trophy },
       ];
 
@@ -376,11 +438,11 @@ function ResponsiveAppBar() {
                 render={
                   <button
                     aria-label="Abrir menu do usuário"
-                    className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors outline-none"
+                    className="rounded-full outline-none transition-shadow hover:ring-2 hover:ring-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   />
                 }
               >
-                <div className="h-7 w-7 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                <div className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                   {profile?.photo?.path ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -393,60 +455,79 @@ function ResponsiveAppBar() {
                   )}
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                {/* User info header */}
-                <div className="px-3 py-2.5 space-y-0.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold font-heading truncate">
-                      {user.firstName} {user.lastName}
-                    </p>
-                    {profile && <LevelBadge totalXp={profile.totalXp ?? 0} />}
-                  </div>
-                  {profile?.username && (
-                    <p className="text-xs font-mono text-muted-foreground">
-                      @{profile.username}
-                    </p>
+              <DropdownMenuContent
+                align="end"
+                className="w-72 overflow-hidden p-0"
+              >
+                <UserMenuHeader user={user} profile={profile} />
+
+                <div className="p-1.5">
+                  <DropdownMenuItem render={<Link href="/profile" />}>
+                    <User className="mr-2 h-4 w-4" />
+                    Minha conta
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem render={<Link href="/submissions" />}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Histórico
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem render={<Link href="/notificacoes" />}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notificações
+                  </DropdownMenuItem>
+
+                  {isModerator && (
+                    <DropdownMenuItem render={<Link href="/moderation" />}>
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Moderação
+                    </DropdownMenuItem>
                   )}
+
+                  {isAdmin && (
+                    <DropdownMenuItem render={<Link href="/admin-panel" />}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem
+                    render={
+                      <Link
+                        href={
+                          profile?.username
+                            ? `/u/${profile.username}`
+                            : "/profile"
+                        }
+                      />
+                    }
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Ver perfil público
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    render={<Link href="/settings/notifications" />}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Preferências de notificação
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem render={<Link href="/legal" />}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Termos e Privacidade
+                  </DropdownMenuItem>
                 </div>
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  render={
-                    <Link
-                      href={
-                        profile?.username
-                          ? `/u/${profile.username}`
-                          : "/profile"
-                      }
-                    />
-                  }
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Ver perfil público
-                </DropdownMenuItem>
-
-                <DropdownMenuItem render={<Link href="/profile" />}>
-                  <User className="mr-2 h-4 w-4" />
-                  Minha conta
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  render={<Link href="/settings/notifications" />}
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notificações
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={logOut}
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
+                <div className="border-t p-1.5">
+                  <DropdownMenuItem
+                    onClick={logOut}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -470,68 +551,8 @@ function ResponsiveAppBar() {
               )}
             </div>
           )}
-
-          {/* Mobile hamburger */}
-          <Button
-            variant="ghost"
-            size="icon"
-            nativeButton={true}
-            className="md:hidden h-8 w-8"
-            onClick={() => setMobileOpen((o) => !o)}
-            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          >
-            {mobileOpen ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Menu className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </div>
-
-      {/* Mobile dropdown menu */}
-      {mobileOpen && (
-        <nav className="border-t border-border/50 bg-background/95 md:hidden">
-          <div className="flex flex-col gap-0.5 p-3">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive(href)
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-            {isModerator && (
-              <Link
-                href="/moderation"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <ClipboardCheck className="h-4 w-4" />
-                Moderação
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                href="/admin-panel"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <Settings className="h-4 w-4" />
-                Admin
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
     </header>
   );
 }

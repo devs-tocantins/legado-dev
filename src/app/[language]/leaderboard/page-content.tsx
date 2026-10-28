@@ -7,16 +7,34 @@ import {
   useGetGamificationProfilesService,
   useGetMyGamificationProfileService,
 } from "@/services/api/services/gamification-profiles";
+import { useGetChampionSnapshotService } from "@/services/api/services/ranking-snapshots";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { GamificationProfile } from "@/services/api/types/gamification-profile";
 import { SortEnum } from "@/services/api/types/sort-type";
 import { getLevel, formatXp } from "@/lib/gamification";
-import { Trophy, Medal, Coins, Crown } from "lucide-react";
+import { Trophy, Coins, Sparkle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonLeaderboard } from "@/components/ui/skeleton-patterns";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
+import { BANNER_PRESETS } from "@/app/[language]/u/[username]/page-content";
+
+const DEFAULT_BANNER = "raiz-verde";
+
+function bannerUrl(preset?: string): string {
+  return (BANNER_PRESETS[preset ?? ""] ?? BANNER_PRESETS[DEFAULT_BANNER]).url;
+}
+
+// Pílula de nível — mesma paleta de cor usada em getLevel(), só que como chip.
+const LEVEL_PILL: Record<string, string> = {
+  Novato: "bg-slate-400/15 text-slate-400",
+  Contribuidor: "bg-emerald-400/15 text-emerald-400",
+  "Colaborador Ativo": "bg-sky-400/15 text-sky-400",
+  Referência: "bg-blue-400/15 text-blue-400",
+  Mentor: "bg-amber-400/15 text-amber-400",
+  Lenda: "bg-rose-400/15 text-rose-400",
+};
 
 type Tab = "monthly" | "yearly" | "alltime";
 
@@ -32,30 +50,37 @@ const TAB_FIELD: Record<Tab, keyof GamificationProfile> = {
   alltime: "totalXp",
 };
 
-const PODIUM_CONFIG = {
+// Paleta por posição (design "8A — Ranking"): laranja/azul/verde, sombra
+// sólida deslocada (mesma linguagem hard-shadow do resto do app). Os valores
+// oklch são literais — funcionam iguais em claro/escuro; só a base do cartão
+// (bg-card/border/foreground) segue o tema.
+const RANK_STYLE = {
   1: {
-    height: "h-60",
-    border: "border-l-4 border-amber-400",
-    bg: "bg-amber-400/5",
-    rankColor: "text-amber-400",
-    icon: <Crown className="h-5 w-5 text-amber-400" />,
+    bright: "oklch(0.7 0.17 55)",
+    ring: "oklch(0.85 0.09 62)",
+    shadow: "oklch(0.72 0.15 55)",
+    chipBg: "oklch(0.96 0.06 62)",
+    chipText: "oklch(0.55 0.16 50)",
     order: "order-2",
+    label: "1º lugar · líder do mês",
   },
   2: {
-    height: "h-48",
-    border: "border-l-4 border-slate-400",
-    bg: "bg-slate-400/5",
-    rankColor: "text-slate-400",
-    icon: <Medal className="h-4 w-4 text-slate-400" />,
+    bright: "oklch(0.6 0.14 245)",
+    ring: "oklch(0.86 0.06 245)",
+    shadow: "oklch(0.78 0.11 245)",
+    chipBg: "oklch(0.96 0.04 245)",
+    chipText: "oklch(0.5 0.13 245)",
     order: "order-1",
+    label: "2º lugar",
   },
   3: {
-    height: "h-44",
-    border: "border-l-4 border-amber-700",
-    bg: "bg-amber-700/5",
-    rankColor: "text-amber-700",
-    icon: <Medal className="h-4 w-4 text-amber-700" />,
+    bright: "oklch(0.56 0.13 150)",
+    ring: "oklch(0.85 0.07 150)",
+    shadow: "oklch(0.75 0.12 150)",
+    chipBg: "oklch(0.95 0.05 150)",
+    chipText: "oklch(0.46 0.13 150)",
     order: "order-3",
+    label: "3º lugar",
   },
 } as const;
 
@@ -70,50 +95,177 @@ function PodiumCard({
 }) {
   const xp = profile[xpField] as number;
   const level = getLevel(profile.totalXp);
-  const cfg = PODIUM_CONFIG[rank];
+  const style = RANK_STYLE[rank];
 
   return (
     <div
-      className={cn(
-        "flex flex-col justify-between rounded-lg border p-3 text-center w-full relative overflow-hidden",
-        cfg.height,
-        cfg.border,
-        cfg.bg,
-        cfg.order
-      )}
+      className="relative flex flex-col items-center overflow-hidden rounded-[24px] border bg-card pb-5 text-center"
+      style={{
+        borderColor: style.ring,
+        boxShadow: `0 ${rank === 1 ? 13 : 9}px 0 ${style.shadow}`,
+      }}
     >
-      <div className="flex flex-col items-center gap-1 pt-1 z-10">
-        <div className="flex items-center justify-center">{cfg.icon}</div>
-        <p className={cn("text-lg font-bold leading-none", cfg.rankColor)}>
-          #{rank}
-        </p>
+      {/* banner real do usuário */}
+      <div className="relative aspect-[4/1] w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bannerUrl(profile.bannerPreset)}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-8"
+          style={{
+            background: "linear-gradient(180deg, transparent, var(--card))",
+          }}
+        />
+        {rank === 1 && (
+          <>
+            <Sparkle
+              className="absolute left-5 top-4 h-3.5 w-3.5 text-white/85"
+              strokeWidth={1.5}
+            />
+            <Sparkle
+              className="absolute right-6 top-7 h-3 w-3 text-white/85"
+              strokeWidth={1.5}
+            />
+            <span className="absolute left-1/2 top-0.5 -translate-x-1/2 text-lg drop-shadow">
+              👑
+            </span>
+          </>
+        )}
       </div>
 
-      <div className="flex flex-col items-center gap-1 z-10">
-        <div className="relative mb-1">
-          {profile.photo?.path ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.photo.path}
-              alt={`@${profile.username}`}
-              className="h-10 w-10 rounded-full border-2 border-background object-cover"
-            />
-          ) : (
-            <div className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
-              {profile.username.substring(0, 2).toUpperCase()}
-            </div>
-          )}
+      {/* avatar squircle sobrepondo o banner */}
+      <div className={cn("relative -mt-[38px] z-10", rank === 1 && "-mt-11")}>
+        {profile.photo?.path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.photo.path}
+            alt={`@${profile.username}`}
+            className={cn(
+              "rounded-[22px] border-[5px] border-card object-cover",
+              rank === 1 ? "h-[88px] w-[88px]" : "h-20 w-20"
+            )}
+          />
+        ) : (
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-[22px] border-[5px] border-card text-2xl font-bold text-white",
+              rank === 1 ? "h-[88px] w-[88px]" : "h-20 w-20"
+            )}
+            style={{ background: style.bright }}
+          >
+            {profile.username.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <span className="mt-3.5 font-mono text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+        {style.label}
+      </span>
+      <Link
+        href={`/u/${profile.username}`}
+        className="mt-1.5 text-base font-bold text-foreground hover:underline truncate max-w-[90%]"
+      >
+        @{profile.username}
+      </Link>
+      <span
+        className={cn(
+          "mt-2 rounded-full px-3 py-1 font-mono text-[11px] font-bold",
+          LEVEL_PILL[level.name]
+        )}
+      >
+        {level.name}
+      </span>
+      <span
+        className="mx-5 mt-3.5 w-[calc(100%-2.5rem)] rounded-2xl py-2.5 font-mono text-lg font-extrabold"
+        style={{ background: style.chipBg, color: style.chipText }}
+      >
+        {formatXp(xp)}
+        <small className="ml-1 text-xs font-bold opacity-70">XP</small>
+      </span>
+      <span className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-amber-500">
+        <Coins className="h-3 w-3" />
+        {profile.gratitudeTokensReceived} reconhecimentos
+      </span>
+    </div>
+  );
+}
+
+function ChampionCard({
+  title,
+  champion,
+  when,
+  meta,
+}: {
+  title: string;
+  champion: GamificationProfile;
+  when: string;
+  meta: string;
+}) {
+  const level = getLevel(champion.totalXp);
+
+  return (
+    <div className="relative overflow-hidden rounded-[20px] border bg-card">
+      <div className="relative aspect-[4/1] w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bannerUrl(champion.bannerPreset)}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-6"
+          style={{
+            background: "linear-gradient(180deg, transparent, var(--card))",
+          }}
+        />
+        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 font-mono text-[10px] font-extrabold uppercase tracking-wide text-amber-950 shadow-sm">
+          🏆 {title}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 pb-4 pt-5">
+        {champion.photo?.path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={champion.photo.path}
+            alt={`@${champion.username}`}
+            className="h-12 w-12 shrink-0 rounded-2xl border-[3px] border-card object-cover"
+          />
+        ) : (
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-[3px] border-card text-sm font-bold text-white"
+            style={{ background: RANK_STYLE[1].bright }}
+          >
+            {champion.username.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/u/${champion.username}`}
+            className="block truncate font-bold text-foreground hover:underline"
+          >
+            @{champion.username}
+          </Link>
+          <p className="mt-0.5 text-xs text-muted-foreground">{when}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[10px] font-bold",
+                LEVEL_PILL[level.name]
+              )}
+            >
+              {level.name}
+            </span>
+            <span className="font-mono text-[10px] font-bold text-muted-foreground">
+              {meta}
+            </span>
+          </div>
         </div>
-        <Link
-          href={`/u/${profile.username}`}
-          className="font-semibold text-xs truncate max-w-full hover:text-primary transition-colors"
-        >
-          @{profile.username}
-        </Link>
-        <p className={cn("text-[10px] font-medium", level.color)}>
-          {level.name}
-        </p>
-        <p className="text-base font-bold font-mono mt-0.5">{formatXp(xp)}</p>
       </div>
     </div>
   );
@@ -144,21 +296,41 @@ function TableRow({
         {position}
       </td>
       <td className="px-4 py-3 font-medium">
-        <Link
-          href={`/u/${profile.username}`}
-          className={cn(
-            "hover:text-primary transition-colors",
-            isMe && "text-primary font-semibold"
+        <div className="flex items-center gap-3">
+          {profile.photo?.path ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photo.path}
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-8 shrink-0 rounded-[10px] object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-muted text-[11px] font-bold text-muted-foreground">
+              {profile.username.substring(0, 2).toUpperCase()}
+            </div>
           )}
-        >
-          @{profile.username}
-        </Link>
-        {isMe && (
-          <span className="ml-2 text-xs text-primary font-normal">(você)</span>
-        )}
+          <Link
+            href={`/u/${profile.username}`}
+            className={cn(
+              "hover:text-primary transition-colors",
+              isMe && "text-primary font-semibold"
+            )}
+          >
+            @{profile.username}
+          </Link>
+          {isMe && (
+            <span className="text-xs text-primary font-normal">(você)</span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 hidden sm:table-cell">
-        <span className={cn("text-xs font-medium", level.color)}>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 font-mono text-[11px] font-bold",
+            LEVEL_PILL[level.name]
+          )}
+        >
           {level.name}
         </span>
       </td>
@@ -168,11 +340,27 @@ function TableRow({
       <td className="px-4 py-3 text-right hidden sm:table-cell">
         <span className="flex items-center justify-end gap-1 text-amber-500 text-xs font-mono">
           <Coins className="h-3 w-3" />
-          {profile.gratitudeTokens}
+          {profile.gratitudeTokensReceived}
         </span>
       </td>
     </tr>
   );
+}
+
+function formatPeriodKey(periodKey: string): string {
+  if (!periodKey) return "";
+  const [yearStr, monthStr] = periodKey.split("-");
+  if (yearStr && monthStr) {
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (!isNaN(year) && !isNaN(month)) {
+      const date = new Date(year, month - 1, 1);
+      return date
+        .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+        .replace(/^\w/, (c) => c.toUpperCase());
+    }
+  }
+  return periodKey;
 }
 
 function LeaderboardPageContent() {
@@ -180,6 +368,7 @@ function LeaderboardPageContent() {
   const { user } = useAuth();
   const fetchProfiles = useGetGamificationProfilesService();
   const fetchMyProfile = useGetMyGamificationProfileService();
+  const fetchChampionSnapshot = useGetChampionSnapshotService();
 
   const { data, isLoading } = useQuery({
     queryKey: ["leaderboard", tab],
@@ -196,13 +385,38 @@ function LeaderboardPageContent() {
   });
 
   const { data: myProfile } = useQuery({
-    queryKey: ["my-profile-leaderboard"],
+    queryKey: ["my-profile"],
     queryFn: async () => {
       const { status, data } = await fetchMyProfile();
       if (status === HTTP_CODES_ENUM.OK) return data;
       return null;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Mural de Campeões — campeões do período encerrado (mês/ano passado).
+  const { data: monthlyChampionSnapshot } = useQuery({
+    queryKey: ["ranking-champion", "monthly"],
+    queryFn: async () => {
+      const { status, data } = await fetchChampionSnapshot({
+        type: "monthly",
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data ?? null;
+      return null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: yearlyChampionSnapshot } = useQuery({
+    queryKey: ["ranking-champion", "yearly"],
+    queryFn: async () => {
+      const { status, data } = await fetchChampionSnapshot({
+        type: "annual",
+      });
+      if (status === HTTP_CODES_ENUM.OK) return data ?? null;
+      return null;
+    },
     staleTime: 5 * 60 * 1000,
   });
 
@@ -219,39 +433,45 @@ function LeaderboardPageContent() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-amber-400" />
-          Ranking da Comunidade
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Os membros mais ativos do legado.dev
-        </p>
-      </div>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-amber-400/90 text-xl">
+              🏆
+            </span>
+            Ranking da Comunidade
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Os membros mais ativos do legado.dev
+          </p>
+        </div>
 
-      {/* Animated tabs */}
-      <div className="flex gap-0 border-b">
-        {(Object.entries(TAB_LABELS) as [Tab, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              "relative px-4 py-2 text-sm font-medium transition-colors",
-              tab === key
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-            {tab === key && (
-              <motion.div
-                layoutId="tab-indicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-              />
-            )}
-          </button>
-        ))}
+        {/* Abas em pílula */}
+        <div className="flex gap-1 rounded-2xl bg-muted p-1">
+          {(Object.entries(TAB_LABELS) as [Tab, string][]).map(
+            ([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "relative px-4 py-2 rounded-xl text-sm font-bold transition-colors",
+                  tab === key
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab === key && (
+                  <motion.div
+                    layoutId="tab-indicator"
+                    className="absolute inset-0 rounded-xl bg-card shadow-sm"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative">{label}</span>
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -289,20 +509,32 @@ function LeaderboardPageContent() {
           >
             {/* Podium — aligned at base */}
             {top3.length > 0 && (
-              <div className="flex items-end gap-3">
-                {([2, 1, 3] as const).map((rank) => {
-                  const profile = top3[rank - 1];
-                  if (!profile) return null;
-                  return (
-                    <div key={rank} className="flex-1">
+              <div className="flex flex-col gap-5 md:gap-3 md:flex-row md:items-end">
+                {top3[0] && (
+                  <div className="flex-1 order-first md:order-2 md:flex-[1.15] md:z-10">
+                    <PodiumCard profile={top3[0]} rank={1} xpField={xpField} />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3 md:contents">
+                  {top3[1] && (
+                    <div className="flex-1 md:order-1 md:scale-95 md:origin-bottom">
                       <PodiumCard
-                        profile={profile}
-                        rank={rank}
+                        profile={top3[1]}
+                        rank={2}
                         xpField={xpField}
                       />
                     </div>
-                  );
-                })}
+                  )}
+                  {top3[2] && (
+                    <div className="flex-1 md:order-3 md:scale-95 md:origin-bottom">
+                      <PodiumCard
+                        profile={top3[2]}
+                        rank={3}
+                        xpField={xpField}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -341,6 +573,34 @@ function LeaderboardPageContent() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Mural de Campeões */}
+            {(monthlyChampionSnapshot?.profile ||
+              yearlyChampionSnapshot?.profile) && (
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                  🏛️ Mural de Campeões
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {monthlyChampionSnapshot?.profile && (
+                    <ChampionCard
+                      title="Campeão do mês"
+                      champion={monthlyChampionSnapshot.profile}
+                      when={formatPeriodKey(monthlyChampionSnapshot.periodKey)}
+                      meta={`${formatXp(monthlyChampionSnapshot.xpAtSnapshot)} XP este mês`}
+                    />
+                  )}
+                  {yearlyChampionSnapshot?.profile && (
+                    <ChampionCard
+                      title="Campeão do ano"
+                      champion={yearlyChampionSnapshot.profile}
+                      when={formatPeriodKey(yearlyChampionSnapshot.periodKey)}
+                      meta={`${formatXp(yearlyChampionSnapshot.xpAtSnapshot)} XP este ano`}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </motion.div>

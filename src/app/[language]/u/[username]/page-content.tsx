@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   useGetGamificationProfileByUsernameService,
@@ -19,9 +19,17 @@ import {
   BadgeCategoryEnum,
   GamificationProfileBadge,
 } from "@/services/api/services/badges";
-import { useGetActivitiesService } from "@/services/api/services/activities";
-import { useGetPublicSubmissionDetailService } from "@/services/api/services/submissions";
-import { PublicSubmissionDetail } from "@/services/api/types/submission";
+import {
+  useGetLearningTracksService,
+  useGetLearningTrackOverviewService,
+  useGetProofPortfolioService,
+} from "@/services/api/services/learning-tracks";
+import {
+  LearningTrackOverview,
+  LearningTrackStatus,
+} from "@/services/api/types/learning-track";
+import { ProfileHistoryTimeline } from "@/components/profile-history-timeline";
+import { getTrackColor } from "@/lib/track-colors";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
 import { SortEnum } from "@/services/api/types/sort-type";
 import {
@@ -41,88 +49,165 @@ import {
   Share2,
   Check,
   Ban,
-  Flag,
   Medal,
+  Lock,
   ArrowDownLeft,
   ArrowUpRight,
-  ChevronDown,
-  FileText,
-  Paperclip,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "@/components/link";
-import useAuth from "@/services/auth/use-auth";
-import { useSnackbar } from "@/hooks/use-snackbar";
-import { getApiError } from "@/lib/utils";
-import { useCreateContributionReportService } from "@/services/api/services/notifications";
-import { MarkdownContent } from "@/components/markdown-editor";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 // ─── Banner presets ───────────────────────────────────────────────────────────
-export const BANNER_PRESETS: Record<
-  string,
-  { className: string; label: string }
-> = {
-  default: { className: "bg-muted", label: "Padrão" },
-  emerald: {
-    className: "bg-gradient-to-r from-emerald-500 to-teal-600",
-    label: "Esmeralda",
+// Banners temáticos (TI + cores do Tocantins + identidade legado.dev),
+// gerados como SVG e hospedados no R2. "raiz-verde" é o padrão.
+const BANNER_BASE =
+  "https://pub-902e55385b5f4a268555827946cd271d.r2.dev/banners";
+
+export const BANNER_PRESETS: Record<string, { url: string; label: string }> = {
+  "raiz-verde": { url: `${BANNER_BASE}/raiz-verde.svg`, label: "Raiz Verde" },
+  "raiz-dourada": {
+    url: `${BANNER_BASE}/raiz-dourada.svg`,
+    label: "Raiz Dourada",
   },
-  amber: {
-    className: "bg-gradient-to-r from-amber-400 to-orange-500",
-    label: "Âmbar",
+  "raiz-azul": { url: `${BANNER_BASE}/raiz-azul.svg`, label: "Raiz Azul" },
+  "raiz-clara": { url: `${BANNER_BASE}/raiz-clara.svg`, label: "Raiz Clara" },
+  "terminal-verde": {
+    url: `${BANNER_BASE}/terminal-verde.svg`,
+    label: "Terminal Verde",
   },
-  purple: {
-    className: "bg-gradient-to-r from-violet-600 to-purple-700",
-    label: "Roxo",
+  "terminal-ambar": {
+    url: `${BANNER_BASE}/terminal-ambar.svg`,
+    label: "Terminal Âmbar",
   },
-  blue: {
-    className: "bg-gradient-to-r from-blue-500 to-sky-600",
-    label: "Azul",
+  "terminal-azul": {
+    url: `${BANNER_BASE}/terminal-azul.svg`,
+    label: "Terminal Azul",
   },
-  dark: {
-    className: "bg-gradient-to-r from-slate-700 to-slate-900",
-    label: "Escuro",
+  "commits-tricolor": {
+    url: `${BANNER_BASE}/commits-tricolor.svg`,
+    label: "Commits Tricolor",
   },
-  rose: {
-    className: "bg-gradient-to-r from-rose-500 to-pink-600",
-    label: "Rosa",
+  "commits-noturno": {
+    url: `${BANNER_BASE}/commits-noturno.svg`,
+    label: "Commits Noturno",
+  },
+  "commits-claro": {
+    url: `${BANNER_BASE}/commits-claro.svg`,
+    label: "Commits Claro",
+  },
+  "hex-cerrado": {
+    url: `${BANNER_BASE}/hex-cerrado.svg`,
+    label: "Chip Cerrado",
+  },
+  "hex-dourado": {
+    url: `${BANNER_BASE}/hex-dourado.svg`,
+    label: "Chip Dourado",
+  },
+  "hex-profundo": {
+    url: `${BANNER_BASE}/hex-profundo.svg`,
+    label: "Chip Profundo",
+  },
+  "rio-agua": { url: `${BANNER_BASE}/rio-agua.svg`, label: "Rio Digital" },
+  "rio-dourado": {
+    url: `${BANNER_BASE}/rio-dourado.svg`,
+    label: "Rio Dourado",
+  },
+  "rio-noturno": {
+    url: `${BANNER_BASE}/rio-noturno.svg`,
+    label: "Rio Noturno",
+  },
+  "cerrado-noite": {
+    url: `${BANNER_BASE}/cerrado-noite.svg`,
+    label: "Céu do Cerrado",
+  },
+  "cerrado-amanhecer": {
+    url: `${BANNER_BASE}/cerrado-amanhecer.svg`,
+    label: "Amanhecer Dourado",
+  },
+  "cerrado-dia": {
+    url: `${BANNER_BASE}/cerrado-dia.svg`,
+    label: "Cerrado Azul",
+  },
+  "binario-verde": {
+    url: `${BANNER_BASE}/binario-verde.svg`,
+    label: "Binário Verde",
+  },
+  "binario-dourado": {
+    url: `${BANNER_BASE}/binario-dourado.svg`,
+    label: "Binário Dourado",
+  },
+  "bandeira-dia": {
+    url: `${BANNER_BASE}/bandeira-dia.svg`,
+    label: "Bandeira Dia",
+  },
+  "bandeira-noite": {
+    url: `${BANNER_BASE}/bandeira-noite.svg`,
+    label: "Bandeira Noite",
+  },
+  // Jogos
+  "jogo-tetris": { url: `${BANNER_BASE}/jogo-tetris.svg`, label: "Tetris" },
+  "jogo-labirinto": {
+    url: `${BANNER_BASE}/jogo-labirinto.svg`,
+    label: "Labirinto",
+  },
+  "jogo-invasores": {
+    url: `${BANNER_BASE}/jogo-invasores.svg`,
+    label: "Invasores",
+  },
+  "jogo-cobrinha": {
+    url: `${BANNER_BASE}/jogo-cobrinha.svg`,
+    label: "Cobrinha",
+  },
+  "jogo-xadrez": { url: `${BANNER_BASE}/jogo-xadrez.svg`, label: "Xadrez" },
+  "jogo-pong": { url: `${BANNER_BASE}/jogo-pong.svg`, label: "Pong" },
+  "jogo-voxel": {
+    url: `${BANNER_BASE}/jogo-voxel.svg`,
+    label: "Mundo de Blocos",
+  },
+  "jogo-plataforma": {
+    url: `${BANNER_BASE}/jogo-plataforma.svg`,
+    label: "Plataforma 8-bit",
+  },
+  "jogo-ritmo": { url: `${BANNER_BASE}/jogo-ritmo.svg`, label: "Ritmo" },
+  "jogo-fliperama": {
+    url: `${BANNER_BASE}/jogo-fliperama.svg`,
+    label: "Fliperama",
+  },
+  // Linguagens e tecnologias
+  "tech-java": { url: `${BANNER_BASE}/tech-java.svg`, label: "Java" },
+  "tech-python": { url: `${BANNER_BASE}/tech-python.svg`, label: "Python" },
+  "tech-rust": { url: `${BANNER_BASE}/tech-rust.svg`, label: "Rust" },
+  "tech-javascript": {
+    url: `${BANNER_BASE}/tech-javascript.svg`,
+    label: "JavaScript",
+  },
+  "tech-go": { url: `${BANNER_BASE}/tech-go.svg`, label: "Go" },
+  "tech-cpp": { url: `${BANNER_BASE}/tech-cpp.svg`, label: "C++" },
+  "tech-csharp": { url: `${BANNER_BASE}/tech-csharp.svg`, label: "C#" },
+  "tech-php": { url: `${BANNER_BASE}/tech-php.svg`, label: "PHP" },
+  "tech-ruby": { url: `${BANNER_BASE}/tech-ruby.svg`, label: "Ruby" },
+  "tech-typescript": {
+    url: `${BANNER_BASE}/tech-typescript.svg`,
+    label: "TypeScript",
   },
 };
 
-// ─── Dot-grid cover pattern ───────────────────────────────────────────────────
-function CoverPattern({ preset = "default" }: { preset?: string }) {
-  const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS.default;
-  const isDotGrid = preset === "default";
+const DEFAULT_BANNER = "raiz-verde";
+
+// ─── Banner de capa (imagem temática) ─────────────────────────────────────────
+function CoverPattern({ preset = DEFAULT_BANNER }: { preset?: string }) {
+  const cfg = BANNER_PRESETS[preset] ?? BANNER_PRESETS[DEFAULT_BANNER];
 
   return (
-    <div className={cn("relative h-36 w-full overflow-hidden", cfg.className)}>
-      {isDotGrid && (
-        <svg
-          className="absolute inset-0 h-full w-full text-primary/10"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <defs>
-            <pattern
-              id="cover-dots"
-              x="0"
-              y="0"
-              width="20"
-              height="20"
-              patternUnits="userSpaceOnUse"
-            >
-              <circle cx="2" cy="2" r="1.5" fill="currentColor" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#cover-dots)" />
-        </svg>
-      )}
+    <div className="relative aspect-[4/1] w-full overflow-hidden bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={cfg.url}
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full object-cover"
+      />
     </div>
   );
 }
@@ -183,91 +268,146 @@ function ProfileAvatar({
   );
 }
 
-// ─── Level bar color (matches level.color text-* → bg-*) ─────────────────────
-function levelBarColor(levelColor: string): string {
-  return levelColor.replace("text-", "bg-");
-}
+// ─── Level bar color (matches level name → bg-* literal class) ────────────────
+const LEVEL_BAR_COLOR: Record<string, string> = {
+  Novato: "bg-slate-400",
+  Contribuidor: "bg-emerald-400",
+  "Colaborador Ativo": "bg-sky-400",
+  Referência: "bg-blue-400",
+  Mentor: "bg-amber-400",
+  Lenda: "bg-rose-400",
+};
 
-function ReportModal({
-  submissionId,
-  open,
-  onClose,
-}: {
-  submissionId: string;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const [reason, setReason] = useState("");
-  const { enqueueSnackbar } = useSnackbar();
-  const createReport = useCreateContributionReportService();
+// ─── Selos de trilha (conquistado / em progresso / bloqueado) ─────────────────
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: async () => {
-      const res = await createReport({ submissionId, reason: reason.trim() });
-      if (res.status !== HTTP_CODES_ENUM.CREATED) {
-        throw new Error(getApiError(res.data, "Erro ao enviar report."));
-      }
+type SealState = "conquistado" | "em-progresso" | "bloqueado";
+
+type TrilhaSeal = {
+  sectionId: string;
+  sectionTitle: string;
+  trackId: string;
+  trackTitle: string;
+  state: SealState;
+};
+
+function useTrilhaSeals(
+  ownedBadgeIds: Set<string>,
+  activeTrackIds: Set<string>
+): TrilhaSeal[] {
+  const fetchTracks = useGetLearningTracksService();
+  const fetchOverview = useGetLearningTrackOverviewService();
+
+  const { data: tracks } = useQuery({
+    queryKey: ["public-profile-tracks"],
+    queryFn: async () => {
+      const { status, data } = await fetchTracks({ page: 1, limit: 50 });
+      if (status === HTTP_CODES_ENUM.OK)
+        return data.data.filter(
+          (t) => t.status === LearningTrackStatus.PUBLISHED
+        );
+      return [];
     },
-    onSuccess: () => {
-      enqueueSnackbar("Report enviado. Nossa equipe vai analisar.", {
-        variant: "success",
-      });
-      setReason("");
-      onClose();
-    },
-    onError: (e: any) => enqueueSnackbar(e.message, { variant: "error" }),
+    staleTime: 5 * 60 * 1000,
   });
 
+  const overviewQueries = useQueries({
+    queries: (tracks ?? []).map((track) => ({
+      queryKey: ["learning-track-overview", track.id],
+      queryFn: async () => {
+        const { status, data } = await fetchOverview({ id: track.id });
+        if (status === HTTP_CODES_ENUM.OK) return data as LearningTrackOverview;
+        return null;
+      },
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  return useMemo(() => {
+    const seals: TrilhaSeal[] = [];
+    for (const query of overviewQueries) {
+      const overview = query.data;
+      if (!overview) continue;
+      for (const { section } of overview.sections) {
+        if (!section.badgeId) continue;
+        const state: SealState = ownedBadgeIds.has(section.badgeId)
+          ? "conquistado"
+          : activeTrackIds.has(overview.track.id)
+            ? "em-progresso"
+            : "bloqueado";
+        seals.push({
+          sectionId: section.id,
+          sectionTitle: section.title,
+          trackId: overview.track.id,
+          trackTitle: overview.track.title,
+          state,
+        });
+      }
+    }
+    return seals;
+  }, [overviewQueries, ownedBadgeIds, activeTrackIds]);
+}
+
+const SEAL_STATE_LABEL: Record<SealState, string> = {
+  conquistado: "Conquistado",
+  "em-progresso": "Em progresso",
+  bloqueado: "Bloqueado",
+};
+
+function TrilhaSealsRow({ seals }: { seals: TrilhaSeal[] }) {
+  if (seals.length === 0) return null;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Flag className="h-4 w-4 text-destructive" />
-            Reportar contribuição
-          </DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          Descreva por que esta contribuição é inválida. Nossa equipe vai
-          analisar e tomar as medidas necessárias.
-        </p>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Motivo *</label>
-            <span className="text-xs text-muted-foreground">
-              {reason.length}/2000
-            </span>
-          </div>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={4}
-            maxLength={2000}
-            placeholder="Ex: Esta contribuição não foi feita por esta pessoa. Tenho evidências de que foi realizada por outra conta..."
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-          />
-        </div>
-        <div className="flex gap-2 pt-1">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            className="flex-1 gap-1.5"
-            disabled={isPending || reason.trim().length < 10}
-            onClick={() => mutate()}
-          >
-            <Flag className="h-3.5 w-3.5" />
-            {isPending ? "Enviando..." : "Enviar report"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+        Selos de trilha
+      </h2>
+      <div className="flex flex-wrap gap-3">
+        {seals.map((seal) => {
+          const color = getTrackColor(seal.trackId);
+          const locked = seal.state === "bloqueado";
+          const inProgress = seal.state === "em-progresso";
+          return (
+            <div
+              key={seal.sectionId}
+              className="group relative flex flex-col items-center gap-1.5 text-center w-16"
+            >
+              <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 hidden group-hover:block w-48">
+                <div className="rounded-md bg-popover border border-border shadow-md px-3 py-2 text-left">
+                  <p className="text-xs font-semibold leading-tight mb-0.5">
+                    {seal.sectionTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    {seal.trackTitle} · {SEAL_STATE_LABEL[seal.state]}
+                  </p>
+                </div>
+                <div className="mx-auto w-2 h-2 bg-popover border-r border-b border-border rotate-45 -mt-1" />
+              </div>
+
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-full border",
+                  locked
+                    ? "bg-muted border-border"
+                    : "border-transparent text-white"
+                )}
+                style={!locked ? { background: color.bg } : undefined}
+              >
+                {locked ? (
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ShieldCheck
+                    className={cn("h-5 w-5", inProgress && "opacity-60")}
+                  />
+                )}
+              </div>
+              <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+                {seal.sectionTitle}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -458,142 +598,16 @@ function TokenActivitySection({ profileId }: { profileId: string }) {
   );
 }
 
-function SubmissionDetailModal({
-  submissionId,
-  activityTitle,
-  awardedXp,
-  open,
-  onClose,
-}: {
-  submissionId: string;
-  activityTitle: string;
-  awardedXp: number;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const fetchDetail = useGetPublicSubmissionDetailService();
-
-  const { data, isLoading } = useQuery<PublicSubmissionDetail | null>({
-    queryKey: ["submission-public-detail", submissionId],
-    queryFn: async () => {
-      const { status, data } = await fetchDetail({ id: submissionId });
-      if (status === HTTP_CODES_ENUM.OK) return data as PublicSubmissionDetail;
-      return null;
-    },
-    enabled: open,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base leading-snug">
-            <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
-            {activityTitle}
-          </DialogTitle>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="space-y-3 animate-pulse py-2">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-2/3" />
-          </div>
-        ) : !data ? (
-          <p className="text-sm text-muted-foreground py-2">
-            Não foi possível carregar os detalhes.
-          </p>
-        ) : (
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span className="flex items-center gap-1 font-semibold font-mono text-emerald-500">
-                <Zap className="h-3.5 w-3.5" />+{awardedXp} XP
-              </span>
-              {data.activityDate && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {new Date(data.activityDate).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-              {data.hasProof && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  Arquivo enviado
-                </span>
-              )}
-            </div>
-
-            {data.description && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Relato da pessoa
-                </p>
-                <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-48 overflow-y-auto">
-                  <MarkdownContent
-                    content={data.description}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Sobre esta atividade
-              </p>
-              <div className="rounded-lg border bg-muted/40 px-3 py-2.5 max-h-36 overflow-y-auto">
-                <MarkdownContent
-                  content={data.activityDescription}
-                  className="text-xs text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Aprovado em{" "}
-              {data.reviewedAt
-                ? new Date(data.reviewedAt).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : new Date(data.createdAt).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-            </p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function PublicProfilePageContent() {
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
   const [copied, setCopied] = useState(false);
-  const [reportingSubmissionId, setReportingSubmissionId] = useState<
-    string | null
-  >(null);
-  const [detailSubmission, setDetailSubmission] = useState<{
-    id: string;
-    activityTitle: string;
-    awardedXp: number;
-  } | null>(null);
-  const { user } = useAuth();
 
   const fetchByUsername = useGetGamificationProfileByUsernameService();
   const fetchApprovedSubmissions = useGetProfileApprovedSubmissionsService();
   const fetchProfiles = useGetGamificationProfilesService();
-  const fetchActivities = useGetActivitiesService();
   const fetchProfileBadges = useGetProfileBadgesService();
+  const fetchProofPortfolio = useGetProofPortfolioService();
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["public-profile", username],
@@ -605,7 +619,7 @@ function PublicProfilePageContent() {
     enabled: !!username,
   });
 
-  const { data: submissionsData, isLoading: loadingSubmissions } = useQuery({
+  const { data: submissionsData } = useQuery({
     queryKey: ["public-profile-submissions", profile?.id],
     queryFn: async () => {
       const { status, data } = await fetchApprovedSubmissions(profile!.id, {
@@ -632,16 +646,6 @@ function PublicProfilePageContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: activitiesData } = useQuery({
-    queryKey: ["activities-map"],
-    queryFn: async () => {
-      const { status, data } = await fetchActivities({ page: 1, limit: 100 });
-      if (status === HTTP_CODES_ENUM.OK) return data.data;
-      return [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: badgesData } = useQuery({
     queryKey: ["public-profile-badges", profile?.id],
     queryFn: async () => {
@@ -652,11 +656,26 @@ function PublicProfilePageContent() {
     enabled: !!profile?.id,
   });
 
-  const activityMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const a of activitiesData ?? []) map.set(a.id, a.title);
-    return map;
-  }, [activitiesData]);
+  const { data: proofPortfolio } = useQuery({
+    queryKey: ["public-profile-portfolio", profile?.id],
+    queryFn: async () => {
+      const { status, data } = await fetchProofPortfolio(profile!.id);
+      if (status === HTTP_CODES_ENUM.OK) return data;
+      return [];
+    },
+    enabled: !!profile?.id,
+  });
+  const portfolio = useMemo(() => proofPortfolio ?? [], [proofPortfolio]);
+
+  const ownedBadgeIds = useMemo(
+    () => new Set((badgesData ?? []).map((pb) => pb.badgeId)),
+    [badgesData]
+  );
+  const activeTrackIds = useMemo(
+    () => new Set(portfolio.map((p) => p.trackId)),
+    [portfolio]
+  );
+  const trilhaSeals = useTrilhaSeals(ownedBadgeIds, activeTrackIds);
 
   const rank = useMemo(() => {
     if (!leaderboardData || !profile) return null;
@@ -780,7 +799,18 @@ function PublicProfilePageContent() {
       value: rank ? `#${rank}` : "—",
       icon: Trophy,
     },
+    {
+      label: "Provas concluídas",
+      value: portfolio.length,
+      icon: ShieldCheck,
+    },
   ];
+
+  const fullName = [profile.firstName, profile.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const shouldShowFullName = profile.showFullName === true && Boolean(fullName);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -800,9 +830,18 @@ function PublicProfilePageContent() {
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="space-y-1">
-            <h1 className="text-xl font-bold font-mono leading-tight">
-              @{profile.username}
-            </h1>
+            {shouldShowFullName ? (
+              <>
+                <h1 className="text-xl font-bold tracking-tight">{fullName}</h1>
+                <p className="font-mono text-sm text-muted-foreground">
+                  @{profile.username}
+                </p>
+              </>
+            ) : (
+              <h1 className="text-xl font-bold font-mono leading-tight">
+                @{profile.username}
+              </h1>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={cn(
@@ -883,7 +922,7 @@ function PublicProfilePageContent() {
           </div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
-              className={cn("h-full rounded-full", levelBarColor(level.color))}
+              className={cn("h-full rounded-full", LEVEL_BAR_COLOR[level.name])}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
@@ -896,6 +935,9 @@ function PublicProfilePageContent() {
           )}
         </div>
 
+        {/* Selos de trilha */}
+        <TrilhaSealsRow seals={trilhaSeals} />
+
         {/* Badges / Conquistas */}
         {badgesData && badgesData.length > 0 && (
           <BadgesSection badges={badgesData} />
@@ -904,111 +946,9 @@ function PublicProfilePageContent() {
         {/* Token activity */}
         <TokenActivitySection profileId={profile.id} />
 
-        {/* Contributions timeline */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-4">
-            Contribuições
-          </h2>
-          {loadingSubmissions ? (
-            <div className="space-y-3 pl-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex gap-3 animate-pulse">
-                  <div className="h-3 w-3 rounded-full bg-muted mt-1 shrink-0" />
-                  <div className="flex-1 h-4 bg-muted rounded" />
-                </div>
-              ))}
-            </div>
-          ) : submissions.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Nenhuma contribuição aprovada ainda.
-            </p>
-          ) : (
-            <div className="relative pl-4">
-              {/* Vertical line */}
-              <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
-
-              <div className="space-y-0">
-                {submissions.map((sub, i) => {
-                  const activityTitle =
-                    activityMap.get(sub.activityId) ??
-                    sub.activityId.substring(0, 8) + "…";
-                  return (
-                    <div key={sub.id} className="relative flex gap-4 pb-4">
-                      {/* Timeline dot */}
-                      <div
-                        className={cn(
-                          "absolute left-[-3px] top-[5px] h-3 w-3 rounded-full border-2 border-background",
-                          "bg-emerald-500"
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          "pl-6 flex items-start justify-between w-full gap-2",
-                          i === submissions.length - 1 && "pb-0"
-                        )}
-                      >
-                        <button
-                          onClick={() =>
-                            setDetailSubmission({
-                              id: sub.id,
-                              activityTitle,
-                              awardedXp: sub.awardedXp,
-                            })
-                          }
-                          className="text-left group flex items-baseline gap-1 hover:text-primary transition-colors"
-                        >
-                          <p className="text-sm font-medium leading-snug group-hover:underline underline-offset-2">
-                            {activityTitle}
-                          </p>
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/50 shrink-0 -rotate-90" />
-                        </button>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-semibold font-mono text-emerald-500">
-                            +{sub.awardedXp} XP
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(sub.createdAt).toLocaleDateString(
-                              "pt-BR",
-                              { day: "2-digit", month: "short" }
-                            )}
-                          </span>
-                          {user && (
-                            <button
-                              onClick={() => setReportingSubmissionId(sub.id)}
-                              title="Reportar contribuição inválida"
-                              className="text-muted-foreground/40 hover:text-destructive transition-colors"
-                            >
-                              <Flag className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Histórico timeline */}
+        <ProfileHistoryTimeline profileId={profile.id} className="mb-8" />
       </div>
-
-      {reportingSubmissionId && (
-        <ReportModal
-          submissionId={reportingSubmissionId}
-          open={!!reportingSubmissionId}
-          onClose={() => setReportingSubmissionId(null)}
-        />
-      )}
-
-      {detailSubmission && (
-        <SubmissionDetailModal
-          submissionId={detailSubmission.id}
-          activityTitle={detailSubmission.activityTitle}
-          awardedXp={detailSubmission.awardedXp}
-          open={!!detailSubmission}
-          onClose={() => setDetailSubmission(null)}
-        />
-      )}
     </div>
   );
 }

@@ -44,9 +44,11 @@
     },
     "policy": {
       "label": "Política de Privacidade",
+      "termsLabel": "Termo de Serviço",
       "agreement": "Li e aceito a ",
+      "agreementAnd": " e o ",
       "validation": {
-        "required": "O consentimento com a Política de Privacidade é obrigatório"
+        "required": "O consentimento com a Política de Privacidade e o Termo de Serviço é obrigatório"
       }
     }
   },

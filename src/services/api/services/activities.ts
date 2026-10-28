@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import useFetch from "../use-fetch";
 import { API_URL } from "../config";
 import wrapperFetchJsonResponse from "../wrapper-fetch-json-response";
-import { Activity } from "../types/activity";
+import { Activity, EffortTier } from "../types/activity";
 import { InfinityPaginationType } from "../types/infinity-pagination";
 import { SortEnum } from "../types/sort-type";
 import { RequestConfigType } from "./types/request-config";
@@ -74,6 +74,8 @@ export type ActivityPostRequest = {
   cooldownHours: number;
   isHidden?: boolean;
   secretCode?: string;
+  effortTiers?: EffortTier[] | null;
+  isFreeform?: boolean;
 };
 
 export type ActivityPostResponse = Activity;
@@ -106,6 +108,8 @@ export type ActivityPatchRequest = {
     cooldownHours: number;
     isHidden: boolean;
     secretCode: string;
+    effortTiers: EffortTier[] | null;
+    isFreeform: boolean;
   }>;
 };
 

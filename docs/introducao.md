@@ -2,7 +2,7 @@
 
 ## O que é este projeto?
 
-Este é o **Frontend do Motor de Engajamento da comunidade Devs Tocantins** — uma plataforma de gamificação que rastreia, registra e recompensa contribuições dos membros da comunidade.
+Este é o **Frontend do legado.dev da comunidade Devs Tocantins** — uma plataforma de gamificação que rastreia, registra e recompensa contribuições dos membros da comunidade.
 
 O mantra do sistema: **"Se gerou valor para a comunidade, vale ponto."** Desde palestrar em um evento até ajudar um júnior no grupo do WhatsApp, toda contribuição importa.
 
@@ -31,7 +31,7 @@ Uma plataforma onde:
 |--------|-----------|
 | Framework | [Next.js](https://nextjs.org/) (App Router) |
 | Linguagem | TypeScript |
-| UI | [Material UI (MUI)](https://mui.com/) |
+| UI | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/) |
 | Formulários | [React Hook Form](https://react-hook-form.com/) + Yup |
 | Requisições | [React Query (TanStack Query)](https://tanstack.com/query) |
 | i18n | [i18next](https://react.i18next.com/) |
@@ -49,6 +49,16 @@ O backend suporta **apenas** dois provedores. Não tente adicionar outros sem al
 - Google OAuth
 
 Facebook, Apple e Twitter foram removidos.
+
+---
+
+## Pilares Atuais da Plataforma
+
+Além do núcleo de gamificação e submissões, a plataforma inclui hoje:
+- **Trilhas de Aprendizado**: percursos estruturados de estudo com marcos e envio de provas.
+- **Eventos**: catálogo de eventos da comunidade com inscrição e controle de participação.
+- **Cursos**: repositório comunitário de cursos com avaliações e recomendações.
+- **Integração com WhatsApp**: automações de notificações e envio de avisos diretamente via WhatsApp.
 
 ---
 

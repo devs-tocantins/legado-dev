@@ -4,13 +4,14 @@ import { usePathname } from "next/navigation";
 import Link from "@/components/link";
 import useAuth from "@/services/auth/use-auth";
 import {
-  LayoutDashboard,
-  BookOpen,
+  Map,
+  HeartHandshake,
   Trophy,
-  User,
   Home,
   LogIn,
-  ClipboardList,
+  BookOpen,
+  CalendarDays,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,16 +45,17 @@ function BottomNav() {
   };
 
   const authedLinks: NavItem[] = [
-    { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/activities", label: "Atividades", icon: BookOpen },
-    { href: "/submissions", label: "Histórico", icon: ClipboardList },
+    { href: "/trilhas", label: "Trilhas", icon: Map },
+    { href: "/cursos", label: "Cursos", icon: BookOpen },
+    { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
+    { href: "/projetos", label: "Projetos", icon: Rocket },
+    { href: "/eventos", label: "Agenda", icon: CalendarDays },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
-    { href: "/profile", label: "Perfil", icon: User },
   ];
 
   const guestLinks: NavItem[] = [
     { href: "/", label: "Início", icon: Home },
-    { href: "/activities", label: "Atividades", icon: BookOpen },
+    { href: "/voluntariado", label: "Voluntariado", icon: HeartHandshake },
     { href: "/leaderboard", label: "Ranking", icon: Trophy },
     { href: "/sign-in", label: "Entrar", icon: LogIn },
   ];
