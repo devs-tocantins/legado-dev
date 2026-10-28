@@ -71,14 +71,6 @@ function MyIdeaRow({
             Ver ideia
           </Button>
         )}
-        {idea.status === ProjectIdeaStatus.APPROVED && (
-          <Button
-            size="sm"
-            render={<Link href={`/projetos/${idea.id}/team/new`} />}
-          >
-            Montar time
-          </Button>
-        )}
         {idea.teamId && (
           <Button
             size="sm"

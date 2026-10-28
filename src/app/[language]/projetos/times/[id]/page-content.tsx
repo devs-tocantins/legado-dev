@@ -36,6 +36,7 @@ import { getApiError } from "@/lib/utils";
 import {
   PROJECT_ROLE_LABELS,
   PROJECT_TEAM_STATUS_LABELS,
+  projectRoleFromLabel,
 } from "@/lib/project-labels";
 import {
   FIELD_CLASS,
@@ -181,7 +182,8 @@ function InterestedPanel({
   const roleFor = (interest: ProjectIdeaInterest): ProjectRole | "" => {
     const chosen = roles[interest.userId];
     if (chosen && openRoles.includes(chosen)) return chosen;
-    if (openRoles.includes(interest.role)) return interest.role;
+    const preferred = projectRoleFromLabel(interest.role);
+    if (preferred && openRoles.includes(preferred)) return preferred;
     return openRoles[0] ?? "";
   };
 
@@ -259,7 +261,7 @@ function InterestedPanel({
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Pediu: {PROJECT_ROLE_LABELS[interest.role]}
+                Pediu: {interest.role}
                 {interest.message ? ` · ${interest.message}` : ""}
               </p>
             </div>
