@@ -174,7 +174,7 @@ export function usePutProjectInterestService() {
 
   return useCallback(
     (
-      data: { ideaId: string; role: string; message?: string },
+      data: { ideaId: string; role?: string; message?: string },
       requestConfig?: RequestConfigType
     ) =>
       fetch(buildUrl(`project-ideas/${data.ideaId}/interest`), {
