@@ -3,16 +3,12 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Lightbulb, Pencil, Plus, X } from "lucide-react";
+import { ArrowLeft, Lightbulb } from "lucide-react";
 import {
   useDeleteProjectInterestService,
-  useDeleteProjectParticipantService,
-  useDeleteProjectRoleService,
   useGetMyProjectInterestService,
   useGetProjectIdeaService,
   useGetProjectParticipantsService,
-  useGetProjectRolesService,
-  usePostProjectRoleService,
   usePutProjectInterestService,
 } from "@/services/api/services/projects";
 import HTTP_CODES_ENUM from "@/services/api/types/http-codes";
@@ -22,7 +18,6 @@ import {
   ProjectParticipant,
   ProjectUserSummary,
 } from "@/services/api/types/project";
-import { RoleEnum } from "@/services/api/types/role";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "@/components/link";
@@ -30,11 +25,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import useAuth from "@/services/auth/use-auth";
 import { useSnackbar } from "@/hooks/use-snackbar";
 import { cn, getApiError } from "@/lib/utils";
-import { projectRoleFromLabel, projectUserName } from "@/lib/project-labels";
-import { FIELD_CLASS } from "../project-components";
+import { projectUserName } from "@/lib/project-labels";
 
-const MAX_STACK = 4;
-const MAX_NAMES = 3;
+const MAX_STACK = 7;
 
 const AVATAR_COLORS = [
   "bg-[#2f5fd8]",
@@ -79,25 +72,25 @@ function PersonAvatar({
 }
 
 /** Fotos sobrepostas, no estilo do Instagram; passando do limite vira "+N". */
-function AvatarStack({ participants }: { participants: ProjectParticipant[] }) {
-  const visible = participants.slice(0, MAX_STACK);
-  const extra = participants.length - visible.length;
+function AvatarStack({ people }: { people: ProjectParticipant[] }) {
+  const visible = people.slice(0, MAX_STACK);
+  const extra = people.length - visible.length;
 
   return (
     <div className="flex items-center">
-      {visible.map((participant, index) => (
+      {visible.map((person, index) => (
         <PersonAvatar
-          key={participant.id}
-          user={participant.user}
-          userId={participant.userId}
+          key={person.userId}
+          user={person.user}
+          userId={person.userId}
           className={cn(
-            "size-14 text-lg ring-[3px] ring-card after:hidden",
+            "size-14 text-lg ring-[3px] ring-background after:hidden",
             index > 0 && "-ml-4"
           )}
         />
       ))}
       {extra > 0 && (
-        <span className="-ml-4 flex size-14 items-center justify-center rounded-full bg-secondary text-[15px] font-semibold ring-[3px] ring-card">
+        <span className="-ml-4 flex size-14 items-center justify-center rounded-full bg-secondary text-[15px] font-semibold ring-[3px] ring-background">
           +{extra}
         </span>
       )}
@@ -105,57 +98,18 @@ function AvatarStack({ participants }: { participants: ProjectParticipant[] }) {
   );
 }
 
-function EmptyStack() {
-  return (
-    <div className="flex items-center">
-      <span
-        aria-hidden="true"
-        className="size-14 rounded-full border-2 border-dashed border-border"
-      />
-      <span
-        aria-hidden="true"
-        className="-ml-4 size-14 rounded-full border-2 border-dashed border-border bg-card"
-      />
-    </div>
-  );
-}
-
-function TeamSection({ idea }: { idea: ProjectIdea }) {
+function InterestSection({ idea }: { idea: ProjectIdea }) {
   const { user, isLoaded } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
-  const fetchRoles = useGetProjectRolesService();
   const fetchParticipants = useGetProjectParticipantsService();
   const getMyInterest = useGetMyProjectInterestService();
   const putInterest = usePutProjectInterestService();
   const deleteInterest = useDeleteProjectInterestService();
-  const postRole = usePostProjectRoleService();
-  const deleteRole = useDeleteProjectRoleService();
-  const deleteParticipant = useDeleteProjectParticipantService();
 
-  const [manage, setManage] = useState(false);
-  const [newRole, setNewRole] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [confirmRoleId, setConfirmRoleId] = useState<string | null>(null);
 
-  const userId = user ? Number(user.id) : null;
-  const roleId = Number(user?.role?.id);
-  const canManage =
-    userId !== null &&
-    (userId === idea.authorId ||
-      roleId === RoleEnum.ADMIN ||
-      roleId === RoleEnum.MODERATOR);
-
-  const { data: roles = [], isLoading: loadingRoles } = useQuery({
-    queryKey: ["project-idea-roles", idea.id],
-    queryFn: async () => {
-      const { status, data } = await fetchRoles({ ideaId: idea.id });
-      return status === HTTP_CODES_ENUM.OK ? data : [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: participants = [] } = useQuery({
+  const { data: participants = [], isLoading } = useQuery({
     queryKey: ["project-idea-participants", idea.id],
     queryFn: async () => {
       const { status, data } = await fetchParticipants({ ideaId: idea.id });
@@ -173,10 +127,14 @@ function TeamSection({ idea }: { idea: ProjectIdea }) {
     enabled: !!user,
   });
 
+  // Uma pessoa por linha, mesmo que tenha marcado interesse mais de uma vez.
+  const people = participants.filter(
+    (participant, index, list) =>
+      list.findIndex((item) => item.userId === participant.userId) === index
+  );
+  const joined = !!mine?.interested;
+
   const refresh = () => {
-    queryClient.invalidateQueries({
-      queryKey: ["project-idea-roles", idea.id],
-    });
     queryClient.invalidateQueries({
       queryKey: ["project-idea-participants", idea.id],
     });
@@ -186,81 +144,30 @@ function TeamSection({ idea }: { idea: ProjectIdea }) {
     queryClient.invalidateQueries({ queryKey: ["project-idea", idea.id] });
   };
 
-  const run = async (
-    action: () => Promise<{ status: number; data?: unknown }>,
-    okStatuses: number[],
-    errorMessage: string,
-    successMessage?: string
-  ) => {
+  const handleToggle = async () => {
     setProcessing(true);
     try {
-      const { status, data } = await action();
-      if (okStatuses.includes(status)) {
-        if (successMessage) {
-          enqueueSnackbar(successMessage, { variant: "success" });
-        }
+      const { status, data } = joined
+        ? await deleteInterest({ ideaId: idea.id })
+        : await putInterest({ ideaId: idea.id });
+      const ok = joined
+        ? status === HTTP_CODES_ENUM.NO_CONTENT
+        : status === HTTP_CODES_ENUM.OK || status === HTTP_CODES_ENUM.CREATED;
+      if (ok) {
+        enqueueSnackbar(
+          joined ? "Interesse removido." : "Interesse registrado!",
+          { variant: "success" }
+        );
         refresh();
-        return true;
+      } else {
+        enqueueSnackbar(getApiError(data, "Erro ao atualizar interesse."), {
+          variant: "error",
+        });
       }
-      enqueueSnackbar(getApiError(data, errorMessage), { variant: "error" });
-      return false;
     } finally {
       setProcessing(false);
     }
   };
-
-  const handleToggle = (roleName: string, joined: boolean) =>
-    joined
-      ? run(
-          () => deleteInterest({ ideaId: idea.id, role: roleName }),
-          [HTTP_CODES_ENUM.NO_CONTENT],
-          "Erro ao sair do cargo.",
-          "Você saiu do cargo."
-        )
-      : run(
-          () => putInterest({ ideaId: idea.id, role: roleName }),
-          [HTTP_CODES_ENUM.OK, HTTP_CODES_ENUM.CREATED],
-          "Erro ao entrar no cargo.",
-          "Você entrou no time!"
-        );
-
-  const handleAddRole = async () => {
-    const name = newRole.trim();
-    if (name.length < 2) return;
-    const ok = await run(
-      () => postRole({ ideaId: idea.id, name }),
-      [HTTP_CODES_ENUM.OK, HTTP_CODES_ENUM.CREATED],
-      "Erro ao adicionar cargo.",
-      "Cargo adicionado."
-    );
-    if (ok) setNewRole("");
-  };
-
-  const handleRemoveRole = (role: { id: string; name: string }) => {
-    if (confirmRoleId !== role.id) {
-      setConfirmRoleId(role.id);
-      return;
-    }
-    setConfirmRoleId(null);
-    run(
-      () => deleteRole({ ideaId: idea.id, roleId: role.id }),
-      [HTTP_CODES_ENUM.NO_CONTENT],
-      "Erro ao remover cargo.",
-      "Cargo removido."
-    );
-  };
-
-  const handleRemoveParticipant = (participant: ProjectParticipant) =>
-    run(
-      () =>
-        deleteParticipant({
-          ideaId: idea.id,
-          userId: participant.userId,
-          role: participant.role,
-        }),
-      [HTTP_CODES_ENUM.NO_CONTENT],
-      "Erro ao remover participante."
-    );
 
   if (!isLoaded) return null;
 
@@ -268,7 +175,7 @@ function TeamSection({ idea }: { idea: ProjectIdea }) {
     return (
       <section className="flex flex-col gap-2">
         <h2 className="text-[26px] font-bold tracking-tight">
-          Time do projeto
+          Quem tem interesse
         </h2>
         <p className="text-[15px] text-muted-foreground">
           <Link
@@ -277,187 +184,70 @@ function TeamSection({ idea }: { idea: ProjectIdea }) {
           >
             Entre na sua conta
           </Link>{" "}
-          para ver quem está no time e participar de um cargo.
+          para ver quem tem interesse e marcar o seu.
         </p>
       </section>
     );
   }
 
-  const joinedRoles = new Set(mine?.roles ?? []);
-
   return (
     <section className="flex flex-col gap-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex max-w-[620px] flex-col gap-1.5">
           <h2 className="text-[26px] font-bold tracking-tight">
-            Time do projeto
+            Quem tem interesse
           </h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
-            Entre em um ou mais cargos. Quem propôs o projeto também pode atuar
-            nele
-            {canManage ? ", e você pode criar cargos novos." : "."}
+            Marque que você quer participar. Quando houver gente suficiente,
+            quem propôs chama o grupo e vocês se organizam juntos.
           </p>
         </div>
-        {canManage && (
-          <Button
-            variant="outline"
-            onClick={() => setManage((value) => !value)}
-            className="gap-2"
-          >
-            <Pencil className="size-4" />
-            {manage ? "Concluir edição" : "Gerenciar cargos"}
-          </Button>
-        )}
+        <Button
+          variant={joined ? "outline" : "default"}
+          onClick={handleToggle}
+          disabled={processing}
+          className="h-12 px-[22px] text-[15px]"
+        >
+          {joined ? "Remover meu interesse" : "Tenho interesse"}
+        </Button>
       </div>
 
-      {loadingRoles ? (
-        <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+      {isLoading ? (
+        <div className="h-32 animate-pulse rounded-lg bg-muted" />
+      ) : people.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Ninguém ainda. Seja a primeira pessoa a marcar interesse.
+        </p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-          {roles.map((role) => {
-            const inRole = participants.filter((p) => p.role === role.name);
-            const joined = joinedRoles.has(role.name);
-            const custom = projectRoleFromLabel(role.name) === undefined;
-
-            return (
-              <article
-                key={role.id}
-                className={cn(
-                  "flex min-h-[232px] flex-col gap-5 rounded-2xl border bg-card p-[22px] transition-colors",
-                  joined
-                    ? "border-primary"
-                    : "border-border hover:border-muted-foreground/40"
-                )}
+        <>
+          <AvatarStack people={people} />
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-6 gap-y-5 border-t border-border pt-7">
+            {people.map((person) => (
+              <li
+                key={person.userId}
+                className="flex min-w-0 items-center gap-3"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <h3 className="text-[17px] font-semibold tracking-tight">
-                      {role.name}
-                    </h3>
-                    {custom && (
-                      <span className="w-fit rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
-                        Cargo criado por quem propôs
-                      </span>
-                    )}
-                  </div>
-                  {manage && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRole(role)}
-                      disabled={processing}
-                      aria-label={`Remover cargo ${role.name}`}
-                      className="text-muted-foreground"
-                    >
-                      {confirmRoleId === role.id ? (
-                        <span className="text-xs text-destructive">
-                          Remover?
-                        </span>
-                      ) : (
-                        <X className="size-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex flex-1 flex-col justify-center gap-3">
-                  {inRole.length === 0 ? (
-                    <div className="flex items-center gap-3.5">
-                      <EmptyStack />
-                      <span className="text-sm text-muted-foreground">
-                        Ninguém ainda. Seja o primeiro.
-                      </span>
-                    </div>
-                  ) : (
-                    <>
-                      <AvatarStack participants={inRole} />
-                      <p className="flex flex-wrap items-center gap-x-1.5 text-sm leading-relaxed text-foreground/80">
-                        {(manage ? inRole : inRole.slice(0, MAX_NAMES)).map(
-                          (participant, index, list) => (
-                            <span
-                              key={participant.id}
-                              className="inline-flex items-center gap-0.5"
-                            >
-                              {participant.user?.username ? (
-                                <Link
-                                  href={`/u/${participant.user.username}`}
-                                  className="hover:text-foreground hover:underline"
-                                >
-                                  {handleOf(participant.user)}
-                                </Link>
-                              ) : (
-                                handleOf(participant.user)
-                              )}
-                              {manage ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleRemoveParticipant(participant)
-                                  }
-                                  disabled={processing}
-                                  className="rounded p-0.5 text-muted-foreground hover:text-destructive"
-                                  aria-label={`Remover ${handleOf(
-                                    participant.user
-                                  )}`}
-                                >
-                                  <X className="size-3" />
-                                </button>
-                              ) : (
-                                index < list.length - 1 && ","
-                              )}
-                            </span>
-                          )
-                        )}
-                        {!manage && inRole.length > MAX_NAMES && (
-                          <span>e mais {inRole.length - MAX_NAMES}</span>
-                        )}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                <Button
-                  variant={joined ? "outline" : "default"}
-                  onClick={() => handleToggle(role.name, joined)}
-                  disabled={processing}
-                  className="h-11 w-full"
-                >
-                  {joined ? "Sair do cargo" : "Participar"}
-                </Button>
-              </article>
-            );
-          })}
-        </div>
-      )}
-
-      {canManage && manage && (
-        <div className="flex flex-wrap gap-3 border-t border-border pt-6">
-          <label htmlFor="novo-cargo" className="sr-only">
-            Novo cargo
-          </label>
-          <input
-            id="novo-cargo"
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddRole();
-              }
-            }}
-            maxLength={40}
-            placeholder="Novo cargo, por exemplo: Mentor"
-            className={cn(FIELD_CLASS, "min-w-0 flex-[1_1_280px]")}
-          />
-          <Button
-            onClick={handleAddRole}
-            disabled={processing || newRole.trim().length < 2}
-            className="h-auto gap-2 px-[18px] py-3"
-          >
-            <Plus className="size-4" />
-            Adicionar cargo
-          </Button>
-        </div>
+                <PersonAvatar
+                  user={person.user}
+                  userId={person.userId}
+                  className="size-11 text-[15px] after:hidden"
+                />
+                {person.user?.username ? (
+                  <Link
+                    href={`/u/${person.user.username}`}
+                    className="min-w-0 truncate text-[15px] font-medium hover:underline"
+                  >
+                    {handleOf(person.user)}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 truncate text-[15px] font-medium">
+                    {handleOf(person.user)}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );
@@ -467,8 +257,6 @@ function ProjectIdeaDetailPageContent() {
   const params = useParams();
   const id = params.id as string;
   const fetchIdea = useGetProjectIdeaService();
-  const fetchRoles = useGetProjectRolesService();
-  const { user } = useAuth();
 
   const { data: idea, isLoading } = useQuery({
     queryKey: ["project-idea", id],
@@ -477,15 +265,6 @@ function ProjectIdeaDetailPageContent() {
       return status === HTTP_CODES_ENUM.OK ? data : null;
     },
     enabled: !!id,
-  });
-
-  const { data: roles } = useQuery({
-    queryKey: ["project-idea-roles", id],
-    queryFn: async () => {
-      const { status, data } = await fetchRoles({ ideaId: id });
-      return status === HTTP_CODES_ENUM.OK ? data : [];
-    },
-    enabled: !!id && !!user,
   });
 
   if (isLoading) {
@@ -514,7 +293,7 @@ function ProjectIdeaDetailPageContent() {
     idea.status === ProjectIdeaStatus.TEAM_FORMED;
 
   return (
-    <div className="mx-auto flex max-w-[1160px] flex-col gap-10 px-4 pb-24 pt-8 sm:px-6">
+    <div className="mx-auto flex max-w-[1160px] flex-col gap-12 px-4 pb-24 pt-8 sm:px-6">
       <header className="flex flex-col gap-5">
         <Link
           href="/projetos"
@@ -531,7 +310,7 @@ function ProjectIdeaDetailPageContent() {
                 aria-hidden="true"
                 className="size-[7px] rounded-full bg-emerald-400"
               />
-              Aberto a participantes
+              Aberto a interessados
             </span>
           )}
           <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight sm:text-[44px]">
@@ -557,16 +336,8 @@ function ProjectIdeaDetailPageContent() {
             <strong className="font-semibold text-foreground">
               {idea.interestCount}
             </strong>{" "}
-            {idea.interestCount === 1 ? "participante" : "participantes"}
+            {idea.interestCount === 1 ? "interessado" : "interessados"}
           </span>
-          {roles && (
-            <span className="text-sm text-muted-foreground">
-              <strong className="font-semibold text-foreground">
-                {roles.length}
-              </strong>{" "}
-              {roles.length === 1 ? "cargo" : "cargos"}
-            </span>
-          )}
         </div>
 
         {idea.tags.length > 0 && (
@@ -592,7 +363,7 @@ function ProjectIdeaDetailPageContent() {
         </div>
       )}
 
-      <TeamSection idea={idea} />
+      <InterestSection idea={idea} />
 
       <section className="flex max-w-[760px] flex-col gap-6">
         <h2 className="text-[26px] font-bold tracking-tight">
