@@ -7,6 +7,8 @@ import {
   MyProjectInterest,
   ProjectIdea,
   ProjectIdeaInterest,
+  ProjectIdeaRole,
+  ProjectParticipant,
   ProjectRole,
   ProjectTeam,
   ProjectTeamStatus,
@@ -172,7 +174,7 @@ export function usePutProjectInterestService() {
 
   return useCallback(
     (
-      data: { ideaId: string; role: ProjectRole; message?: string },
+      data: { ideaId: string; role: string; message?: string },
       requestConfig?: RequestConfigType
     ) =>
       fetch(buildUrl(`project-ideas/${data.ideaId}/interest`), {
@@ -188,11 +190,21 @@ export function useDeleteProjectInterestService() {
   const fetch = useFetch();
 
   return useCallback(
-    (data: { ideaId: string }, requestConfig?: RequestConfigType) =>
-      fetch(buildUrl(`project-ideas/${data.ideaId}/interest`), {
-        method: "DELETE",
-        ...requestConfig,
-      }).then(wrapperFetchJsonResponse<undefined>),
+    (
+      data: { ideaId: string; role?: string },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(
+        buildUrl(
+          `project-ideas/${data.ideaId}/interest${
+            data.role ? `?role=${encodeURIComponent(data.role)}` : ""
+          }`
+        ),
+        {
+          method: "DELETE",
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<undefined>),
     [fetch]
   );
 }
@@ -206,6 +218,88 @@ export function useGetProjectInterestsService() {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<ProjectIdeaInterest[]>),
+    [fetch]
+  );
+}
+
+export function useGetProjectRolesService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: { ideaId: string }, requestConfig?: RequestConfigType) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/roles`), {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProjectIdeaRole[]>),
+    [fetch]
+  );
+}
+
+export function usePostProjectRoleService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { ideaId: string; name: string },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/roles`), {
+        method: "POST",
+        body: JSON.stringify({ name: data.name }),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProjectIdeaRole>),
+    [fetch]
+  );
+}
+
+export function useDeleteProjectRoleService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { ideaId: string; roleId: string },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/roles/${data.roleId}`), {
+        method: "DELETE",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<undefined>),
+    [fetch]
+  );
+}
+
+export function useGetProjectParticipantsService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: { ideaId: string }, requestConfig?: RequestConfigType) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/participants`), {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProjectParticipant[]>),
+    [fetch]
+  );
+}
+
+export function useDeleteProjectParticipantService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { ideaId: string; userId: number; role: string },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(
+        buildUrl(
+          `project-ideas/${data.ideaId}/participants/${
+            data.userId
+          }?role=${encodeURIComponent(data.role)}`
+        ),
+        {
+          method: "DELETE",
+          ...requestConfig,
+        }
+      ).then(wrapperFetchJsonResponse<undefined>),
     [fetch]
   );
 }

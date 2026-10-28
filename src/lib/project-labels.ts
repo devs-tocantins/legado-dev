@@ -17,6 +17,13 @@ export const PROJECT_ROLE_LABELS: Record<ProjectRole, string> = {
   [ProjectRole.PROJECT_MANAGER]: "Gerente de projeto",
 };
 
+/** Cargos da ideia guardam o nome; os padrão voltam ao enum de vaga do time. */
+export function projectRoleFromLabel(name: string): ProjectRole | undefined {
+  return (Object.values(ProjectRole) as ProjectRole[]).find(
+    (role) => PROJECT_ROLE_LABELS[role] === name
+  );
+}
+
 export const PROJECT_IDEA_STATUS_LABELS: Record<ProjectIdeaStatus, string> = {
   [ProjectIdeaStatus.PENDING]: "Em análise",
   [ProjectIdeaStatus.APPROVED]: "Aberta a interessados",

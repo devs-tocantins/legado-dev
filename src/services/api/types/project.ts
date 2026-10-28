@@ -31,6 +31,7 @@ export type ProjectUserSummary = {
   firstName: string | null;
   lastName: string | null;
   photo?: FileEntity | null;
+  username?: string | null;
 };
 
 export type ProjectIdea = {
@@ -55,15 +56,23 @@ export type ProjectIdeaInterest = {
   ideaId: string;
   userId: number;
   user?: ProjectUserSummary | null;
-  role: ProjectRole;
+  role: string;
   message: string | null;
   createdAt: string;
 };
 
+export type ProjectParticipant = Omit<ProjectIdeaInterest, "message">;
+
+export type ProjectIdeaRole = {
+  id: string;
+  ideaId: string;
+  name: string;
+  position: number;
+};
+
 export type MyProjectInterest = {
   interested: boolean;
-  role: ProjectRole | null;
-  message: string | null;
+  roles: string[];
 };
 
 export type SuggestedVacancy = {
