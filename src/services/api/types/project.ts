@@ -45,10 +45,17 @@ export type ProjectIdea = {
   author?: ProjectUserSummary | null;
   reviewerId: number | null;
   reviewedAt: string | null;
+  featuredAt: string | null;
+  calledAt: string | null;
   interestCount: number;
   teamId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProjectGroup = {
+  groupLink: string | null;
+  calledAt: string | null;
 };
 
 export type ProjectIdeaInterest = {
