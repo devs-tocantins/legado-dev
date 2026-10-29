@@ -30,9 +30,9 @@ const TABS: Record<Tab, { label: string; icon: typeof Lightbulb }> = {
 
 function CardSkeletons() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-44 animate-pulse rounded-lg bg-muted" />
+    <div className="flex flex-col gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-36 animate-pulse rounded-lg bg-muted" />
       ))}
     </div>
   );
@@ -100,7 +100,7 @@ function IdeasList() {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-col gap-4">
         {ideas.map((idea) => (
           <IdeaCard key={idea.id} idea={idea} />
         ))}
@@ -200,7 +200,7 @@ function ProjectsPageContent() {
   const [tab, setTab] = useState<Tab>("ideias");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 pb-20">
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-10 pb-20 sm:px-8">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 font-heading text-xs font-semibold uppercase tracking-wider text-primary">
@@ -210,8 +210,8 @@ function ProjectsPageContent() {
             Projetos da comunidade
           </h1>
           <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-            Proponha uma ideia, veja quem quer participar e monte um time com as
-            pessoas certas para cada cargo.
+            Proponha uma ideia, marque interesse nas que você quer ver acontecer
+            e acompanhe quem vai participar.
           </p>
         </div>
         <div className="flex gap-2">

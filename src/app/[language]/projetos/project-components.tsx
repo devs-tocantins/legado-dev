@@ -5,7 +5,6 @@ import Link from "@/components/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  PROJECT_IDEA_STATUS_LABELS,
   PROJECT_ROLE_LABELS,
   PROJECT_TEAM_STATUS_LABELS,
   projectUserName,
@@ -123,39 +122,40 @@ export function IdeaCard({ idea }: { idea: ProjectIdea }) {
   return (
     <Link
       href={`/projetos/${idea.id}`}
-      className="group flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      className="group flex w-full flex-col gap-5 rounded-[var(--radius)] border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-6"
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="font-heading text-[15px] font-semibold leading-snug line-clamp-2">
-          {idea.title}
-        </h3>
-        {idea.status === ProjectIdeaStatus.TEAM_FORMED && (
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        {idea.featuredAt && (
           <StatusPill
-            label={PROJECT_IDEA_STATUS_LABELS[idea.status]}
-            className={IDEA_STATUS_CLASS[idea.status]}
+            label="★ Projeto da vez"
+            className="w-fit bg-amber-500/15 text-amber-400"
           />
         )}
+        <h3 className="font-heading text-lg font-semibold leading-snug tracking-tight sm:text-xl">
+          {idea.title}
+        </h3>
+        <p className="line-clamp-2 max-w-4xl text-[15px] leading-relaxed text-muted-foreground">
+          {idea.description}
+        </p>
+        {idea.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {idea.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded bg-secondary px-2 py-0.5 font-mono text-xs text-muted-foreground"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-      <p className="line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">
-        {idea.description}
-      </p>
-      {idea.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {idea.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+      <div className="flex shrink-0 items-center justify-between gap-6 border-t border-border pt-4 sm:min-w-[220px] sm:flex-col sm:items-end sm:gap-3 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
         <UserChip user={idea.author} />
-        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-          <Users className="h-3.5 w-3.5" />
-          {idea.interestCount}
+        <span className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+          <Users className="h-4 w-4" />
+          {idea.interestCount}{" "}
+          {idea.interestCount === 1 ? "interessado" : "interessados"}
         </span>
       </div>
     </Link>

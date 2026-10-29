@@ -7,6 +7,7 @@ import {
   MyProjectInterest,
   ProjectIdea,
   ProjectIdeaInterest,
+  ProjectGroup,
   ProjectIdeaRole,
   ProjectParticipant,
   ProjectRole,
@@ -165,6 +166,56 @@ export function useGetMyProjectInterestService() {
         method: "GET",
         ...requestConfig,
       }).then(wrapperFetchJsonResponse<MyProjectInterest>),
+    [fetch]
+  );
+}
+
+export function usePatchProjectFeatureService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { ideaId: string; featured: boolean },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/feature`), {
+        method: "PATCH",
+        body: JSON.stringify({ featured: data.featured }),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProjectIdea>),
+    [fetch]
+  );
+}
+
+export function usePostProjectCallService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (
+      data: { ideaId: string; groupLink: string; message?: string },
+      requestConfig?: RequestConfigType
+    ) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/call`), {
+        method: "POST",
+        body: JSON.stringify({
+          groupLink: data.groupLink,
+          message: data.message,
+        }),
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<{ notified: number }>),
+    [fetch]
+  );
+}
+
+export function useGetProjectGroupService() {
+  const fetch = useFetch();
+
+  return useCallback(
+    (data: { ideaId: string }, requestConfig?: RequestConfigType) =>
+      fetch(buildUrl(`project-ideas/${data.ideaId}/group`), {
+        method: "GET",
+        ...requestConfig,
+      }).then(wrapperFetchJsonResponse<ProjectGroup>),
     [fetch]
   );
 }
